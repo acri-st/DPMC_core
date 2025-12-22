@@ -1,0 +1,18 @@
+DB_SERVER=192.168.101.108
+DB_NAME=remote_sensing
+DB_USER=srv_dpmc
+DB_PASSWORD=xxxxxx
+DB_REQUESTER=/usr/bin/psql
+DB_CALL="$DB_REQUESTER -h $DB_SERVER -U $DB_USER" 
+
+export DB_CONNECT="connect to remote_sensing@$DB_SERVER as db1 user $DB_USER using $DB_PASSWORD;"
+
+CONNECT_TODB() {
+    SQLCODE=-1
+    while [ $SQLCODE -ne $SQL_OK ]; do
+        exec_sql "${DB_CONNECT}"
+        if [ $SQLCODE -ne $SQL_OK ]; then
+            sleep 5 
+        fi
+    done
+}

@@ -1,0 +1,446 @@
+
+# -------------------------------------------------------------------
+#
+# History:
+#
+# 2014-08-20 :  gb : update list_lta_ftp_files function to allow listing of dot-files
+# 2015-04-24 :  gb : remove the /bin/pgbash top command
+#
+# -------------------------------------------------------------------
+
+if [ -z ${LTA_HOME} ]; then
+	export LTA_HOME=/exports/dpmc/scripts
+fi
+
+log_message1() {
+  echo "`date_utc` : $*" 
+}
+
+export SYSTEM_NAME=DPMC
+export SYSTEM_ROOT=${LTA_HOME}
+export SYSTEM_CORE=${SYSTEM_ROOT}/system-core
+export SYSTEM_LOG=${SYSTEM_ROOT}/log
+export SYSTEM_LOCK=${SYSTEM_ROOT}/lock
+
+export SPECIFIC_DATA=${SYSTEM_ROOT}/specific-data
+export SPECIFIC_BATCH=${SYSTEM_ROOT}/specific-batch
+export SPECIFIC_BIN=${SYSTEM_ROOT}/specific-binaries
+export SPECIFIC_PACKAGE=${SYSTEM_ROOT}/specific-package
+
+export SYSTEM_BIN=${SYSTEM_ROOT}/bin
+export SYSTEM_TMP=${SYSTEM_ROOT}/tmp
+export TEMP_DIR=${SYSTEM_TMP}
+
+export HOSTNAME=`hostname`
+export OS=`uname`
+
+export MSOC_EMAIL=xxxxx@domain-st.fr
+
+export SOCKS_SERVER_ADDRESS=194.98.101.254
+export SOCKS_SERVER_PORT=3328
+
+####export MAIL_SOFTWARE=/usr/lib/sendmail
+export MAIL_SOFTWARE=echo
+
+export FTP_MACHINE=ftp.domain.fr
+export FTP_SOFTWARE=/usr/bin/lftp
+
+export LTA_FTP_SERVER=10.27.29.106
+export LTA_FTP_USER=ftp_lta
+export LTA_FTP_PASSWORD=lta
+export LTA_FTP_DIR=dropbox
+export LTA_FTP_LOCAL_DIR=/exports/ftp/${LTA_FTP_DIR}
+
+export FTP_TIMEOUT=30
+export HTTP_TIMEOUT=30
+
+export LTA_FRIDGE=/exports/ftp/fridge
+
+export LTA_FTP_SLEEP=15	
+export LTA_BATCH_SLEEP=15
+export SCHEDULER_SLEEP=05
+
+export LTA_CLEAN_FTP_SLEEP=21600
+
+# Maximum number fi transaction transformed into batch at a time
+export BATCH_MAX_CREATION=100
+
+# Maximum number of jobs launched in //
+export SCHEDULER_MAX_LAUNCH=100
+
+export SYSTEM_DEBUG=1
+
+# Load database dependant part
+source ${SYSTEM_CORE}/db.include 
+
+export DB_SERVER
+export DB_USER
+export DB_PASSWORD
+export DB_NAME
+
+export PGHOST=${DB_SERVER}
+export PGUSER=${DB_USER}
+export PGDATABASE=${DB_NAME}
+export PGPORT=5432
+
+# build generic psql command
+PSQL_CMD="psql -t -q -c"
+
+LN=/bin/ln
+
+CP=/bin/cp
+CP_OPTS="-p --sparse=never"
+
+MV=/bin/mv
+
+TAR=tar    
+
+WGET=/usr/bin/wget
+WGET_OPTS="--tries=3 "
+
+CURL=/usr/bin/curl
+
+#ZIP=/usr/bin/zip
+#ZIPTEST=-T
+ZIP=/usr/bin/7z
+ZIPTEST="t"
+
+RSYNC=/usr/bin/rsync
+RSYNC_OPTS="-t"
+
+RM=/bin/rm
+RM_OPTS=-f
+
+MKDIR=/bin/mkdir
+RMDIR=/bin/rmdir
+
+# maximum of retries for most of the commands and duration of pause between two retries
+MAX_RETRIES=3
+SLEEP_RETRY=05
+
+send_mail() {
+MAIL_USER=$1
+TITLE=$2
+BODY=$3
+${MAIL_SOFTWARE} ${MAIL_USER} <<EOF
+Subject: [${SYSTEM_NAME}] ${TITLE}
+
+hostname: $HOSTNAME
+user: $USER
+directory: $PWD
+
+${BODY}
+
+EOF
+}
+
+get_disk_capacity() {
+  if [ -d $1 ]; then
+    WORDS=`df -k $1 | tail -1 | wc -w`
+    if [ $WORDS -eq 5 ]; then
+      expr `df -k $1 | tail -1 | awk '{ print $1 }'` \* 1024
+    else
+      expr `df -k $1 | tail -1 | awk '{ print $2 }'` \* 1024
+    fi
+  else
+    echo NULL
+  fi
+}
+
+get_disk_free_space() {
+  if [ -d $1 ]; then
+	  WORDS=`df -k $1 | tail -1 | wc -w`
+		if [ $WORDS -eq 5 ]; then
+      expr `df -k $1 | tail -1 | awk '{ print $3 }'` \* 1024
+		else
+      expr `df -k $1 | tail -1 | awk '{ print $4 }'` \* 1024
+		fi
+  else
+    echo NULL
+  fi
+}
+
+get_disk_used_space() {
+  if [ -d $1 ]; then
+    WORDS=`df -k $1 | tail -1 | wc -w`
+    if [ $WORDS -eq 5 ]; then
+      expr `df -k $1 | tail -1 | awk '{ print $2 }'` \* 1024
+    else
+      expr `df -k $1 | tail -1 | awk '{ print $3 }'` \* 1024
+    fi
+  else
+    echo NULL
+  fi
+}
+
+unique_identifier() {
+  echo `hostname`".$$"
+}
+
+get_official_name() {
+  PRODUCT_NAME=`echo $1 | sed "s/.zip//"`
+  echo ${PRODUCT_NAME}
+}
+
+date_utc() {
+  #date --utc +'%Y-%m-%dT%H:%M:%S.%6N'
+  date +'%Y-%m-%dT%H:%M:%S.%6N'
+}
+
+log_message() {
+  echo "`date_utc` : $*" 
+}
+
+log_warning() {
+  echo "`date_utc` : WARNING : $*" 
+}
+
+log_error() {
+  echo "`date_utc` : ERROR : $*" 
+}
+
+log_fatal() {
+  echo "`date_utc` : FATAL : $*" 
+}
+
+check_ok() {
+  ERROR=`expr $ERROR + $3`
+#  if [ $3 -ne 0 ]; then
+#  	log_error $1 $2
+#  fi
+#  if [ $SYSTEM_DEBUG -eq 1 ]; then
+#	  log_message "$1 $2 return codes $3"
+#  fi
+  return $3
+}
+
+list_lta_ftp_files() {
+lftp << +	
+open -u $2,$3 $1
+cd $4
+set ftp:list-options -a
+cls --block-size=1 --size
+quit
++
+}
+
+delete_lta_ftp_file() {
+lftp << +	
+open -u $2,$3 $1
+cd $4
+rm $5
+quit
++
+}
+
+send_file() {
+lftp << +	
+open -u $3,$4 $2
+cd $5
+put $1 -o .$1
+mv .$1 $1
+quit
++
+}
+
+send_file_to_ftp_URL() {
+if [ "$1" == "SEND" ]; then
+lftp << +	
+open $2
+put $3 -o .$3
+quit
++
+elif [ "$1" == "RENAME" ]; then
+lftp << +	
+open $2
+mv .$3 $3
+quit
++
+elif [ "$1" == "DELETE" ]; then
+lftp << +	
+open $2
+rm -f .$3
+quit
++
+else
+lftp << +	
+open $2
+ls
+quit
++
+fi
+}
+
+send_file_to_http_URL() {
+  curl --connect-timeout ${HTTP_TIMEOUT} --request PUT --upload-file $2 $1
+  return $?
+}
+
+send_error_mail() {
+MAIL_USER=$1
+TITLE=$2
+BODY=$3
+${MAIL_SOFTWARE} ${MAIL_USER} <<EOF
+Subject: [${SYSTEM_NAME}] ${TITLE}
+
+---------------------------------------------------
+hostname: ${HOSTNAME}
+user: ${USER}
+directory: ${PWD}
+---------------------------------------------------
+
+batch Id: ${BATCH_ID}
+
+transaction Id: ${TRANSACTION_ID}
+
+product Id: ${PRODUCT_ID}
+product name: ${PRODUCT_NAME}
+product zip name: ${PRODUCT_ZIPNAME}
+
+LTA fridge: ${LTA_FRIDGE}
+
+primary media: ${PRIMARY_MEDIA}
+secondary media: ${SECONDARY_MEDIA}
+
+primary directory: ${PRIMARY_DIR}
+secondary directory: ${SECONDARY_DIR}
+
+Ingestion transactions:
+
+URL: ${URL}
+
+original URL: ${PRODUCT_URL_AUX}
+updated URL: ${PRODUCT_URL}
+
+Retrieval transactions:
+
+product_path: ${PRODUCT_PATH}
+target URL: ${TARGET_URL}
+
+Warning/Error description:
+
+${BODY}
+
+EOF
+}
+
+report_error() {
+  # get arguments
+  REP_PROC_NAME=$1
+  REP_ERR_LEVEL=$2
+  REP_CMD=$3
+  REP_CMD_STATUS=$4
+  REP_TXT=$5
+  # record error and alert the operator
+  log_${REP_ERR_LEVEL} "${REP_PROC_NAME} - ${HOSTNAME} - ${REP_TXT} - Cmd ${REP_CMD} returns ${REP_CMD_STATUS}" >> ${LOG_FILE}
+  #####send_error_mail ${MSOC_EMAIL} "${REP_PROC_NAME} - ${HOSTNAME} - ${REP_TXT}" "Cmd ${REP_CMD} returns ${REP_CMD_STATUS}"
+}
+
+cp_file() {
+  _ERROR=0
+  _FILE=$1
+  _SOURCE=$2
+  _TARGET=$3
+  _NB=0
+  _STATUS=1
+  while [ ${_STATUS} -ne 0 -a ${_NB} -lt ${MAX_RETRIES} ]; do
+    _NB=$(($_NB+1))
+    ${CP} ${CP_OPTS} ${_SOURCE}/${_FILE} ${_TARGET}
+    _STATUS=$?
+    if [ ${_STATUS} -ne 0 ]; then 
+      if [ ! -d "${_SOURCE}" ]; then
+        report_error "direct" "error" "cp_file" "$STATUS" "source directory ${_SOURCE} not found"
+      fi
+      if [ ! -f "${_SOURCE}/${_FILE}" ]; then
+        report_error "direct" "error" "cp_file" "$STATUS" "source file ${_SOURCE}/${_FILE} not found"
+      fi
+      if [ ! -d "${_TARGET}" ]; then
+        report_error "direct" "error" "cp_file" "$STATUS" "target directory ${_TARGET} not found"
+      fi
+      sleep ${SLEEP_RETRY}
+    fi
+  done
+  if [ ${_NB} -eq ${MAX_RETRIES} ]; then
+    _ERROR=${_STATUS}
+  fi
+  return ${_ERROR}
+}
+
+keep_last_lines() {
+  if [ -f $1 ]; then
+    if [ `wc -l $1 | awk '{print $1}'` -gt $2 ]; then
+      _AUX=$(tail -n $3 $1)
+      echo "${_AUX}" > $1
+    fi  
+  else
+    touch $1
+  fi
+}
+
+rm_file() {
+  _ERROR=0
+  _FILE=$1
+  _NB=0
+  _STATUS=1
+  while [ ${_STATUS} -ne 0 -a ${_NB} -lt ${MAX_RETRIES} ]; do
+    _NB=$(($_NB+1))
+    ${RM} ${RM_OPTS} ${_FILE}
+    _STATUS=$?
+    if [ ${_STATUS} -ne 0 ]; then 
+      sleep ${SLEEP_RETRY}
+    fi
+  done
+  if [ ${_NB} -eq ${MAX_RETRIES} ]; then
+    _ERROR=${_STATUS}
+  fi
+  return ${_ERROR}
+}
+
+rsync_file() {
+  _ERROR=0
+  _FILE=$1
+  _SOURCE=$2
+  _TARGET=$3
+  _NB=0
+  _STATUS=1
+  while [ ${_STATUS} -ne 0 -a ${_NB} -lt ${MAX_RETRIES} ]; do
+    _NB=$(($_NB+1))
+    ${RSYNC} ${RSYNC_OPTS} ${_SOURCE}/${_FILE} ${_TARGET}
+    _STATUS=$?
+    if [ ${_STATUS} -ne 0 ]; then 
+      sleep ${SLEEP_RETRY}
+    fi
+  done
+  if [ ${_NB} -eq ${MAX_RETRIES} ]; then
+    _ERROR=${_STATUS}
+  fi
+  return ${_ERROR}
+}
+
+check_zip_file() {
+  _FILE=$1
+  ${ZIP} ${ZIPTEST} ${_FILE}
+  _STATUS=$?
+  return ${_STATUS}
+}
+
+create_dir() {
+  _ERROR=0
+  _DIR=$1
+  _NB=0
+  _STATUS=1
+  while [ ${_STATUS} -ne 0 -a ${_NB} -lt ${MAX_RETRIES} ]; do
+    _NB=$(($_NB+1))
+    ${MKDIR} -p ${_DIR}
+    _STATUS=$?
+    if [ ${_STATUS} -ne 0 ]; then 
+      sleep ${SLEEP_RETRY}
+    fi
+  done
+  if [ ${_NB} -eq ${MAX_RETRIES} ]; then
+    _ERROR=${_STATUS}
+  fi
+  return ${_ERROR}
+}
+
+
