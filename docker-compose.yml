@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  dpmc-job-launcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dpmc-job-launcher
+    env_file:
+      - .env
+    volumes:
+      - /exports/dpmc:/exports/dpmc
+      - ./system-core:/root/system-core
+      - ./specific-batch:/root/specific-batch
+    command: python3 /root/system-core/job_launcher.py
+    restart: unless-stopped

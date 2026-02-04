@@ -2,12 +2,22 @@
 -- PostgreSQL database dump
 --
 
+\restrict nbE3Eq8veifhtK9dk2BmnUJhph2goqqlcaOtwSWfbT0F8sSbH7cpfyvjQo2LSZv
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
+SET row_security = off;
 
 --
 -- Name: internal; Type: SCHEMA; Schema: -; Owner: srv_dpmc
@@ -17,15 +27,6 @@ CREATE SCHEMA internal;
 
 
 ALTER SCHEMA internal OWNER TO srv_dpmc;
-
---
--- Name: lta; Type: SCHEMA; Schema: -; Owner: srv_dpmc
---
-
-CREATE SCHEMA lta;
-
-
-ALTER SCHEMA lta OWNER TO srv_dpmc;
 
 --
 -- Name: processing; Type: SCHEMA; Schema: -; Owner: srv_dpmc
@@ -44,15 +45,6 @@ COMMENT ON SCHEMA processing IS 'Schema containing all the specific table for th
 
 
 --
--- Name: s3ome; Type: SCHEMA; Schema: -; Owner: srv_dpmc
---
-
-CREATE SCHEMA s3ome;
-
-
-ALTER SCHEMA s3ome OWNER TO srv_dpmc;
-
---
 -- Name: temporary; Type: SCHEMA; Schema: -; Owner: srv_dpmc
 --
 
@@ -62,26 +54,10 @@ CREATE SCHEMA temporary;
 ALTER SCHEMA temporary OWNER TO srv_dpmc;
 
 --
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
-SET search_path = internal, pg_catalog;
-
---
 -- Name: transcription_status; Type: TYPE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TYPE transcription_status AS ENUM (
+CREATE TYPE internal.transcription_status AS ENUM (
     'full',
     'partial',
     'null'
@@ -90,77 +66,78 @@ CREATE TYPE transcription_status AS ENUM (
 
 ALTER TYPE internal.transcription_status OWNER TO srv_dpmc;
 
-SET search_path = lta, pg_catalog;
-
 --
--- Name: enum_product_status; Type: TYPE; Schema: lta; Owner: srv_dpmc
+-- Name: reprocessing_status; Type: TYPE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TYPE enum_product_status AS ENUM (
+CREATE TYPE processing.reprocessing_status AS ENUM (
     'NEW',
-    'FAILED',
     'IN_PROGRESS',
-    'ARCHIVED',
-    'DELETED',
-    'NOT_FOUND',
-    'IN_TRANSFER',
-    'ABORTED'
+    'ERROR',
+    'DONE',
+    'SUSPENDED'
 );
 
 
-ALTER TYPE lta.enum_product_status OWNER TO srv_dpmc;
+ALTER TYPE processing.reprocessing_status OWNER TO srv_dpmc;
 
 --
--- Name: enum_request_outcome; Type: TYPE; Schema: lta; Owner: srv_dpmc
+-- Name: processing_mode; Type: TYPE; Schema: public; Owner: srv_dpmc
 --
 
-CREATE TYPE enum_request_outcome AS ENUM (
-    'OK',
-    'NOK'
+CREATE TYPE public.processing_mode AS ENUM (
+    'calibration',
+    'measurement'
 );
 
 
-ALTER TYPE lta.enum_request_outcome OWNER TO srv_dpmc;
+ALTER TYPE public.processing_mode OWNER TO srv_dpmc;
 
 --
--- Name: enum_transaction_status; Type: TYPE; Schema: lta; Owner: srv_dpmc
+-- Name: task_record_status; Type: TYPE; Schema: public; Owner: srv_dpmc
 --
 
-CREATE TYPE enum_transaction_status AS ENUM (
+CREATE TYPE public.task_record_status AS ENUM (
+    'RUNNING',
+    'DONE',
+    'FAILED'
+);
+
+
+ALTER TYPE public.task_record_status OWNER TO srv_dpmc;
+
+--
+-- Name: task_status; Type: TYPE; Schema: public; Owner: srv_dpmc
+--
+
+CREATE TYPE public.task_status AS ENUM (
     'NEW',
-    'PENDING',
-    'ACTIVE',
-    'ABORTED',
-    'FAILED',
-    'FINISHED'
+    'RUNNING',
+    'DONE',
+    'SUSPENDED'
 );
 
 
-ALTER TYPE lta.enum_transaction_status OWNER TO srv_dpmc;
+ALTER TYPE public.task_status OWNER TO srv_dpmc;
 
 --
--- Name: transaction_status; Type: TYPE; Schema: lta; Owner: srv_dpmc
+-- Name: timeliness; Type: TYPE; Schema: public; Owner: srv_dpmc
 --
 
-CREATE TYPE transaction_status AS ENUM (
-    'NEW',
-    'PENDING',
-    'ACTIVE',
-    'ABORTED',
-    'FAILED',
-    'FINISHED'
+CREATE TYPE public.timeliness AS ENUM (
+    'NRT',
+    'STC',
+    'NTC'
 );
 
 
-ALTER TYPE lta.transaction_status OWNER TO srv_dpmc;
-
-SET search_path = internal, pg_catalog;
+ALTER TYPE public.timeliness OWNER TO srv_dpmc;
 
 --
 -- Name: add_product_to_dataset(integer, integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION add_product_to_dataset(integer, integer) RETURNS integer
+CREATE FUNCTION internal.add_product_to_dataset(integer, integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -190,7 +167,7 @@ ALTER FUNCTION internal.add_product_to_dataset(integer, integer) OWNER TO srv_dp
 -- Name: add_product_to_dataset_by_name(character varying, character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION add_product_to_dataset_by_name(character varying, character varying) RETURNS integer
+CREATE FUNCTION internal.add_product_to_dataset_by_name(character varying, character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -226,7 +203,7 @@ ALTER FUNCTION internal.add_product_to_dataset_by_name(character varying, charac
 -- Name: clean_dataset(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION clean_dataset(integer) RETURNS integer
+CREATE FUNCTION internal.clean_dataset(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -248,7 +225,7 @@ ALTER FUNCTION internal.clean_dataset(integer) OWNER TO srv_dpmc;
 -- Name: clean_dataset_by_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION clean_dataset_by_name(character varying) RETURNS integer
+CREATE FUNCTION internal.clean_dataset_by_name(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -272,7 +249,7 @@ ALTER FUNCTION internal.clean_dataset_by_name(character varying) OWNER TO srv_dp
 -- Name: create_media_from_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION create_media_from_name(character varying) RETURNS integer
+CREATE FUNCTION internal.create_media_from_name(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -308,7 +285,7 @@ ALTER FUNCTION internal.create_media_from_name(character varying) OWNER TO srv_d
 -- Name: delete_dataset(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_dataset(integer) RETURNS integer
+CREATE FUNCTION internal.delete_dataset(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -331,7 +308,7 @@ ALTER FUNCTION internal.delete_dataset(integer) OWNER TO srv_dpmc;
 -- Name: delete_dataset_by_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_dataset_by_name(character varying) RETURNS integer
+CREATE FUNCTION internal.delete_dataset_by_name(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -356,7 +333,7 @@ ALTER FUNCTION internal.delete_dataset_by_name(character varying) OWNER TO srv_d
 -- Name: delete_product_from_database(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_product_from_database(character varying) RETURNS integer
+CREATE FUNCTION internal.delete_product_from_database(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$declare
   product_name_ alias for $1;
@@ -377,12 +354,12 @@ begin
     delete from internal.sensing_product where product = v_product_id_;
     delete from internal.auxiliary_product where product = v_product_id_;
     delete from internal.dataset_x_product where product_id = v_product_id_;
+	delete from internal.processing_product_x_tag where product_name = product_name_;
     -- Update gb 18/06/2018
     -- create temporary table zzz as (select * from internal.product_x_media_catalog_entry where product = v_product_id_);
     -- delete from internal.product_x_media_catalog_entry where product = v_product_id_;
     -- delete from internal.media_catalog_entry where id in (select media_catalog_entry from zzz);
     -- drop table zzz;
-    update internal.orbit set anx_date_time_source_product=0 where anx_date_time_source_product=v_product_id_;
     delete from internal.media_catalog_entry where id in (select media_catalog_entry from internal.product_x_media_catalog_entry where product = v_product_id_);
     delete from internal.product_x_media_catalog_entry where product = v_product_id_;
     delete from internal.product where id = v_product_id_;
@@ -401,7 +378,7 @@ ALTER FUNCTION internal.delete_product_from_database(character varying) OWNER TO
 -- Name: delete_product_from_dataset(integer, integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_product_from_dataset(integer, integer) RETURNS integer
+CREATE FUNCTION internal.delete_product_from_dataset(integer, integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -431,7 +408,7 @@ ALTER FUNCTION internal.delete_product_from_dataset(integer, integer) OWNER TO s
 -- Name: delete_product_from_dataset_by_name(character varying, character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_product_from_dataset_by_name(character varying, character varying) RETURNS integer
+CREATE FUNCTION internal.delete_product_from_dataset_by_name(character varying, character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -467,7 +444,7 @@ ALTER FUNCTION internal.delete_product_from_dataset_by_name(character varying, c
 -- Name: disk_location_create(character varying, character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION disk_location_create(character varying, character varying) RETURNS integer
+CREATE FUNCTION internal.disk_location_create(character varying, character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -551,15 +528,21 @@ begin
 		if media_id_ is null then
 			raise exception 'check violation : media id is valid';
 		end if;
+	
 
-	if not exists (	select	*
-			from	internal.media_catalog
-			where	media = media_id_
-				and name = media_catalog_) then
-		insert into internal.media_catalog(media, name)
-		values( media_id_, media_catalog_);
-	end if;
-	select 	into media_catalog_id_ id
+	LOOP
+        if exists (select * from internal.media_catalog where media = media_id_ and name = media_catalog_) then
+            EXIT;
+        end if;
+        begin
+            insert into internal.media_catalog(media, name) values( media_id_, media_catalog_);
+            EXIT;
+        exception when unique_violation then
+                -- Do nothing, and loop to try the SELECT again.
+        end;
+    END LOOP;
+	
+   select 	into media_catalog_id_ id
 	from	internal.media_catalog
 		where media = media_id_
 		and name = media_catalog_;
@@ -623,10 +606,150 @@ end;$_$;
 ALTER FUNCTION internal.disk_location_create(character varying, character varying) OWNER TO srv_dpmc;
 
 --
+-- Name: disk_location_create_md5(character varying, character varying, character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
+--
+
+CREATE FUNCTION internal.disk_location_create_md5(character varying, character varying, character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $_$declare
+	product_name_ alias for $1;
+	disk_location_ alias for $2;
+	md5_checksum_ alias for $3;
+	product_id_ integer;
+	media_ varchar(2500);
+	media_id_ integer;
+	media_catalog_ varchar(255);
+	media_catalog_id_ integer;
+	media_catalog_entry_ varchar(255);
+	media_catalog_entry_id_ integer;
+	level_ integer;
+	part_ varchar(255);
+	next_part_ varchar(255);
+	result_ integer;
+begin
+-- preconditions
+	-- product with name product_name exists
+	if not exists (	select	*
+			from	internal.product
+			where	name = product_name_) then
+		raise exception 'precondition violation : product named % exists', product_name_;
+	end if;
+	-- valid disk_location format
+	if not (	split_part(disk_location_, '/', 1) = ''
+			and length(split_part(disk_location_, '/', 2)) > 0 -- media
+			and length(split_part(disk_location_, '/', 3)) > 0 -- media_catalog
+			and length(split_part(disk_location_, '/', 4)) > 0 -- media_catalog_entry
+			and substring(disk_location_, length(disk_location_), 1) <> '/') then
+		raise exception 'precondition violation : % is a valid disk_location format', disk_location_;
+	end if;
+-- main
+	select 	into product_id_ id 
+	from	internal.product
+	where	name = product_name_;
+
+	media_ := '/' || split_part(disk_location_, '/', 2);
+	media_catalog_ := split_part(disk_location_, '/', 3);
+	level_ := 4;
+	part_ := split_part(disk_location_, '/', level_);
+	next_part_ := split_part(disk_location_, '/', level_ + 1);
+	while next_part_ <> '' loop
+		media_catalog_ := media_catalog_ || '/' || part_;
+		level_ := level_ + 1;
+		part_ := next_part_;
+		next_part_ := split_part(disk_location_, '/', level_ + 1);
+	end loop;
+	media_catalog_entry_ := part_;
+	
+		-- check
+		if length(media_) <= 1 then
+			raise exception 'check violation : media % is valid', media_;
+		end if;
+		if length(media_catalog_) = 0 then
+			raise exception 'check violation : media_catalog % is valid', media_catalog_;
+		end if;
+		if length(media_catalog_entry_) = 0 then
+			raise exception 'check violation : media_catalog_entry % is valid', media_catalog_entry_;
+		end if;
+
+	if not exists (	select	*
+			from	internal.media join
+				internal.media_type on (media_type.id = media.media_type)
+			where	media.name = media_
+				and media_type.name = 'HARD-DISK'
+			) then
+		insert into internal.media(media_type, name)
+		select	media_type.id, media_
+		from 	internal.media_type
+		where	media_type.name = 'HARD-DISK';
+	end if;
+	media_id_ := null;
+	select 	into media_id_ media.id
+	from	internal.media join 
+		internal.media_type on (media_type.id = media.media_type)
+	where	media.name = media_
+		and media_type.name = 'HARD-DISK';
+
+		-- check
+		if media_id_ is null then
+			raise exception 'check violation : media id is valid';
+		end if;
+    LOOP
+        if exists (select * from internal.media_catalog where media = media_id_ and name = media_catalog_) then
+            EXIT;
+        end if;
+        begin
+            insert into internal.media_catalog(media, name) values( media_id_, media_catalog_);
+            EXIT;
+        exception when unique_violation then
+                -- Do nothing, and loop to try the SELECT again.
+        end;
+    END LOOP;
+	select 	into media_catalog_id_ id
+	from	internal.media_catalog
+		where media = media_id_
+		and name = media_catalog_;
+
+		-- check
+		if media_catalog_id_ is null then
+			raise exception 'check violation : media_catalog id is valid';
+		end if;
+
+	if not exists (	select	*
+			from	internal.media_catalog_entry
+			where	media_catalog = media_catalog_id_
+				and name = media_catalog_entry_) then
+		insert into internal.media_catalog_entry(media_catalog, name, md5_checksum)
+		values( media_catalog_id_, media_catalog_entry_, md5_checksum_);
+	end if;
+	select	into media_catalog_entry_id_ id
+	from	internal.media_catalog_entry
+		where media_catalog = media_catalog_id_
+		and name = media_catalog_entry_;
+
+		-- check
+		if media_catalog_entry_id_ is null then
+			raise exception 'check violation : media_catalog_entry id is valid';
+		end if;
+
+	if not exists (	select	*
+			from	internal.product_x_media_catalog_entry
+			where	product = product_id_
+				and media_catalog_entry = media_catalog_entry_id_) then
+		insert into internal.product_x_media_catalog_entry(product, media_catalog_entry)
+		values( product_id_, media_catalog_entry_id_);
+	end if;
+
+	return result_;
+end;$_$;
+
+
+ALTER FUNCTION internal.disk_location_create_md5(character varying, character varying, character varying) OWNER TO srv_dpmc;
+
+--
 -- Name: disk_location_delete(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION disk_location_delete(character varying) RETURNS integer
+CREATE FUNCTION internal.disk_location_delete(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -728,7 +851,7 @@ ALTER FUNCTION internal.disk_location_delete(character varying) OWNER TO srv_dpm
 -- Name: exists_product(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION exists_product(integer) RETURNS boolean
+CREATE FUNCTION internal.exists_product(integer) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$begin
   return exists ( select * 
@@ -747,7 +870,7 @@ ALTER FUNCTION internal.exists_product(integer) OWNER TO srv_dpmc;
 -- Name: interval_to_seconds(interval); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION interval_to_seconds(interval) RETURNS integer
+CREATE FUNCTION internal.interval_to_seconds(interval) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -765,7 +888,7 @@ ALTER FUNCTION internal.interval_to_seconds(interval) OWNER TO srv_dpmc;
 -- Name: media_catalog_create(integer, character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION media_catalog_create(integer, character varying) RETURNS integer
+CREATE FUNCTION internal.media_catalog_create(integer, character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -816,7 +939,7 @@ ALTER FUNCTION internal.media_catalog_create(integer, character varying) OWNER T
 -- Name: merge_datasets(integer, integer, integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION merge_datasets(integer, integer, integer) RETURNS integer
+CREATE FUNCTION internal.merge_datasets(integer, integer, integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -856,7 +979,7 @@ ALTER FUNCTION internal.merge_datasets(integer, integer, integer) OWNER TO srv_d
 -- Name: new_image_processing_from_request(integer, integer, integer, timestamp without time zone, timestamp without time zone); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_image_processing_from_request(integer, integer, integer, timestamp without time zone, timestamp without time zone) RETURNS integer
+CREATE FUNCTION internal.new_image_processing_from_request(integer, integer, integer, timestamp without time zone, timestamp without time zone) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 
@@ -1032,7 +1155,7 @@ ALTER FUNCTION internal.new_image_processing_from_request(integer, integer, inte
 -- Name: new_image_processings_from_product(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_image_processings_from_product(integer) RETURNS integer
+CREATE FUNCTION internal.new_image_processings_from_product(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -1148,7 +1271,7 @@ ALTER FUNCTION internal.new_image_processings_from_product(integer) OWNER TO srv
 -- Name: new_image_processings_from_request(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_image_processings_from_request(integer) RETURNS integer
+CREATE FUNCTION internal.new_image_processings_from_request(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 
@@ -1253,7 +1376,7 @@ ALTER FUNCTION internal.new_image_processings_from_request(integer) OWNER TO srv
 -- Name: new_processing(integer, integer, character, boolean); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_processing(integer, integer, character, boolean) RETURNS integer
+CREATE FUNCTION internal.new_processing(integer, integer, character, boolean) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 
@@ -1336,7 +1459,7 @@ ALTER FUNCTION internal.new_processing(integer, integer, character, boolean) OWN
 -- Name: new_processings_from_product(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_processings_from_product(integer) RETURNS integer
+CREATE FUNCTION internal.new_processings_from_product(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$declare
 	product_ alias for $1;
@@ -1393,7 +1516,7 @@ ALTER FUNCTION internal.new_processings_from_product(integer) OWNER TO srv_dpmc;
 -- Name: new_processings_from_product_old(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_processings_from_product_old(integer) RETURNS integer
+CREATE FUNCTION internal.new_processings_from_product_old(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -1435,7 +1558,7 @@ ALTER FUNCTION internal.new_processings_from_product_old(integer) OWNER TO srv_d
 -- Name: new_processings_from_request(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_processings_from_request(integer) RETURNS integer
+CREATE FUNCTION internal.new_processings_from_request(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 
@@ -1487,7 +1610,7 @@ ALTER FUNCTION internal.new_processings_from_request(integer) OWNER TO srv_dpmc;
 -- Name: new_processings_from_request_and_product(integer, integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_processings_from_request_and_product(integer, integer) RETURNS integer
+CREATE FUNCTION internal.new_processings_from_request_and_product(integer, integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$declare
 	request_ alias for $1;
@@ -1523,7 +1646,7 @@ ALTER FUNCTION internal.new_processings_from_request_and_product(integer, intege
 -- Name: new_product(integer); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_product(integer) RETURNS integer
+CREATE FUNCTION internal.new_product(integer) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -1915,7 +2038,7 @@ ALTER FUNCTION internal.new_product(integer) OWNER TO srv_dpmc;
 -- Name: new_product_from_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_product_from_name(character varying) RETURNS integer
+CREATE FUNCTION internal.new_product_from_name(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$DECLARE
 
@@ -2065,7 +2188,7 @@ ALTER FUNCTION internal.new_product_from_name(character varying) OWNER TO srv_dp
 -- Name: new_product_from_name_old(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_product_from_name_old(character varying) RETURNS integer
+CREATE FUNCTION internal.new_product_from_name_old(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$DECLARE
 
@@ -2207,7 +2330,7 @@ ALTER FUNCTION internal.new_product_from_name_old(character varying) OWNER TO sr
 -- Name: next_media_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION next_media_name(character varying) RETURNS character varying
+CREATE FUNCTION internal.next_media_name(character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2249,7 +2372,7 @@ ALTER FUNCTION internal.next_media_name(character varying) OWNER TO srv_dpmc;
 -- Name: next_media_suffixed_name(character varying, character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION next_media_suffixed_name(character varying, character varying) RETURNS character varying
+CREATE FUNCTION internal.next_media_suffixed_name(character varying, character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2296,7 +2419,7 @@ ALTER FUNCTION internal.next_media_suffixed_name(character varying, character va
 -- Name: product_processing_center_from_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION product_processing_center_from_name(character varying) RETURNS character varying
+CREATE FUNCTION internal.product_processing_center_from_name(character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$begin
   return substring( $1, 12, 3);
@@ -2309,7 +2432,7 @@ ALTER FUNCTION internal.product_processing_center_from_name(character varying) O
 -- Name: product_processing_stage_flag_from_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION product_processing_stage_flag_from_name(character varying) RETURNS character
+CREATE FUNCTION internal.product_processing_stage_flag_from_name(character varying) RETURNS character
     LANGUAGE plpgsql
     AS $_$begin
   return substring( $1, 11, 1);
@@ -2322,7 +2445,7 @@ ALTER FUNCTION internal.product_processing_stage_flag_from_name(character varyin
 -- Name: product_type_acronym_from_name(character varying); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION product_type_acronym_from_name(character varying) RETURNS character varying
+CREATE FUNCTION internal.product_type_acronym_from_name(character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$begin
   if substring( $1, 10, 1) = 'C' then 
@@ -2339,7 +2462,7 @@ ALTER FUNCTION internal.product_type_acronym_from_name(character varying) OWNER 
 -- Name: remove_scheduler_lock_file(); Type: FUNCTION; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE FUNCTION remove_scheduler_lock_file() RETURNS integer
+CREATE FUNCTION internal.remove_scheduler_lock_file() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
@@ -2367,13 +2490,56 @@ end;$$;
 
 ALTER FUNCTION internal.remove_scheduler_lock_file() OWNER TO srv_dpmc;
 
-SET search_path = processing, pg_catalog;
+--
+-- Name: add_host2pool(integer, integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE FUNCTION processing.add_host2pool(integer, integer) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $_$
+declare 
+  v_pool_id alias for $1;
+  v_host_id alias for $2;
+  v_count_pool integer;
+  v_count_host integer;
+begin
+  
+  select count(*) into v_count_pool from processing.pool where id = v_pool_id;
+  
+  if v_count_pool = 0 then
+     raise notice 'bad pool id';
+     return false;
+  end if;
+
+  select count(*) into v_count_host from processing.hosts where host_id = v_host_id;
+  
+  if v_count_host =0 then
+     raise notice 'bad host id';
+     return false;
+  end if;
+
+  select count(*) into v_pool_x_hosts from processing.pool_x_hosts where hosts = v_host_id and pool = v_pool_id 
+  
+  if v_pool_x_hosts > 0 then
+     raise notice 'already in pool';
+     return false;
+  end if;
+
+  insert into processing.pool_x_hosts (pool,hosts) values (v_pool_id, v_host_id);
+
+  return true;
+
+end;
+$_$;
+
+
+ALTER FUNCTION processing.add_host2pool(integer, integer) OWNER TO srv_dpmc;
 
 --
 -- Name: add_host2pool(character varying, character varying); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION add_host2pool(character varying, character varying) RETURNS boolean
+CREATE FUNCTION processing.add_host2pool(character varying, character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare 
@@ -2420,55 +2586,10 @@ $_$;
 ALTER FUNCTION processing.add_host2pool(character varying, character varying) OWNER TO srv_dpmc;
 
 --
--- Name: add_host2pool(integer, integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
---
-
-CREATE FUNCTION add_host2pool(integer, integer) RETURNS boolean
-    LANGUAGE plpgsql
-    AS $_$
-declare 
-  v_pool_id alias for $1;
-  v_host_id alias for $2;
-  v_count_pool integer;
-  v_count_host integer;
-begin
-  
-  select count(*) into v_count_pool from processing.pool where id = v_pool_id;
-  
-  if v_count_pool = 0 then
-     raise notice 'bad pool id';
-     return false;
-  end if;
-
-  select count(*) into v_count_host from processing.hosts where host_id = v_host_id;
-  
-  if v_count_host =0 then
-     raise notice 'bad host id';
-     return false;
-  end if;
-
-  select count(*) into v_pool_x_hosts from processing.pool_x_hosts where hosts = v_host_id and pool = v_pool_id 
-  
-  if v_pool_x_hosts > 0 then
-     raise notice 'already in pool';
-     return false;
-  end if;
-
-  insert into processing.pool_x_hosts (pool,hosts) values (v_pool_id, v_host_id);
-
-  return true;
-
-end;
-$_$;
-
-
-ALTER FUNCTION processing.add_host2pool(integer, integer) OWNER TO srv_dpmc;
-
---
 -- Name: add_output_file(character varying, character varying, integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION add_output_file(character varying, character varying, integer) RETURNS boolean
+CREATE FUNCTION processing.add_output_file(character varying, character varying, integer) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare 
@@ -2502,7 +2623,7 @@ ALTER FUNCTION processing.add_output_file(character varying, character varying, 
 -- Name: add_pool(character varying); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION add_pool(character varying) RETURNS integer
+CREATE FUNCTION processing.add_pool(character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2532,7 +2653,7 @@ ALTER FUNCTION processing.add_pool(character varying) OWNER TO srv_dpmc;
 -- Name: check_launch_time_outs(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION check_launch_time_outs() RETURNS integer
+CREATE FUNCTION processing.check_launch_time_outs() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare 
@@ -2547,16 +2668,16 @@ begin
 
 	for rec in
 
-		select	top.batch_id, top.hostname_id
-		from	internal.global
-			cross join processing.batch
-			join processing.top using (batch_id)
-		where	batch.state = 'Launched'
-			and now() - top.started > global.launch_time_out
+		select	t.batch_id, t.hostname_id
+		FROM internal.global g
+		CROSS JOIN processing.batch b
+		JOIN processing.top t ON t.batch_id = b.id
+		where	b.status = 'LAUNCHED'
+			and now() - t.started > g.launch_time_out
 
 	loop
 
-		update processing.batch set state = 'Queued' where batch_id = rec.batch_id;
+		update processing.batch set status = 'QUEUED' where id = rec.batch_id;
 
 		delete from processing.top where batch_id = rec.batch_id;
 
@@ -2567,7 +2688,8 @@ begin
 	end loop;
 
 	return result_;
-end;$$;
+end;
+$$;
 
 
 ALTER FUNCTION processing.check_launch_time_outs() OWNER TO srv_dpmc;
@@ -2576,7 +2698,7 @@ ALTER FUNCTION processing.check_launch_time_outs() OWNER TO srv_dpmc;
 -- Name: check_run_time_outs(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION check_run_time_outs() RETURNS integer
+CREATE FUNCTION processing.check_run_time_outs() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare 
@@ -2591,18 +2713,18 @@ begin
 
 	for rec in
 
-		select	top.batch_id, top.hostname_id
-		from	internal.global
-			cross join processing.batch
-			join processing.top using (batch_id)
-		where	batch.state = 'Running'
-                        and now() - now() > global.run_time_out
+		select	t.batch_id, t.hostname_id
+		FROM internal.global g
+		CROSS JOIN processing.batch b
+		JOIN processing.top t ON t.batch_id = b.id
+		where	b.status = 'RUNNING'
+                        and now() - now() > g.run_time_out
 --                      strange request to avoid killing process longer than run_time_out
 --			and now() - top.started > global.run_time_out
 
 	loop
 
-		update processing.batch set state = 'Queued' where batch_id = rec.batch_id;
+		update processing.batch set status = 'QUEUED' where id = rec.batch_id;
 
 		delete from processing.top where batch_id = rec.batch_id;
 
@@ -2620,10 +2742,79 @@ $$;
 ALTER FUNCTION processing.check_run_time_outs() OWNER TO srv_dpmc;
 
 --
+-- Name: compute_carbon_footprint(text); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE FUNCTION processing.compute_carbon_footprint(p_history_tag text) RETURNS numeric
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    rec RECORD;
+
+    -- Total CO2e (kgCO2)
+    co2_computation NUMERIC := 0;
+    co2_transfer    NUMERIC := 0;
+    co2_storage     NUMERIC := 0;
+
+    duration_h NUMERIC;
+BEGIN
+
+    -- for all jobs with the same tag
+    FOR rec IN
+        SELECT
+            h.avg_power,          -- W
+            h.data_volume,        -- Go
+            h.started,
+            h.ended,
+            c.pue,
+            c.emission_factor,    -- kgCO2 / kWh
+            c.energy_intensity    -- kWh / Go
+        FROM processing.history h
+        JOIN processing.center c
+            ON c.id = h.center_id
+        WHERE h.tag = p_history_tag
+          AND h.started IS NOT NULL
+          AND h.ended IS NOT NULL
+    LOOP
+
+        duration_h := EXTRACT(EPOCH FROM (rec.ended - rec.started)) / 3600;
+
+        -- CO2 Computation
+        co2_computation :=
+            co2_computation
+            + (((rec.avg_power * duration_h) / 1000)
+               * rec.pue
+               * rec.emission_factor);
+
+        -- CO2 Transfer
+        co2_transfer :=
+            co2_transfer
+            + (rec.data_volume
+               * rec.energy_intensity
+               * rec.emission_factor);
+
+        -- CO2 Storage (monthly)
+        co2_storage :=
+            co2_storage
+            + (((rec.avg_power * 24 * 30) / 1000)
+               * rec.pue
+               * rec.emission_factor);
+
+    END LOOP;
+
+    -- Result
+    RETURN co2_computation + co2_transfer + co2_storage;
+END;
+$$;
+
+
+ALTER FUNCTION processing.compute_carbon_footprint(p_history_tag text) OWNER TO srv_dpmc;
+
+--
 -- Name: delete_job(integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_job(integer) RETURNS boolean
+CREATE FUNCTION processing.delete_job(integer) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2631,7 +2822,7 @@ declare
 begin
   delete from processing.parameters_set where parameters_set.id = v_batch_id;
   delete from processing.batch_x_product where batch = v_batch_id;
-  delete from processing.batch where batch_id = v_batch_id;
+  delete from processing.batch where id = v_batch_id;
 return true;
 end;
 $_$;
@@ -2643,7 +2834,7 @@ ALTER FUNCTION processing.delete_job(integer) OWNER TO srv_dpmc;
 -- Name: delete_top_item(integer, character varying); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_top_item(integer, character varying) RETURNS boolean
+CREATE FUNCTION processing.delete_top_item(integer, character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2664,21 +2855,21 @@ begin
 
 	v_history_id := nextval('processing.history_history_id');
 
-	select into v_request_id request_id from processing.batch where batch_id = v_batch_id;
+	select into v_request_id request_id from processing.batch where id = v_batch_id;
 
-        select software, auxiliary_configuration, processing_comment 
-        into v_software_id, v_aux_conf_id, v_proc_comment_id
-        from internal.request where id = v_request_id;
+        select processing_script_id 
+        into v_proc_comment_id
+        from processing.request where id = v_request_id;
         	
 	insert into processing.history(
-		history_id, file_input_id, request_id, processing_set_id, started, ended, host_id, batch_id, state, output_dir, software_id, auxiliary_configuration_id, processing_comment_id)
+		history_id, processing_script, request_id, started, ended, host_id, batch_id, status)
 	select
-		v_history_id, batch.file_input_id, batch.request_id, batch.processing_set_id, top.started, now(), top.hostname_id, v_batch_id, v_state, batch.output_dir, v_software_id, v_aux_conf_id, v_proc_comment_id
+		v_history_id, v_proc_comment_id, batch.request_id, top.started, now(), top.hostname_id, v_batch_id, v_state
 	from	
 		processing.batch
-		join processing.top on top.batch_id = batch.batch_id
+		join processing.top on top.batch_id = batch.id
 	where 	
-		batch.batch_id = v_batch_id;
+		batch.id = v_batch_id;
 
 	insert into processing.history_x_product( history, product)
 	select 	v_history_id, product
@@ -2700,7 +2891,7 @@ ALTER FUNCTION processing.delete_top_item(integer, character varying) OWNER TO s
 -- Name: delete_top_item_errors_inside(integer, character varying); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION delete_top_item_errors_inside(integer, character varying) RETURNS boolean
+CREATE FUNCTION processing.delete_top_item_errors_inside(integer, character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2764,7 +2955,7 @@ ALTER FUNCTION processing.delete_top_item_errors_inside(integer, character varyi
 -- Name: get_next_input_media_from_current_physical_capacity(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION get_next_input_media_from_current_physical_capacity() RETURNS integer
+CREATE FUNCTION processing.get_next_input_media_from_current_physical_capacity() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
@@ -2792,7 +2983,7 @@ ALTER FUNCTION processing.get_next_input_media_from_current_physical_capacity() 
 -- Name: get_next_media(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION get_next_media() RETURNS integer
+CREATE FUNCTION processing.get_next_media() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
@@ -2819,7 +3010,7 @@ ALTER FUNCTION processing.get_next_media() OWNER TO srv_dpmc;
 -- Name: get_next_output_media_from_current_physical_capacity(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION get_next_output_media_from_current_physical_capacity() RETURNS integer
+CREATE FUNCTION processing.get_next_output_media_from_current_physical_capacity() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
@@ -2845,10 +3036,10 @@ $$;
 ALTER FUNCTION processing.get_next_output_media_from_current_physical_capacity() OWNER TO srv_dpmc;
 
 --
--- Name: history_double_levels(integer, integer); Type: FUNCTION; Schema: processing; Owner: postgres
+-- Name: history_double_levels(integer, integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION history_double_levels(v_c1 integer, v_c2 integer) RETURNS TABLE(history_id integer, state character varying, l0_id integer, l0_name character varying, l1_id integer, l1_name character varying, tag1 character varying, l2_id integer, l2_name character varying, tag2 character varying)
+CREATE FUNCTION processing.history_double_levels(v_c1 integer, v_c2 integer) RETURNS TABLE(history_id integer, state character varying, l0_id integer, l0_name character varying, l1_id integer, l1_name character varying, tag1 character varying, l2_id integer, l2_name character varying, tag2 character varying)
     LANGUAGE sql
     AS $_$
 select h1.history_id, h1.state, p0.id as L0_id, p0.name as L0_name, hxp1.product as L1_id, p1.name as L1_name, h1.tag as tag1, p2.id as L2_id, p2.name as L2_name, h2.tag as tag2
@@ -2863,13 +3054,13 @@ select h1.history_id, h1.state, p0.id as L0_id, p0.name as L0_name, hxp1.product
 $_$;
 
 
-ALTER FUNCTION processing.history_double_levels(v_c1 integer, v_c2 integer) OWNER TO postgres;
+ALTER FUNCTION processing.history_double_levels(v_c1 integer, v_c2 integer) OWNER TO srv_dpmc;
 
 --
--- Name: history_single_level(integer); Type: FUNCTION; Schema: processing; Owner: postgres
+-- Name: history_single_level(integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION history_single_level(v_c1 integer) RETURNS TABLE(history_id integer, state character varying, l0_id integer, l0_name character varying, l1_id integer, l1_name character varying, tag1 character varying)
+CREATE FUNCTION processing.history_single_level(v_c1 integer) RETURNS TABLE(history_id integer, state character varying, l0_id integer, l0_name character varying, l1_id integer, l1_name character varying, tag1 character varying)
     LANGUAGE sql
     AS $_$
 select h1.history_id as history_id, h1.state as state, p0.id as L0_id, p0.name as L0_name, hxp1.product as L1_id, p1.name as L1_name, h1.tag as tag1
@@ -2881,13 +3072,13 @@ select h1.history_id as history_id, h1.state as state, p0.id as L0_id, p0.name a
 $_$;
 
 
-ALTER FUNCTION processing.history_single_level(v_c1 integer) OWNER TO postgres;
+ALTER FUNCTION processing.history_single_level(v_c1 integer) OWNER TO srv_dpmc;
 
 --
 -- Name: purge_history(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION purge_history() RETURNS boolean
+CREATE FUNCTION processing.purge_history() RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 begin
@@ -2905,7 +3096,7 @@ ALTER FUNCTION processing.purge_history() OWNER TO srv_dpmc;
 -- Name: remove_host2pool(character varying, character varying); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION remove_host2pool(character varying, character varying) RETURNS boolean
+CREATE FUNCTION processing.remove_host2pool(character varying, character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare 
@@ -2960,7 +3151,7 @@ ALTER FUNCTION processing.remove_host2pool(character varying, character varying)
 -- Name: restart_job(integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION restart_job(integer) RETURNS boolean
+CREATE FUNCTION processing.restart_job(integer) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$
 declare
@@ -2979,7 +3170,7 @@ ALTER FUNCTION processing.restart_job(integer) OWNER TO srv_dpmc;
 -- Name: schedule_batch(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION schedule_batch() RETURNS integer
+CREATE FUNCTION processing.schedule_batch() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare 
@@ -3034,7 +3225,7 @@ ALTER FUNCTION processing.schedule_batch() OWNER TO srv_dpmc;
 -- Name: schedule_batches(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION schedule_batches() RETURNS integer
+CREATE FUNCTION processing.schedule_batches() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare 
@@ -3103,7 +3294,7 @@ ALTER FUNCTION processing.schedule_batches() OWNER TO srv_dpmc;
 -- Name: schedule_batches_all(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION schedule_batches_all() RETURNS integer
+CREATE FUNCTION processing.schedule_batches_all() RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare 
@@ -3165,14 +3356,110 @@ end;$$;
 ALTER FUNCTION processing.schedule_batches_all() OWNER TO srv_dpmc;
 
 --
--- Name: schedule_batches_new(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
+-- Name: schedule_batches_docker(character varying); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION schedule_batches_new() RETURNS integer
+CREATE FUNCTION processing.schedule_batches_docker(character varying) RETURNS integer
     LANGUAGE plpgsql
-    AS $$
-declare 
+    AS $_$
+DECLARE
+    hostname_  ALIAS FOR $1;
+    result_    integer := 0;
+    i          integer;
+    rec        record;
+    rec2       record;
+    host_exists boolean;
+BEGIN
 
+    UPDATE internal.global
+    SET last_schedule_date_time = now();
+
+    FOR rec IN
+        SELECT
+            h.host_id,
+            h.hostname,
+            c.current_ncpu,
+            h.bogomips
+        FROM hosts_current_ncpu c
+        JOIN processing.hosts h ON h.host_id = c.host_id
+        WHERE
+            c.current_ncpu > 0
+            AND h.available
+            AND h.hostname = hostname_
+        ORDER BY h.bogomips DESC, c.current_ncpu DESC
+    LOOP
+        i := 1;
+
+        FOR rec2 IN
+            SELECT
+                b.id,
+                b.input
+            FROM processing.pool_x_hosts pxh
+            JOIN processing.request r ON r.pool = pxh.pool
+            JOIN processing.batch b ON b.request_id = r.id
+            WHERE
+                b.status = 'QUEUED'
+                AND pxh.hosts = rec.host_id
+            ORDER BY b.id, b.input
+        LOOP
+            -- Vérifie si le host demandé existe
+            IF rec2.input->>'host' IS NOT NULL THEN
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM processing.hosts h
+                    WHERE h.hostname = rec2.input->>'host'
+                      AND h.available
+                )
+                INTO host_exists;
+
+                -- Si le host existe mais ne correspond pas au host courant → skip
+                IF host_exists AND rec2.input->>'host' <> rec.hostname THEN
+                    CONTINUE;
+                END IF;
+            END IF;
+
+            -- Dispatch du batch
+            INSERT INTO processing.top (batch_id, hostname_id, started, pid)
+            VALUES (rec2.id, rec.host_id, now(), NULL);
+
+            UPDATE processing.batch
+            SET status = 'DISPATCHED'
+            WHERE id = rec2.id;
+
+            i := i + 1;
+            result_ := result_ + 1;
+
+            IF i > rec.current_ncpu THEN
+                EXIT;
+            END IF;
+
+        END LOOP;
+    END LOOP;
+
+    SELECT INTO result_ COUNT(*)
+    FROM processing.batch b
+    JOIN processing.top t ON t.batch_id = b.id
+    JOIN processing.hosts h ON h.host_id = t.hostname_id
+    WHERE
+        b.status = 'DISPATCHED'
+        AND h.hostname = hostname_;
+
+    RETURN result_;
+END;
+$_$;
+
+
+ALTER FUNCTION processing.schedule_batches_docker(character varying) OWNER TO srv_dpmc;
+
+--
+-- Name: schedule_batches_new(integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE FUNCTION processing.schedule_batches_new(integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $_$
+declare 
+	orchest_id alias for $1;
 	result_ integer;
 	i 	integer;
 	rec	record;
@@ -3229,11 +3516,13 @@ begin
 				internal.product
 			WHERE
 				batch.state = 'Queued'::character varying
+				and request.id in 
+					(select o_r.request_id from processing.orchestrator_x_request o_r where o_r.orchestrator_id = orchest_id)
 				AND request.pool = pool_x_hosts.pool
 				AND batch.request_id = request.id
 				AND pool_x_hosts.hosts = rec.host_id
 				AND product.id = batch.file_input_id
-			ORDER BY substring (product.name, 11, 1), batch_id
+			ORDER BY batch_id
 			
 		loop
 
@@ -3264,121 +3553,16 @@ begin
 	where state = 'Dispatched';
 
 	return result_;
-end;$$;
+end;$_$;
 
 
-ALTER FUNCTION processing.schedule_batches_new() OWNER TO srv_dpmc;
-
---
--- Name: update_batch_output_media_catalog(integer); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
---
-
-CREATE FUNCTION update_batch_output_media_catalog(integer) RETURNS boolean
-    LANGUAGE plpgsql
-    AS $_$
-declare 
-
-	batch_id_ alias for $1;
-	output_media_catalog_ integer;
-	output_dir_ varchar;
-	next_media_ integer;
-	next_media_catalog_ integer;
-	next_media_catalog_name_ varchar;
-	-- 20040603 ETA
-	processing_comment_ integer;
-	result_ varchar;
-
-begin
-	result_ := true;
-	-- precondition : batch exists
-	if not exists (	select	*
-			from	processing.batch
-			where	batch_id = batch_id_) then
-		raise exception 'precondition exception : batch id % exists', batch_id_;
-	end if;
-
-	-- 2040603 ETA
-	select into output_media_catalog_, processing_comment_
-		request.media_catalog, request.processing_comment
-	from	processing.batch join internal.request on request.id = batch.request_id
-	where	batch_id = batch_id_;
-
-	if output_media_catalog_ is null then
-
-/*
-	    -- BE CAREFULL WITH end if
-	    -- 20040603 ETA
-	    if processing_comment_ = 5 then -- gomos level2 processing, so output location same as input product
-
-		select into next_media_catalog_, output_dir_ 
-			mc.id, m.name || '/' || mc.name
-		from 	processing.batch
-			join internal.product_x_media_catalog_entry as x on x.product = batch.file_input_id
-			join internal.media_catalog_entry as mce on mce.id = x.media_catalog_entry
-			join internal.media_catalog as mc on mc.id = mce.media_catalog
-			join internal.media as m on m.id = mc.media
-		where	batch.batch_id = batch_id_
-		order by m.name || '/' || mc.name
-		limit 1;
-
-		update processing.batch 
-		set output_dir = output_dir_, output_media_catalog = next_media_catalog_
-		where batch_id = batch_id_;
-
-	    else -- not a level2 processing, so output location is free
-
-*/
-		next_media_ := processing.get_next_output_media_from_current_physical_capacity();
-		if next_media_ is not null then
-			select into next_media_catalog_name_
-				internal.default_product_media_catalog_name( product.name)
-			from	processing.batch
-				join internal.product on (product.id = batch.file_input_id)
-			where	batch_id = batch_id_;
-			if not exists (	select	*
-					from	internal.media_catalog
-					where	media = next_media_
-						and name = next_media_catalog_name_) then
-				insert into internal.media_catalog( media, name)
-				values( next_media_, next_media_catalog_name_);
-			end if;
-			select into next_media_catalog_, output_dir_
-				media_catalog.id, media.name || '/' || next_media_catalog_name_
-			from	internal.media join internal.media_catalog on media_catalog.media = media.id
-			where 	media.id = next_media_ and media_catalog.name = next_media_catalog_name_;
-
-			update processing.batch 
-			set output_dir = output_dir_, output_media_catalog = next_media_catalog_
-			where batch_id = batch_id_;
-		else
-			update processing.batch 
-			set output_dir = '/exports/dpmc/scripts/default_output'
-			where batch_id = batch_id_;			
-			result_ := false;
-		end if;
-
---	    end if;
-
-	else
-		update processing.batch
-		set output_media_catalog = output_media_catalog_, output_dir = media.name || '/' || media_catalog.name
-		from internal.media_catalog join internal.media on media.id = media_catalog.media
-		where batch_id = batch_id_ and media_catalog.id = output_media_catalog_;
-	end if;
-
-	return result_;
-
-end;
-$_$;
-
-
-ALTER FUNCTION processing.update_batch_output_media_catalog(integer) OWNER TO srv_dpmc;
+ALTER FUNCTION processing.schedule_batches_new(integer) OWNER TO srv_dpmc;
 
 --
 -- Name: update_processing_order(); Type: FUNCTION; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE FUNCTION update_processing_order() RETURNS boolean
+CREATE FUNCTION processing.update_processing_order() RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 
@@ -3401,24 +3585,22 @@ $$;
 
 ALTER FUNCTION processing.update_processing_order() OWNER TO srv_dpmc;
 
-SET search_path = public, pg_catalog;
-
 --
--- Name: abs(interval); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: abs(interval); Type: FUNCTION; Schema: public; Owner: srv_dpmc
 --
 
-CREATE FUNCTION abs(interval) RETURNS interval
+CREATE FUNCTION public.abs(interval) RETURNS interval
     LANGUAGE sql IMMUTABLE
     AS $_$ select case when ($1<interval '0') then -$1 else $1 end; $_$;
 
 
-ALTER FUNCTION public.abs(interval) OWNER TO postgres;
+ALTER FUNCTION public.abs(interval) OWNER TO srv_dpmc;
 
 --
 -- Name: new_image_batch(integer, integer, timestamp without time zone, timestamp without time zone); Type: FUNCTION; Schema: public; Owner: srv_dpmc
 --
 
-CREATE FUNCTION new_image_batch(integer, integer, timestamp without time zone, timestamp without time zone) RETURNS boolean
+CREATE FUNCTION public.new_image_batch(integer, integer, timestamp without time zone, timestamp without time zone) RETURNS boolean
     LANGUAGE plpgsql
     AS $_$DECLARE 
 	v_request alias for $1;
@@ -3597,21 +3779,10 @@ $_$;
 ALTER FUNCTION public.new_image_batch(integer, integer, timestamp without time zone, timestamp without time zone) OWNER TO srv_dpmc;
 
 --
--- Name: plpgsql_call_handler(); Type: FUNCTION; Schema: public; Owner: srv_dpmc
---
-
-CREATE FUNCTION plpgsql_call_handler() RETURNS language_handler
-    LANGUAGE c
-    AS '$libdir/plpgsql', 'plpgsql_call_handler';
-
-
-ALTER FUNCTION public.plpgsql_call_handler() OWNER TO srv_dpmc;
-
---
 -- Name: user_id(); Type: FUNCTION; Schema: public; Owner: srv_dpmc
 --
 
-CREATE FUNCTION user_id() RETURNS integer
+CREATE FUNCTION public.user_id() RETURNS integer
     LANGUAGE plpgsql SECURITY DEFINER
     AS $$
 
@@ -3638,33 +3809,31 @@ $$;
 
 ALTER FUNCTION public.user_id() OWNER TO srv_dpmc;
 
-SET search_path = internal, pg_catalog;
+--
+-- Name: xc_au_nc_1txy__Sheet1_updated_at(); Type: FUNCTION; Schema: public; Owner: srv_dpmc
+--
+
+CREATE FUNCTION public."xc_au_nc_1txy__Sheet1_updated_at"() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+                          BEGIN
+                            NEW."updated_at" = NOW();
+                            RETURN NEW;
+                          END;
+                          $$;
+
+
+ALTER FUNCTION public."xc_au_nc_1txy__Sheet1_updated_at"() OWNER TO srv_dpmc;
 
 SET default_tablespace = '';
 
-SET default_with_oids = true;
+SET default_table_access_method = heap;
 
 --
--- Name: acquisition_chain; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: adf_baseline; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE acquisition_chain (
-    product integer NOT NULL,
-    center integer NOT NULL,
-    center_rank integer NOT NULL,
-    CONSTRAINT acquisition_chain_center_rank_check CHECK ((center_rank > 0))
-);
-
-
-ALTER TABLE internal.acquisition_chain OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: adf_baseline; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE adf_baseline (
+CREATE TABLE internal.adf_baseline (
     aux_id integer NOT NULL,
     version character varying NOT NULL,
     generation_date timestamp without time zone,
@@ -3676,13 +3845,25 @@ CREATE TABLE adf_baseline (
 
 ALTER TABLE internal.adf_baseline OWNER TO srv_dpmc;
 
-SET default_with_oids = true;
-
 --
--- Name: auxiliary_configuration; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: attribute_dictionary_id_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE auxiliary_configuration (
+CREATE SEQUENCE internal.attribute_dictionary_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 2147483647
+    CACHE 1;
+
+
+ALTER SEQUENCE internal.attribute_dictionary_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: auxiliary_configuration; Type: TABLE; Schema: internal; Owner: srv_dpmc
+--
+
+CREATE TABLE internal.auxiliary_configuration (
     id integer DEFAULT nextval(('internal.auxiliary_configuration_seq'::text)::regclass) NOT NULL,
     name character varying(255) NOT NULL,
     comment text,
@@ -3693,10 +3874,10 @@ CREATE TABLE auxiliary_configuration (
 ALTER TABLE internal.auxiliary_configuration OWNER TO srv_dpmc;
 
 --
--- Name: auxiliary_configuration_detail; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: auxiliary_configuration_detail; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE auxiliary_configuration_detail (
+CREATE TABLE internal.auxiliary_configuration_detail (
     configuration integer NOT NULL,
     product_type integer NOT NULL,
     version character varying(10) DEFAULT '1.0'::character varying
@@ -3709,7 +3890,7 @@ ALTER TABLE internal.auxiliary_configuration_detail OWNER TO srv_dpmc;
 -- Name: auxiliary_configuration_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE auxiliary_configuration_seq
+CREATE SEQUENCE internal.auxiliary_configuration_seq
     START WITH 11
     INCREMENT BY 1
     MINVALUE 0
@@ -3717,28 +3898,28 @@ CREATE SEQUENCE auxiliary_configuration_seq
     CACHE 1;
 
 
-ALTER TABLE internal.auxiliary_configuration_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.auxiliary_configuration_seq OWNER TO srv_dpmc;
 
 --
--- Name: auxiliary_product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: auxiliary_product; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE auxiliary_product (
+CREATE TABLE internal.auxiliary_product (
     product integer NOT NULL,
     validity_start_date_time timestamp without time zone NOT NULL,
     validity_stop_date_time timestamp without time zone NOT NULL,
     version character varying(10),
-    CONSTRAINT auxiliary_product_validity_period_check CHECK ((validity_start_date_time < validity_stop_date_time))
+    CONSTRAINT auxiliary_product_validity_period_check CHECK ((validity_start_date_time <= validity_stop_date_time))
 );
 
 
 ALTER TABLE internal.auxiliary_product OWNER TO srv_dpmc;
 
 --
--- Name: center; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: center; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE center (
+CREATE TABLE internal.center (
     id integer NOT NULL,
     latitude real,
     longitude real,
@@ -3751,61 +3932,23 @@ CREATE TABLE center (
 ALTER TABLE internal.center OWNER TO srv_dpmc;
 
 --
--- Name: center_x_software; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: constant; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE center_x_software (
-    center integer NOT NULL,
-    software integer NOT NULL,
-    system_subdirectory character varying(255),
-    available boolean DEFAULT false
+CREATE TABLE internal.constant (
+    id smallint NOT NULL,
+    name character varying NOT NULL,
+    value json NOT NULL
 );
 
 
-ALTER TABLE internal.center_x_software OWNER TO srv_dpmc;
+ALTER TABLE internal.constant OWNER TO srv_dpmc;
 
 --
--- Name: communication_request; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: dataset; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE communication_request (
-    request integer NOT NULL,
-    title character varying(255) DEFAULT ''::character varying,
-    message text DEFAULT ''::text
-);
-
-
-ALTER TABLE internal.communication_request OWNER TO srv_dpmc;
-
---
--- Name: current_software; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE current_software (
-    center integer NOT NULL,
-    software integer
-);
-
-
-ALTER TABLE internal.current_software OWNER TO srv_dpmc;
-
---
--- Name: data_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE data_type (
-    id integer NOT NULL,
-    name character varying(255) NOT NULL
-);
-
-
-ALTER TABLE internal.data_type OWNER TO srv_dpmc;
-
---
--- Name: dataset; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE dataset (
+CREATE TABLE internal.dataset (
     id integer DEFAULT nextval(('internal.dataset_seq'::text)::regclass) NOT NULL,
     cdate timestamp without time zone NOT NULL,
     name character varying NOT NULL,
@@ -3816,10 +3959,10 @@ CREATE TABLE dataset (
 ALTER TABLE internal.dataset OWNER TO srv_dpmc;
 
 --
--- Name: dataset_x_product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: dataset_x_product; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE dataset_x_product (
+CREATE TABLE internal.dataset_x_product (
     dataset_id integer NOT NULL,
     product_id integer NOT NULL
 );
@@ -3828,14 +3971,13 @@ CREATE TABLE dataset_x_product (
 ALTER TABLE internal.dataset_x_product OWNER TO srv_dpmc;
 
 --
--- Name: product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE product (
+CREATE TABLE internal.product (
     id integer DEFAULT nextval(('internal.product_seq'::text)::regclass) NOT NULL,
     processing integer,
     product_type integer NOT NULL,
-    document integer,
     generation_date_time timestamp without time zone,
     size bigint,
     checked boolean DEFAULT false,
@@ -3850,25 +3992,25 @@ ALTER TABLE internal.product OWNER TO srv_dpmc;
 -- Name: dataset_content; Type: VIEW; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW dataset_content AS
+CREATE VIEW internal.dataset_content AS
  SELECT d.name AS dataset_name,
     p.name AS product_name,
     d.id AS dataset_id,
     p.id AS product_id
-   FROM dataset_x_product dxp,
-    dataset d,
-    product p
+   FROM internal.dataset_x_product dxp,
+    internal.dataset d,
+    internal.product p
   WHERE ((dxp.product_id = p.id) AND (dxp.dataset_id = d.id))
   ORDER BY d.name, p.name;
 
 
-ALTER TABLE internal.dataset_content OWNER TO srv_dpmc;
+ALTER VIEW internal.dataset_content OWNER TO srv_dpmc;
 
 --
 -- Name: dataset_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE dataset_seq
+CREATE SEQUENCE internal.dataset_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -3876,106 +4018,13 @@ CREATE SEQUENCE dataset_seq
     CACHE 1;
 
 
-ALTER TABLE internal.dataset_seq OWNER TO srv_dpmc;
-
---
--- Name: dataset_x_dataset; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE dataset_x_dataset (
-    master_dataset_id integer NOT NULL,
-    sub_dataset_id integer NOT NULL
-);
-
-
-ALTER TABLE internal.dataset_x_dataset OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: dataset_x_document; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE dataset_x_document (
-    id integer NOT NULL,
-    dataset_id integer,
-    document_id integer
-);
-
-
-ALTER TABLE internal.dataset_x_document OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: default_center_x_product_type_software; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE default_center_x_product_type_software (
-    center integer NOT NULL,
-    product_type integer NOT NULL,
-    software integer NOT NULL
-);
-
-
-ALTER TABLE internal.default_center_x_product_type_software OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: default_processing; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE default_processing (
-    id integer NOT NULL,
-    cdate timestamp without time zone,
-    processing_configuration_id integer,
-    sxac_id integer,
-    comment character varying,
-    product_type_id integer
-);
-
-
-ALTER TABLE internal.default_processing OWNER TO srv_dpmc;
-
---
--- Name: distribution; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE distribution (
-    id integer NOT NULL,
-    requester_id integer NOT NULL,
-    media_id integer,
-    dataset_id integer,
-    date timestamp without time zone,
-    comment character varying,
-    mode character varying
-);
-
-
-ALTER TABLE internal.distribution OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: document; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE document (
-    id integer DEFAULT nextval(('internal.document_seq'::text)::regclass) NOT NULL,
-    name character varying,
-    url character varying,
-    comment character varying
-);
-
-
-ALTER TABLE internal.document OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.dataset_seq OWNER TO srv_dpmc;
 
 --
 -- Name: document_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE document_seq
+CREATE SEQUENCE internal.document_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -3983,69 +4032,27 @@ CREATE SEQUENCE document_seq
     CACHE 1;
 
 
-ALTER TABLE internal.document_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.document_seq OWNER TO srv_dpmc;
 
 --
--- Name: error_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: downlink_orbit_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE error_type (
-    id integer NOT NULL,
-    name character varying(255) NOT NULL
-);
+CREATE SEQUENCE internal.downlink_orbit_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
-ALTER TABLE internal.error_type OWNER TO srv_dpmc;
-
---
--- Name: error_type_x_product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE error_type_x_product (
-    error_type integer NOT NULL,
-    product integer NOT NULL,
-    significant boolean NOT NULL,
-    error_count integer NOT NULL,
-    threshold real NOT NULL
-);
-
-
-ALTER TABLE internal.error_type_x_product OWNER TO srv_dpmc;
-
---
--- Name: first_nadir_point; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE first_nadir_point (
-    id integer NOT NULL,
-    satellite integer NOT NULL,
-    date_time timestamp without time zone NOT NULL,
-    latitude double precision NOT NULL,
-    longitude double precision NOT NULL
-);
-
-
-ALTER TABLE internal.first_nadir_point OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: footprint; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE footprint (
-    product_id integer NOT NULL,
-    footprint polygon NOT NULL
-);
-
-
-ALTER TABLE internal.footprint OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.downlink_orbit_seq OWNER TO srv_dpmc;
 
 --
 -- Name: gen_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE gen_seq
+CREATE SEQUENCE internal.gen_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4053,13 +4060,13 @@ CREATE SEQUENCE gen_seq
     CACHE 1;
 
 
-ALTER TABLE internal.gen_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.gen_seq OWNER TO srv_dpmc;
 
 --
--- Name: ipf_processing_baseline; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: ipf_processing_baseline; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE ipf_processing_baseline (
+CREATE TABLE internal.ipf_processing_baseline (
     id integer NOT NULL,
     document character varying,
     creation_date timestamp without time zone,
@@ -4071,10 +4078,10 @@ CREATE TABLE ipf_processing_baseline (
 ALTER TABLE internal.ipf_processing_baseline OWNER TO srv_dpmc;
 
 --
--- Name: ipf_processing_baseline_x_sxa; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: ipf_processing_baseline_x_sxa; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE ipf_processing_baseline_x_sxa (
+CREATE TABLE internal.ipf_processing_baseline_x_sxa (
     id integer NOT NULL,
     ipf_processing_baseline_id integer,
     soft_x_aux_conf_id integer,
@@ -4084,13 +4091,11 @@ CREATE TABLE ipf_processing_baseline_x_sxa (
 
 ALTER TABLE internal.ipf_processing_baseline_x_sxa OWNER TO srv_dpmc;
 
-SET default_with_oids = true;
-
 --
--- Name: product_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product_type; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE product_type (
+CREATE TABLE internal.product_type (
     id integer NOT NULL,
     sph_size integer,
     mean_size real,
@@ -4099,34 +4104,34 @@ CREATE TABLE product_type (
     processing_level character varying(2),
     cache_duration integer DEFAULT 0,
     gap_type character varying(3),
-    gap_nominal integer
+    gap_nominal integer,
+    retention_time integer
 );
 
 
 ALTER TABLE internal.product_type OWNER TO srv_dpmc;
 
 --
--- Name: software; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE software (
+CREATE TABLE internal.software (
     id integer DEFAULT nextval(('internal.software_seq'::text)::regclass) NOT NULL,
     name character varying(255) NOT NULL,
     version character varying(20) NOT NULL,
     default_auxiliary_configuration integer,
-    processing_stage character(1)
+    processing_stage character(1),
+    image_tag character varying
 );
 
 
 ALTER TABLE internal.software OWNER TO srv_dpmc;
 
-SET default_with_oids = false;
-
 --
--- Name: software_x_auxiliary_configuration; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software_x_auxiliary_configuration; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE software_x_auxiliary_configuration (
+CREATE TABLE internal.software_x_auxiliary_configuration (
     id integer NOT NULL,
     software integer,
     auxiliary_configuration integer,
@@ -4142,14 +4147,14 @@ ALTER TABLE internal.software_x_auxiliary_configuration OWNER TO srv_dpmc;
 -- Name: COLUMN software_x_auxiliary_configuration.creation_date; Type: COMMENT; Schema: internal; Owner: srv_dpmc
 --
 
-COMMENT ON COLUMN software_x_auxiliary_configuration.creation_date IS 'Date given in the IPF Processing Baseline Document';
+COMMENT ON COLUMN internal.software_x_auxiliary_configuration.creation_date IS 'Date given in the IPF Processing Baseline Document';
 
 
 --
 -- Name: give_ipf_processing_baseline; Type: VIEW; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW give_ipf_processing_baseline AS
+CREATE VIEW internal.give_ipf_processing_baseline AS
  SELECT ipb.version AS ipb_version,
     s.name AS soft_name,
     sxac.ipf_baseline,
@@ -4157,26 +4162,26 @@ CREATE VIEW give_ipf_processing_baseline AS
     ac.name AS ac_version,
     pt.acronym,
     p.name AS adf_name
-   FROM ipf_processing_baseline ipb,
-    ipf_processing_baseline_x_sxa ipbsxa,
-    software_x_auxiliary_configuration sxac,
-    software s,
-    auxiliary_configuration ac,
-    auxiliary_configuration_detail acd,
-    product_type pt,
-    product p,
-    auxiliary_product ap
-  WHERE ((((((((((ipbsxa.ipf_processing_baseline_id = ipb.id) AND (ipbsxa.soft_x_aux_conf_id = sxac.id)) AND (sxac.software = s.id)) AND (sxac.auxiliary_configuration = ac.id)) AND (acd.configuration = ac.id)) AND (acd.product_type = pt.id)) AND (ap.product = p.id)) AND (p.product_type = pt.id)) AND (p.product_type = acd.product_type)) AND ((acd.version)::text = (ap.version)::text))
+   FROM internal.ipf_processing_baseline ipb,
+    internal.ipf_processing_baseline_x_sxa ipbsxa,
+    internal.software_x_auxiliary_configuration sxac,
+    internal.software s,
+    internal.auxiliary_configuration ac,
+    internal.auxiliary_configuration_detail acd,
+    internal.product_type pt,
+    internal.product p,
+    internal.auxiliary_product ap
+  WHERE ((ipbsxa.ipf_processing_baseline_id = ipb.id) AND (ipbsxa.soft_x_aux_conf_id = sxac.id) AND (sxac.software = s.id) AND (sxac.auxiliary_configuration = ac.id) AND (acd.configuration = ac.id) AND (acd.product_type = pt.id) AND (ap.product = p.id) AND (p.product_type = pt.id) AND (p.product_type = acd.product_type) AND ((acd.version)::text = (ap.version)::text))
   ORDER BY ipb.id, s.id;
 
 
-ALTER TABLE internal.give_ipf_processing_baseline OWNER TO srv_dpmc;
+ALTER VIEW internal.give_ipf_processing_baseline OWNER TO srv_dpmc;
 
 --
 -- Name: give_ipf_processing_sxac; Type: VIEW; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW give_ipf_processing_sxac AS
+CREATE VIEW internal.give_ipf_processing_sxac AS
  SELECT ipb.version AS ipb_version,
     s.name AS soft_name,
     sxac.id AS sxac,
@@ -4186,62 +4191,26 @@ CREATE VIEW give_ipf_processing_sxac AS
     pt.acronym,
     p.name AS adf_name,
     acd.version AS adf_version
-   FROM ipf_processing_baseline ipb,
-    ipf_processing_baseline_x_sxa ipbsxa,
-    software_x_auxiliary_configuration sxac,
-    software s,
-    auxiliary_configuration ac,
-    auxiliary_configuration_detail acd,
-    product_type pt,
-    product p,
-    auxiliary_product ap
-  WHERE ((((((((((ipbsxa.ipf_processing_baseline_id = ipb.id) AND (ipbsxa.soft_x_aux_conf_id = sxac.id)) AND (sxac.software = s.id)) AND (sxac.auxiliary_configuration = ac.id)) AND (acd.configuration = ac.id)) AND (acd.product_type = pt.id)) AND (ap.product = p.id)) AND (p.product_type = pt.id)) AND (p.product_type = acd.product_type)) AND ((acd.version)::text = (ap.version)::text))
+   FROM internal.ipf_processing_baseline ipb,
+    internal.ipf_processing_baseline_x_sxa ipbsxa,
+    internal.software_x_auxiliary_configuration sxac,
+    internal.software s,
+    internal.auxiliary_configuration ac,
+    internal.auxiliary_configuration_detail acd,
+    internal.product_type pt,
+    internal.product p,
+    internal.auxiliary_product ap
+  WHERE ((ipbsxa.ipf_processing_baseline_id = ipb.id) AND (ipbsxa.soft_x_aux_conf_id = sxac.id) AND (sxac.software = s.id) AND (sxac.auxiliary_configuration = ac.id) AND (acd.configuration = ac.id) AND (acd.product_type = pt.id) AND (ap.product = p.id) AND (p.product_type = pt.id) AND (p.product_type = acd.product_type) AND ((acd.version)::text = (ap.version)::text))
   ORDER BY ipb.id, s.id;
 
 
-ALTER TABLE internal.give_ipf_processing_sxac OWNER TO srv_dpmc;
+ALTER VIEW internal.give_ipf_processing_sxac OWNER TO srv_dpmc;
 
 --
--- Name: give_one_full_baseline; Type: VIEW; Schema: internal; Owner: postgres
+-- Name: global; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW give_one_full_baseline AS
- SELECT ipb.version AS ipb_version,
-    s.name AS soft_name,
-    s.id AS soft_id,
-    cxs.system_subdirectory AS dir,
-    sxac.ipf_baseline,
-    sxac.id AS sxac_id,
-    s.version AS soft_version,
-    ac.id AS ac_id,
-    ac.name AS ac_version,
-    pt.acronym,
-    pt.id AS pt_id,
-    p.name AS adf_name,
-    ap.version AS ap_version
-   FROM ipf_processing_baseline ipb,
-    ipf_processing_baseline_x_sxa ipbsxa,
-    software_x_auxiliary_configuration sxac,
-    software s,
-    center_x_software cxs,
-    auxiliary_configuration ac,
-    auxiliary_configuration_detail acd,
-    product_type pt,
-    product p,
-    auxiliary_product ap
-  WHERE ((((((((((((s.id = cxs.software) AND (ipbsxa.ipf_processing_baseline_id = ipb.id)) AND (ipbsxa.soft_x_aux_conf_id = sxac.id)) AND (sxac.software = s.id)) AND (sxac.auxiliary_configuration = ac.id)) AND (acd.configuration = ac.id)) AND (acd.product_type = pt.id)) AND (ap.product = p.id)) AND (p.product_type = pt.id)) AND (p.product_type = acd.product_type)) AND ((acd.version)::text = (ap.version)::text)) AND ((ipb.version)::text = 'i3r04_AOD_newPCPAAX_2024'::text))
-  ORDER BY s.name, p.name;
-
-
-ALTER TABLE internal.give_one_full_baseline OWNER TO postgres;
-
-SET default_with_oids = true;
-
---
--- Name: global; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE global (
+CREATE TABLE internal.global (
     center integer,
     output_media_catalog integer,
     idl_token_count integer,
@@ -4257,6 +4226,8 @@ CREATE TABLE global (
     max_time_cache integer,
     max_time_lock integer,
     s3_cots character varying,
+    task_rule_id integer,
+    executor_pause_flag boolean DEFAULT true,
     CONSTRAINT global_check_stage_shift_count CHECK ((stage_shift_count >= 0)),
     CONSTRAINT global_check_stage_shift_interval CHECK (((stage_shift_interval)::text >= '0'::text))
 );
@@ -4265,39 +4236,10 @@ CREATE TABLE global (
 ALTER TABLE internal.global OWNER TO srv_dpmc;
 
 --
--- Name: image_processing_input; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: instrument; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE image_processing_input (
-    processing integer NOT NULL,
-    product integer NOT NULL,
-    start_date_time timestamp without time zone,
-    stop_date_time timestamp without time zone
-);
-
-
-ALTER TABLE internal.image_processing_input OWNER TO srv_dpmc;
-
---
--- Name: imaging_instrument; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE imaging_instrument (
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    reference_trace polygon,
-    reference_relative_orbit_number integer,
-    min_product_frame_count integer
-);
-
-
-ALTER TABLE internal.imaging_instrument OWNER TO srv_dpmc;
-
---
--- Name: instrument; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE instrument (
+CREATE TABLE internal.instrument (
     satellite integer NOT NULL,
     id integer NOT NULL,
     acronym character varying(50) NOT NULL,
@@ -4308,39 +4250,10 @@ CREATE TABLE instrument (
 ALTER TABLE internal.instrument OWNER TO srv_dpmc;
 
 --
--- Name: instrument_calibration_history; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: ipf_x_dynamic_adf; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE instrument_calibration_history (
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    orbit_absolute_number integer NOT NULL,
-    comment character varying(255)
-);
-
-
-ALTER TABLE internal.instrument_calibration_history OWNER TO srv_dpmc;
-
---
--- Name: instrument_unavailability_period; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE instrument_unavailability_period (
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    start_date_time timestamp without time zone NOT NULL,
-    stop_date_time timestamp without time zone,
-    comment character varying(255)
-);
-
-
-ALTER TABLE internal.instrument_unavailability_period OWNER TO srv_dpmc;
-
---
--- Name: ipf_x_dynamic_adf; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE ipf_x_dynamic_adf (
+CREATE TABLE internal.ipf_x_dynamic_adf (
     ipf character varying NOT NULL,
     acronym character varying NOT NULL,
     type character varying,
@@ -4353,10 +4266,10 @@ CREATE TABLE ipf_x_dynamic_adf (
 ALTER TABLE internal.ipf_x_dynamic_adf OWNER TO srv_dpmc;
 
 --
--- Name: living_request; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: living_request; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE living_request (
+CREATE TABLE internal.living_request (
     request integer NOT NULL
 );
 
@@ -4364,22 +4277,10 @@ CREATE TABLE living_request (
 ALTER TABLE internal.living_request OWNER TO srv_dpmc;
 
 --
--- Name: mailing_list; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE mailing_list (
-    requester integer NOT NULL,
-    request integer NOT NULL
-);
-
-
-ALTER TABLE internal.mailing_list OWNER TO srv_dpmc;
-
---
--- Name: media; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media (
+CREATE TABLE internal.media (
     id integer DEFAULT nextval(('internal.media_id'::text)::regclass) NOT NULL,
     media_type integer NOT NULL,
     name character varying(255) NOT NULL,
@@ -4396,10 +4297,10 @@ CREATE TABLE media (
 ALTER TABLE internal.media OWNER TO srv_dpmc;
 
 --
--- Name: media_catalog; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_catalog; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE media_catalog (
+CREATE TABLE internal.media_catalog (
     media integer NOT NULL,
     name character varying(255) NOT NULL,
     id integer DEFAULT nextval(('internal.media_catalog_sequence'::text)::regclass) NOT NULL
@@ -4409,10 +4310,10 @@ CREATE TABLE media_catalog (
 ALTER TABLE internal.media_catalog OWNER TO srv_dpmc;
 
 --
--- Name: media_catalog_entry; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_catalog_entry; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE media_catalog_entry (
+CREATE TABLE internal.media_catalog_entry (
     id integer DEFAULT nextval(('internal.media_catalog_entry_sequence'::text)::regclass) NOT NULL,
     media_catalog integer,
     name character varying(255),
@@ -4426,7 +4327,7 @@ ALTER TABLE internal.media_catalog_entry OWNER TO srv_dpmc;
 -- Name: media_catalog_entry_sequence; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE media_catalog_entry_sequence
+CREATE SEQUENCE internal.media_catalog_entry_sequence
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4434,13 +4335,13 @@ CREATE SEQUENCE media_catalog_entry_sequence
     CACHE 1;
 
 
-ALTER TABLE internal.media_catalog_entry_sequence OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.media_catalog_entry_sequence OWNER TO srv_dpmc;
 
 --
 -- Name: media_catalog_sequence; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE media_catalog_sequence
+CREATE SEQUENCE internal.media_catalog_sequence
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4448,40 +4349,13 @@ CREATE SEQUENCE media_catalog_sequence
     CACHE 1;
 
 
-ALTER TABLE internal.media_catalog_sequence OWNER TO srv_dpmc;
-
---
--- Name: media_history; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media_history (
-    media integer NOT NULL,
-    history_type integer NOT NULL,
-    date_time timestamp without time zone NOT NULL,
-    comment character varying(255)
-);
-
-
-ALTER TABLE internal.media_history OWNER TO srv_dpmc;
-
---
--- Name: media_history_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media_history_type (
-    id integer NOT NULL,
-    name character varying(255) NOT NULL,
-    code character varying(20) NOT NULL
-);
-
-
-ALTER TABLE internal.media_history_type OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.media_catalog_sequence OWNER TO srv_dpmc;
 
 --
 -- Name: media_id; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE media_id
+CREATE SEQUENCE internal.media_id
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4489,109 +4363,13 @@ CREATE SEQUENCE media_id
     CACHE 1;
 
 
-ALTER TABLE internal.media_id OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: media_info; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media_info (
-    media integer NOT NULL,
-    shipment_id character varying,
-    shipment_origin character varying,
-    shipment_date timestamp without time zone,
-    delivery_date timestamp without time zone,
-    item_id character varying,
-    nature character varying,
-    media_status integer NOT NULL,
-    initial_label character varying,
-    delivery_info character varying,
-    known_info character varying,
-    transcription_date timestamp without time zone,
-    transcription_status transcription_status,
-    transcription_report integer NOT NULL
-);
-
-
-ALTER TABLE internal.media_info OWNER TO srv_dpmc;
-
---
--- Name: COLUMN media_info.media; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.media IS 'foreign key on media: id';
-
-
---
--- Name: COLUMN media_info.shipment_id; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.shipment_id IS 'Label that defines the shipment (to be defined at the beginning of a project)';
-
-
---
--- Name: COLUMN media_info.shipment_origin; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.shipment_origin IS 'The name of the shipment';
-
-
---
--- Name: COLUMN media_info.item_id; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.item_id IS 'Label that define the item related to this media';
-
-
---
--- Name: COLUMN media_info.nature; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.nature IS 'the type of data stored in the media';
-
-
---
--- Name: COLUMN media_info.media_status; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.media_status IS 'foreign key to a media_status  table (to be created with id, status)';
-
-
---
--- Name: COLUMN media_info.initial_label; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.initial_label IS 'reading of any label which may already be on the item at the time of reception ';
-
-
---
--- Name: COLUMN media_info.delivery_info; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.delivery_info IS 'any information regarding the item included in the inventory prepared by the party doing the shipment';
-
-
---
--- Name: COLUMN media_info.known_info; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.known_info IS 'any known information on the contents of the item';
-
-
---
--- Name: COLUMN media_info.transcription_report; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN media_info.transcription_report IS 'Foreign key to a product';
-
+ALTER SEQUENCE internal.media_id OWNER TO srv_dpmc;
 
 --
 -- Name: media_sequence; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE media_sequence
+CREATE SEQUENCE internal.media_sequence
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4599,27 +4377,13 @@ CREATE SEQUENCE media_sequence
     CACHE 1;
 
 
-ALTER TABLE internal.media_sequence OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.media_sequence OWNER TO srv_dpmc;
 
 --
--- Name: media_status; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_type; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE media_status (
-    id integer NOT NULL,
-    status character varying
-);
-
-
-ALTER TABLE internal.media_status OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: media_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media_type (
+CREATE TABLE internal.media_type (
     id integer NOT NULL,
     capacity double precision NOT NULL,
     sequential boolean,
@@ -4631,53 +4395,10 @@ CREATE TABLE media_type (
 ALTER TABLE internal.media_type OWNER TO srv_dpmc;
 
 --
--- Name: mode; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: orbit; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE mode (
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    mode integer NOT NULL,
-    name character(100) NOT NULL
-);
-
-
-ALTER TABLE internal.mode OWNER TO srv_dpmc;
-
---
--- Name: mode_x_product_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE mode_x_product_type (
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    mode integer NOT NULL,
-    product_type integer NOT NULL
-);
-
-
-ALTER TABLE internal.mode_x_product_type OWNER TO srv_dpmc;
-
---
--- Name: on_board_time; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE on_board_time (
-    id integer NOT NULL,
-    satellite integer NOT NULL,
-    date_time timestamp without time zone NOT NULL,
-    binary_time bigint NOT NULL,
-    clock_step bigint NOT NULL
-);
-
-
-ALTER TABLE internal.on_board_time OWNER TO srv_dpmc;
-
---
--- Name: orbit; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE orbit (
+CREATE TABLE internal.orbit (
     satellite integer NOT NULL,
     absolute_number integer NOT NULL,
     mission_phase character(1) NOT NULL,
@@ -4693,46 +4414,25 @@ CREATE TABLE orbit (
 
 ALTER TABLE internal.orbit OWNER TO srv_dpmc;
 
-SET default_with_oids = false;
-
 --
--- Name: priority; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: platform_id_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE priority (
-    id integer DEFAULT nextval(('internal.priority_seq'::text)::regclass) NOT NULL,
-    satellite integer,
-    product_type integer,
-    from_date timestamp without time zone,
-    to_date timestamp without time zone,
-    priority json
-);
+CREATE SEQUENCE internal.platform_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 2147483647
+    CACHE 1;
 
 
-ALTER TABLE internal.priority OWNER TO srv_dpmc;
-
---
--- Name: TABLE priority; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON TABLE priority IS 'Table to store consolidated list of products according to the priority list.
-Example with this priority list:
-1 | MAR | orbits
-2 | MAR | granules
-3 | LN3 | orbits
-4 | LN3 | granules
-
-It means the base list is orbits from MAR.
-Then we fill in gaps with MAR granules
-Then we fill in gaps with LN3 orbits
-Then we fill in gaps with LN3 granules';
-
+ALTER SEQUENCE internal.platform_id_seq OWNER TO srv_dpmc;
 
 --
 -- Name: priority_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE priority_seq
+CREATE SEQUENCE internal.priority_seq
     START WITH 1
     INCREMENT BY 1
     MINVALUE 0
@@ -4740,32 +4440,13 @@ CREATE SEQUENCE priority_seq
     CACHE 1;
 
 
-ALTER TABLE internal.priority_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.priority_seq OWNER TO srv_dpmc;
 
 --
--- Name: priority_x_product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: processing; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE priority_x_product (
-    priority_id integer,
-    product_id integer
-);
-
-
-ALTER TABLE internal.priority_x_product OWNER TO srv_dpmc;
-
---
--- Name: TABLE priority_x_product; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON TABLE priority_x_product IS 'Table to link priority list with all products of this list';
-
-
---
--- Name: processing; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE processing (
+CREATE TABLE internal.processing (
     id integer DEFAULT nextval(('internal.processing_seq'::text)::regclass) NOT NULL,
     center integer NOT NULL,
     software integer,
@@ -4777,27 +4458,11 @@ CREATE TABLE processing (
 
 ALTER TABLE internal.processing OWNER TO srv_dpmc;
 
-SET default_with_oids = true;
-
 --
--- Name: processing_chain; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_configuration; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE processing_chain (
-    before integer NOT NULL,
-    after integer NOT NULL
-);
-
-
-ALTER TABLE internal.processing_chain OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: processing_configuration; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE processing_configuration (
+CREATE TABLE internal.processing_configuration (
     id integer NOT NULL,
     cdate timestamp without time zone NOT NULL,
     sxac_id integer NOT NULL,
@@ -4809,25 +4474,23 @@ CREATE TABLE processing_configuration (
 
 ALTER TABLE internal.processing_configuration OWNER TO srv_dpmc;
 
-SET default_with_oids = true;
-
 --
--- Name: processing_input; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_product_x_tag; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE processing_input (
-    processing integer NOT NULL,
-    product integer NOT NULL
+CREATE TABLE internal.processing_product_x_tag (
+    product_name character varying(255) NOT NULL,
+    tag text NOT NULL
 );
 
 
-ALTER TABLE internal.processing_input OWNER TO srv_dpmc;
+ALTER TABLE internal.processing_product_x_tag OWNER TO srv_dpmc;
 
 --
 -- Name: processing_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE processing_seq
+CREATE SEQUENCE internal.processing_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4835,29 +4498,29 @@ CREATE SEQUENCE processing_seq
     CACHE 1;
 
 
-ALTER TABLE internal.processing_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.processing_seq OWNER TO srv_dpmc;
 
 --
 -- Name: product_media; Type: VIEW; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW product_media AS
+CREATE VIEW internal.product_media AS
  SELECT m.name AS volume_name,
     mc.name AS dir_name,
     mce.name AS product_name
-   FROM media_catalog_entry mce,
-    media_catalog mc,
-    media m
+   FROM internal.media_catalog_entry mce,
+    internal.media_catalog mc,
+    internal.media m
   WHERE ((m.id = mc.media) AND (mce.media_catalog = mc.id));
 
 
-ALTER TABLE internal.product_media OWNER TO srv_dpmc;
+ALTER VIEW internal.product_media OWNER TO srv_dpmc;
 
 --
--- Name: product_x_media_catalog_entry; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product_x_media_catalog_entry; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE product_x_media_catalog_entry (
+CREATE TABLE internal.product_x_media_catalog_entry (
     media_catalog_entry integer NOT NULL,
     product integer NOT NULL
 );
@@ -4866,10 +4529,10 @@ CREATE TABLE product_x_media_catalog_entry (
 ALTER TABLE internal.product_x_media_catalog_entry OWNER TO srv_dpmc;
 
 --
--- Name: sensing_product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: sensing_product; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE sensing_product (
+CREATE TABLE internal.sensing_product (
     product integer NOT NULL,
     start_date_time timestamp without time zone NOT NULL,
     stop_date_time timestamp without time zone NOT NULL,
@@ -4883,10 +4546,10 @@ CREATE TABLE sensing_product (
 ALTER TABLE internal.sensing_product OWNER TO srv_dpmc;
 
 --
--- Name: product_path; Type: VIEW; Schema: internal; Owner: postgres
+-- Name: product_path; Type: VIEW; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW product_path WITH (security_barrier=false) AS
+CREATE VIEW internal.product_path WITH (security_barrier='false') AS
  SELECT product.id,
     product.name,
     (((((media.name)::text || ('/'::character varying)::text) || (media_catalog.name)::text) || ('/'::character varying)::text) || (media_catalog_entry.name)::text) AS product_path,
@@ -4894,23 +4557,23 @@ CREATE VIEW product_path WITH (security_barrier=false) AS
     sensing_product.start_date_time,
     sensing_product.stop_date_time,
     sensing_product.start_absolute_orbit_number
-   FROM product,
-    sensing_product,
-    product_type,
-    product_x_media_catalog_entry,
-    media_catalog_entry,
-    media_catalog,
-    media
-  WHERE ((((((product.product_type = product_type.id) AND (sensing_product.product = product.id)) AND (product_x_media_catalog_entry.product = product.id)) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id)) AND (media_catalog_entry.media_catalog = media_catalog.id)) AND (media_catalog.media = media.id));
+   FROM internal.product,
+    internal.sensing_product,
+    internal.product_type,
+    internal.product_x_media_catalog_entry,
+    internal.media_catalog_entry,
+    internal.media_catalog,
+    internal.media
+  WHERE ((product.product_type = product_type.id) AND (sensing_product.product = product.id) AND (product_x_media_catalog_entry.product = product.id) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id) AND (media_catalog_entry.media_catalog = media_catalog.id) AND (media_catalog.media = media.id));
 
 
-ALTER TABLE internal.product_path OWNER TO postgres;
+ALTER VIEW internal.product_path OWNER TO srv_dpmc;
 
 --
 -- Name: product_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE product_seq
+CREATE SEQUENCE internal.product_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -4918,13 +4581,13 @@ CREATE SEQUENCE product_seq
     CACHE 1;
 
 
-ALTER TABLE internal.product_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.product_seq OWNER TO srv_dpmc;
 
 --
 -- Name: product_time_range; Type: VIEW; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW product_time_range AS
+CREATE VIEW internal.product_time_range AS
  SELECT p.name,
         CASE
             WHEN (sp.start_date_time IS NULL) THEN ap.validity_start_date_time
@@ -4934,401 +4597,30 @@ CREATE VIEW product_time_range AS
             WHEN (sp.stop_date_time IS NULL) THEN ap.validity_stop_date_time
             ELSE sp.stop_date_time
         END AS stop_time
-   FROM ((product p
-     LEFT JOIN sensing_product sp ON ((sp.product = p.id)))
-     LEFT JOIN auxiliary_product ap ON ((ap.product = p.id)));
+   FROM ((internal.product p
+     LEFT JOIN internal.sensing_product sp ON ((sp.product = p.id)))
+     LEFT JOIN internal.auxiliary_product ap ON ((ap.product = p.id)));
 
 
-ALTER TABLE internal.product_time_range OWNER TO srv_dpmc;
+ALTER VIEW internal.product_time_range OWNER TO srv_dpmc;
 
 --
--- Name: product_type_chain; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: production_chain_x_product_type; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE product_type_chain (
-    target integer NOT NULL,
-    id integer NOT NULL,
-    source integer
+CREATE TABLE internal.production_chain_x_product_type (
+    production_chain text NOT NULL,
+    product_type integer NOT NULL
 );
 
 
-ALTER TABLE internal.product_type_chain OWNER TO srv_dpmc;
-
---
--- Name: product_type_dependency; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE product_type_dependency (
-    target integer NOT NULL,
-    source integer NOT NULL,
-    dependency_group integer NOT NULL,
-    source_rank integer NOT NULL,
-    is_auxiliary boolean
-);
-
-
-ALTER TABLE internal.product_type_dependency OWNER TO srv_dpmc;
-
---
--- Name: product_type_link; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE product_type_link (
-    product_type integer NOT NULL,
-    name character varying(255)
-);
-
-
-ALTER TABLE internal.product_type_link OWNER TO srv_dpmc;
-
---
--- Name: product_x_sequential_media; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE product_x_sequential_media (
-    media integer NOT NULL,
-    "position" integer NOT NULL,
-    product integer NOT NULL
-);
-
-
-ALTER TABLE internal.product_x_sequential_media OWNER TO srv_dpmc;
-
---
--- Name: pushed_products; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE pushed_products (
-    product_name character varying NOT NULL,
-    requester_id integer NOT NULL,
-    status character varying,
-    product_size bigint,
-    start_upload timestamp without time zone,
-    stop_upload timestamp without time zone
-);
-
-
-ALTER TABLE internal.pushed_products OWNER TO srv_dpmc;
-
---
--- Name: TABLE pushed_products; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON TABLE pushed_products IS 'Once products reprocessed, a script compares an output dataset with this table to know if products are already pushed to the EUMETSAT FTP.
-The status New means that the script is running, the status Done means that the upload succeed and the status Error means that the upload failed.';
-
-
---
--- Name: recipient; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE recipient (
-    communication_request integer NOT NULL,
-    requester integer NOT NULL,
-    by_mail boolean DEFAULT false,
-    by_ftp boolean DEFAULT false,
-    by_email boolean DEFAULT false
-);
-
-
-ALTER TABLE internal.recipient OWNER TO srv_dpmc;
-
---
--- Name: rectangular_site; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE rectangular_site (
-    site integer NOT NULL
-);
-
-
-ALTER TABLE internal.rectangular_site OWNER TO srv_dpmc;
-
---
--- Name: reference_tie_frame; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE reference_tie_frame (
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    id integer NOT NULL,
-    anx_interval interval,
-    region polygon
-);
-
-
-ALTER TABLE internal.reference_tie_frame OWNER TO srv_dpmc;
-
---
--- Name: relative_orbit; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE relative_orbit (
-    satellite integer NOT NULL,
-    id integer NOT NULL,
-    reference_trace_translation_vector point,
-    reference_trace_translation_longitude double precision
-);
-
-
-ALTER TABLE internal.relative_orbit OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: reprocessing; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE reprocessing (
-    id integer NOT NULL,
-    cdate timestamp without time zone,
-    processing_configuration_id integer,
-    dataset_in_id integer,
-    dataset_out_id integer,
-    comment character varying
-);
-
-
-ALTER TABLE internal.reprocessing OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: request; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE request (
-    id integer DEFAULT nextval(('internal.request_seq'::text)::regclass) NOT NULL,
-    site integer,
-    requester integer NOT NULL,
-    min_date_time timestamp without time zone NOT NULL,
-    max_date_time timestamp without time zone NOT NULL,
-    center integer NOT NULL,
-    submission_date_time timestamp without time zone NOT NULL,
-    answer_date_time timestamp without time zone,
-    priority smallint,
-    lock boolean,
-    product_type integer,
-    media_catalog integer,
-    server_account integer,
-    pool integer,
-    software integer,
-    auxiliary_configuration integer,
-    processing_comment integer NOT NULL,
-    processing_stage character(1),
-    is_output_referenced boolean DEFAULT false NOT NULL
-);
-
-
-ALTER TABLE internal.request OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: request_description; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE request_description (
-    request integer NOT NULL,
-    description character varying NOT NULL
-);
-
-
-ALTER TABLE internal.request_description OWNER TO srv_dpmc;
-
---
--- Name: COLUMN request_description.request; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN request_description.request IS 'request id';
-
-
---
--- Name: COLUMN request_description.description; Type: COMMENT; Schema: internal; Owner: srv_dpmc
---
-
-COMMENT ON COLUMN request_description.description IS 'description of the request';
-
-
-SET default_with_oids = true;
-
---
--- Name: site; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE site (
-    id integer DEFAULT nextval(('internal.site_seq'::text)::regclass) NOT NULL,
-    min_latitude real,
-    min_longitude real,
-    max_latitude real,
-    max_longitude real,
-    name character varying(255) NOT NULL,
-    min_point_count integer,
-    point_count integer,
-    sys_polygon polygon,
-    is_across_international_date_line boolean,
-    owner integer NOT NULL,
-    CONSTRAINT max_latitude_chk CHECK ((max_latitude <= (90)::double precision)),
-    CONSTRAINT max_longitude_chk CHECK ((max_longitude <= (180)::double precision)),
-    CONSTRAINT min_latitude_chk CHECK ((((- (90)::double precision) <= min_latitude) AND (min_latitude < (90)::double precision))),
-    CONSTRAINT min_longitude_chk CHECK ((((- (180)::double precision) <= min_longitude) AND (min_longitude < (180)::double precision)))
-);
-
-
-ALTER TABLE internal.site OWNER TO srv_dpmc;
-
-SET search_path = processing, pg_catalog;
-
---
--- Name: pool; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE pool (
-    id integer DEFAULT nextval(('processing.processing_pool_id'::text)::regclass) NOT NULL,
-    comment character varying NOT NULL
-);
-
-
-ALTER TABLE processing.pool OWNER TO srv_dpmc;
-
---
--- Name: processing_comment; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE processing_comment (
-    id integer NOT NULL,
-    pcomment character varying,
-    acronym character varying(255)
-);
-
-
-ALTER TABLE processing.processing_comment OWNER TO srv_dpmc;
-
---
--- Name: processing_set; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE processing_set (
-    id integer NOT NULL,
-    seq_index integer NOT NULL,
-    type integer,
-    function_name character varying
-);
-
-
-ALTER TABLE processing.processing_set OWNER TO srv_dpmc;
-
-SET search_path = internal, pg_catalog;
-
---
--- Name: request_detail_site; Type: VIEW; Schema: internal; Owner: srv_dpmc
---
-
-CREATE VIEW request_detail_site AS
- SELECT r.id,
-    si.name,
-    si.min_longitude AS minlon,
-    si.max_longitude AS maxlon,
-    si.min_latitude AS minlat,
-    si.max_latitude AS maxlat,
-    r.submission_date_time,
-    r.product_type,
-    pt.acronym,
-    r.media_catalog,
-    m.name AS media,
-    mc.name AS dir,
-    r.pool,
-    p.comment AS poolc,
-    r.software,
-    s.version AS soft,
-    ac.id AS aux_id,
-    ac.comment AS aux,
-    r.processing_comment,
-    pc.pcomment,
-    ps.function_name AS func,
-    rd.description
-   FROM (request r
-     LEFT JOIN request_description rd ON ((r.id = rd.request))),
-    media_catalog mc,
-    media m,
-    product_type pt,
-    processing.pool p,
-    software s,
-    auxiliary_configuration ac,
-    processing.processing_comment pc,
-    processing.processing_set ps,
-    site si
-  WHERE (((((((((r.media_catalog = mc.id) AND (mc.media = m.id)) AND (r.product_type = pt.id)) AND (r.pool = p.id)) AND (r.software = s.id)) AND (r.auxiliary_configuration = ac.id)) AND (r.processing_comment = pc.id)) AND (r.processing_comment = ps.id)) AND (r.site = si.id))
-  ORDER BY r.id;
-
-
-ALTER TABLE internal.request_detail_site OWNER TO srv_dpmc;
-
---
--- Name: request_details; Type: VIEW; Schema: internal; Owner: srv_dpmc
---
-
-CREATE VIEW request_details AS
- SELECT r.id,
-    r.submission_date_time,
-    r.product_type,
-    pt.acronym,
-    r.media_catalog,
-    m.name AS media,
-    mc.name AS dir,
-    r.pool,
-    p.comment AS poolc,
-    r.software,
-    s.version AS soft,
-    ac.id AS aux_id,
-    ac.comment AS aux,
-    r.processing_comment,
-    pc.pcomment,
-    ps.function_name AS func
-   FROM request r,
-    media_catalog mc,
-    media m,
-    product_type pt,
-    processing.pool p,
-    software s,
-    auxiliary_configuration ac,
-    processing.processing_comment pc,
-    processing.processing_set ps
-  WHERE ((((((((r.media_catalog = mc.id) AND (mc.media = m.id)) AND (r.product_type = pt.id)) AND (r.pool = p.id)) AND (r.software = s.id)) AND (r.auxiliary_configuration = ac.id)) AND (r.processing_comment = pc.id)) AND (r.processing_comment = ps.id))
-  ORDER BY r.id;
-
-
-ALTER TABLE internal.request_details OWNER TO srv_dpmc;
-
---
--- Name: request_group; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE request_group (
-    id integer NOT NULL,
-    name character varying(50) NOT NULL
-);
-
-
-ALTER TABLE internal.request_group OWNER TO srv_dpmc;
-
---
--- Name: request_group_x_request; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE request_group_x_request (
-    request_group integer NOT NULL,
-    request integer NOT NULL
-);
-
-
-ALTER TABLE internal.request_group_x_request OWNER TO srv_dpmc;
+ALTER TABLE internal.production_chain_x_product_type OWNER TO srv_dpmc;
 
 --
 -- Name: request_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE request_seq
+CREATE SEQUENCE internal.request_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -5336,49 +4628,13 @@ CREATE SEQUENCE request_seq
     CACHE 1;
 
 
-ALTER TABLE internal.request_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.request_seq OWNER TO srv_dpmc;
 
 --
--- Name: request_x_data_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: requester; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE request_x_data_type (
-    data_type integer NOT NULL,
-    request integer NOT NULL
-);
-
-
-ALTER TABLE internal.request_x_data_type OWNER TO srv_dpmc;
-
---
--- Name: request_x_processing; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE request_x_processing (
-    request integer NOT NULL,
-    processing integer NOT NULL
-);
-
-
-ALTER TABLE internal.request_x_processing OWNER TO srv_dpmc;
-
---
--- Name: request_x_product; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE request_x_product (
-    request integer NOT NULL,
-    product integer NOT NULL
-);
-
-
-ALTER TABLE internal.request_x_product OWNER TO srv_dpmc;
-
---
--- Name: requester; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE requester (
+CREATE TABLE internal.requester (
     id integer DEFAULT nextval(('internal.requester_seq'::text)::regclass) NOT NULL,
     name character varying(255) NOT NULL,
     group_name character varying(255),
@@ -5400,7 +4656,7 @@ ALTER TABLE internal.requester OWNER TO srv_dpmc;
 -- Name: requester_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE requester_seq
+CREATE SEQUENCE internal.requester_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -5408,13 +4664,13 @@ CREATE SEQUENCE requester_seq
     CACHE 1;
 
 
-ALTER TABLE internal.requester_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.requester_seq OWNER TO srv_dpmc;
 
 --
--- Name: satellite; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: satellite; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE satellite (
+CREATE TABLE internal.satellite (
     id integer NOT NULL,
     acronym character varying(50) NOT NULL,
     name character varying(255) NOT NULL,
@@ -5425,43 +4681,10 @@ CREATE TABLE satellite (
 ALTER TABLE internal.satellite OWNER TO srv_dpmc;
 
 --
--- Name: satellite_phase; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE satellite_phase (
-    id integer NOT NULL,
-    satellite_id integer NOT NULL,
-    start_date_time timestamp without time zone NOT NULL,
-    stop_date_time timestamp without time zone NOT NULL,
-    first_cycle integer NOT NULL,
-    cycle_length integer NOT NULL,
-    first_absolute_orbit integer NOT NULL,
-    first_relative_orbit integer NOT NULL
-);
-
-
-ALTER TABLE internal.satellite_phase OWNER TO srv_dpmc;
-
---
--- Name: server_account; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE server_account (
-    id integer DEFAULT nextval(('internal.server_account_seq'::text)::regclass) NOT NULL,
-    server_name character varying(255),
-    login character varying(255),
-    password character varying(255),
-    server_type character varying(10)
-);
-
-
-ALTER TABLE internal.server_account OWNER TO srv_dpmc;
-
---
 -- Name: server_account_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE server_account_seq
+CREATE SEQUENCE internal.server_account_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -5469,31 +4692,13 @@ CREATE SEQUENCE server_account_seq
     CACHE 1;
 
 
-ALTER TABLE internal.server_account_seq OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: site_coverage; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE site_coverage (
-    site integer NOT NULL,
-    satellite integer NOT NULL,
-    instrument integer NOT NULL,
-    relative_orbit_number integer NOT NULL,
-    start_anx_interval interval NOT NULL,
-    stop_anx_interval interval NOT NULL
-);
-
-
-ALTER TABLE internal.site_coverage OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.server_account_seq OWNER TO srv_dpmc;
 
 --
 -- Name: software_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE software_seq
+CREATE SEQUENCE internal.software_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -5501,15 +4706,13 @@ CREATE SEQUENCE software_seq
     CACHE 1;
 
 
-ALTER TABLE internal.software_seq OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
+ALTER SEQUENCE internal.software_seq OWNER TO srv_dpmc;
 
 --
--- Name: software_x_binary; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software_x_binary; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE software_x_binary (
+CREATE TABLE internal.software_x_binary (
     software_id integer NOT NULL,
     rank integer NOT NULL,
     binary_name character varying NOT NULL
@@ -5519,22 +4722,22 @@ CREATE TABLE software_x_binary (
 ALTER TABLE internal.software_x_binary OWNER TO srv_dpmc;
 
 --
--- Name: software_x_product_type; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software_x_image_tag; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE software_x_product_type (
-    product_type integer NOT NULL,
-    software integer NOT NULL
+CREATE TABLE internal.software_x_image_tag (
+    software_id integer NOT NULL,
+    image_tag character varying(255) NOT NULL
 );
 
 
-ALTER TABLE internal.software_x_product_type OWNER TO srv_dpmc;
+ALTER TABLE internal.software_x_image_tag OWNER TO srv_dpmc;
 
 --
--- Name: state_vector; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: state_vector; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE state_vector (
+CREATE TABLE internal.state_vector (
     satellite integer NOT NULL,
     absolute_orbit_number integer NOT NULL,
     date_time timestamp without time zone NOT NULL,
@@ -5554,400 +4757,10 @@ CREATE TABLE state_vector (
 ALTER TABLE internal.state_vector OWNER TO srv_dpmc;
 
 --
--- Name: state_vector_source; Type: TABLE; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: status_type_id_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE state_vector_source (
-    product_type integer NOT NULL,
-    code character varying(2) NOT NULL,
-    confidency_rank smallint NOT NULL,
-    at_anx boolean NOT NULL
-);
-
-
-ALTER TABLE internal.state_vector_source OWNER TO srv_dpmc;
-
---
--- Name: temp_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
---
-
-CREATE SEQUENCE temp_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE internal.temp_seq OWNER TO srv_dpmc;
-
-SET search_path = lta, pg_catalog;
-
-SET default_with_oids = false;
-
---
--- Name: abort; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE abort (
-    transaction_id integer NOT NULL,
-    comment character varying,
-    received_id integer NOT NULL
-);
-
-
-ALTER TABLE lta.abort OWNER TO srv_dpmc;
-
---
--- Name: direct; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE direct (
-    transaction_id integer NOT NULL,
-    product_name character varying NOT NULL,
-    filesize bigint NOT NULL
-);
-
-
-ALTER TABLE lta.direct OWNER TO srv_dpmc;
-
---
--- Name: transaction; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE transaction (
-    id integer NOT NULL,
-    transaction_name character varying(30) NOT NULL,
-    received_date timestamp without time zone NOT NULL,
-    status enum_transaction_status,
-    client_name character varying NOT NULL,
-    request_outcome boolean,
-    reason character varying,
-    retry_after integer
-);
-
-
-ALTER TABLE lta.transaction OWNER TO srv_dpmc;
-
---
--- Name: active_transactions; Type: VIEW; Schema: lta; Owner: srv_dpmc
---
-
-CREATE VIEW active_transactions AS
- SELECT t.id,
-    t.transaction_name,
-    t.received_date,
-    t.status,
-    t.client_name,
-    t.request_outcome,
-    t.reason,
-    t.retry_after,
-    d.transaction_id,
-    d.product_name,
-    d.filesize
-   FROM transaction t,
-    direct d
-  WHERE ((t.id = d.transaction_id) AND (((t.status = 'NEW'::enum_transaction_status) OR (t.status = 'PENDING'::enum_transaction_status)) OR (t.status = 'ACTIVE'::enum_transaction_status)));
-
-
-ALTER TABLE lta.active_transactions OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: archive; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE archive (
-    primary_id integer NOT NULL,
-    secondary_id integer NOT NULL
-);
-
-
-ALTER TABLE lta.archive OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: check; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE "check" (
-    transaction_id integer NOT NULL,
-    comment character varying,
-    received_id integer NOT NULL
-);
-
-
-ALTER TABLE lta."check" OWNER TO srv_dpmc;
-
---
--- Name: delete; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE delete (
-    transaction_id integer NOT NULL,
-    product_list character varying,
-    product_regex character varying,
-    start_date timestamp without time zone,
-    stop_date timestamp without time zone,
-    status_input enum_product_status
-);
-
-
-ALTER TABLE lta.delete OWNER TO srv_dpmc;
-
---
--- Name: global; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE global (
-    id integer NOT NULL,
-    param character varying NOT NULL,
-    value character varying NOT NULL
-);
-
-
-ALTER TABLE lta.global OWNER TO srv_dpmc;
-
---
--- Name: global_id_seq; Type: SEQUENCE; Schema: lta; Owner: srv_dpmc
---
-
-CREATE SEQUENCE global_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE lta.global_id_seq OWNER TO srv_dpmc;
-
---
--- Name: global_id_seq; Type: SEQUENCE OWNED BY; Schema: lta; Owner: srv_dpmc
---
-
-ALTER SEQUENCE global_id_seq OWNED BY global.id;
-
-
---
--- Name: ingestion; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE ingestion (
-    transaction_id integer NOT NULL,
-    product_name character varying,
-    filesize bigint NOT NULL,
-    url character varying NOT NULL
-);
-
-
-ALTER TABLE lta.ingestion OWNER TO srv_dpmc;
-
---
--- Name: product_status; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE product_status (
-    id integer NOT NULL,
-    product_id integer NOT NULL,
-    transaction_id integer DEFAULT 0 NOT NULL,
-    status enum_product_status,
-    status_date timestamp without time zone,
-    reason character varying
-);
-
-
-ALTER TABLE lta.product_status OWNER TO srv_dpmc;
-
---
--- Name: last_products_status; Type: VIEW; Schema: lta; Owner: srv_dpmc
---
-
-CREATE VIEW last_products_status AS
- SELECT DISTINCT ON (p.id) p.id AS product_id,
-    p.product_type,
-    p.size,
-    p.name,
-    ps.status,
-    ps.status_date,
-    ps.reason,
-    t.id AS transaction_id,
-    t.transaction_name,
-    t.received_date,
-    t.status AS transaction_status,
-    t.client_name
-   FROM internal.product p,
-    product_status ps,
-    transaction t
-  WHERE ((p.id = ps.product_id) AND (t.id = ps.transaction_id))
-  ORDER BY p.id, ps.id DESC;
-
-
-ALTER TABLE lta.last_products_status OWNER TO srv_dpmc;
-
---
--- Name: monitoring; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE monitoring (
-    transaction_id integer NOT NULL,
-    year integer,
-    month integer
-);
-
-
-ALTER TABLE lta.monitoring OWNER TO srv_dpmc;
-
---
--- Name: not_archived_products; Type: VIEW; Schema: lta; Owner: srv_dpmc
---
-
-CREATE VIEW not_archived_products AS
- SELECT lps.product_id,
-    lps.product_type,
-    lps.size,
-    lps.name,
-    lps.status,
-    lps.status_date,
-    lps.reason,
-    lps.transaction_id,
-    lps.transaction_name,
-    lps.received_date,
-    lps.transaction_status,
-    lps.client_name
-   FROM last_products_status lps
-  WHERE (lps.status <> 'ARCHIVED'::enum_product_status);
-
-
-ALTER TABLE lta.not_archived_products OWNER TO srv_dpmc;
-
---
--- Name: product_status_id_seq; Type: SEQUENCE; Schema: lta; Owner: srv_dpmc
---
-
-CREATE SEQUENCE product_status_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE lta.product_status_id_seq OWNER TO srv_dpmc;
-
---
--- Name: product_status_id_seq; Type: SEQUENCE OWNED BY; Schema: lta; Owner: srv_dpmc
---
-
-ALTER SEQUENCE product_status_id_seq OWNED BY product_status.id;
-
-
---
--- Name: query; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE query (
-    transaction_id integer NOT NULL,
-    product_list character varying,
-    product_regex character varying,
-    start_date timestamp without time zone,
-    stop_date timestamp without time zone,
-    status_input enum_product_status
-);
-
-
-ALTER TABLE lta.query OWNER TO srv_dpmc;
-
---
--- Name: retrieval; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE retrieval (
-    transaction_id integer NOT NULL,
-    product_name character varying NOT NULL,
-    url character varying NOT NULL,
-    filesize bigint
-);
-
-
-ALTER TABLE lta.retrieval OWNER TO srv_dpmc;
-
---
--- Name: transaction_id_seq; Type: SEQUENCE; Schema: lta; Owner: srv_dpmc
---
-
-CREATE SEQUENCE transaction_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE lta.transaction_id_seq OWNER TO srv_dpmc;
-
---
--- Name: transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: lta; Owner: srv_dpmc
---
-
-ALTER SEQUENCE transaction_id_seq OWNED BY transaction.id;
-
-
---
--- Name: transaction_type; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE transaction_type (
-    id integer NOT NULL,
-    transaction_name character varying NOT NULL,
-    xml_name character varying
-);
-
-
-ALTER TABLE lta.transaction_type OWNER TO srv_dpmc;
-
---
--- Name: transaction_type_id_seq; Type: SEQUENCE; Schema: lta; Owner: srv_dpmc
---
-
-CREATE SEQUENCE transaction_type_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE lta.transaction_type_id_seq OWNER TO srv_dpmc;
-
---
--- Name: transaction_type_id_seq; Type: SEQUENCE OWNED BY; Schema: lta; Owner: srv_dpmc
---
-
-ALTER SEQUENCE transaction_type_id_seq OWNED BY transaction_type.id;
-
-
---
--- Name: transaction_type_x_request; Type: TABLE; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE transaction_type_x_request (
-    id integer DEFAULT nextval(('lta.transaction_type_x_request_id_seq'::text)::regclass) NOT NULL,
-    transaction_name character varying NOT NULL,
-    request_id integer,
-    comment character varying(30)
-);
-
-
-ALTER TABLE lta.transaction_type_x_request OWNER TO srv_dpmc;
-
---
--- Name: transaction_type_x_request_id_seq; Type: SEQUENCE; Schema: lta; Owner: srv_dpmc
---
-
-CREATE SEQUENCE transaction_type_x_request_id_seq
+CREATE SEQUENCE internal.status_type_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -5955,38 +4768,60 @@ CREATE SEQUENCE transaction_type_x_request_id_seq
     CACHE 1;
 
 
-ALTER TABLE lta.transaction_type_x_request_id_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE internal.status_type_id_seq OWNER TO srv_dpmc;
 
 --
--- Name: transactions_details; Type: VIEW; Schema: lta; Owner: srv_dpmc
+-- Name: task; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE VIEW transactions_details AS
- SELECT t.id,
-    t.transaction_name,
-    d.product_name,
-    d.filesize,
-    t.received_date,
-    t.status,
-    t.reason,
-    t.client_name
-   FROM transaction t,
-    direct d
-  WHERE (t.id = d.transaction_id)
-  ORDER BY t.received_date;
+CREATE TABLE internal.task (
+    start_time timestamp without time zone NOT NULL,
+    production_chain text NOT NULL,
+    orbit integer NOT NULL,
+    satellite integer NOT NULL,
+    status public.task_status DEFAULT 'NEW'::public.task_status,
+    end_time timestamp without time zone,
+    baseline character varying DEFAULT '2.78'::character varying NOT NULL,
+    pool integer,
+    extra_params json
+);
 
 
-ALTER TABLE lta.transactions_details OWNER TO srv_dpmc;
-
-SET search_path = processing, pg_catalog;
-
-SET default_with_oids = true;
+ALTER TABLE internal.task OWNER TO srv_dpmc;
 
 --
--- Name: hosts; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: task_rule; Type: TABLE; Schema: internal; Owner: srv_dpmc
 --
 
-CREATE TABLE hosts (
+CREATE TABLE internal.task_rule (
+    task_rule integer NOT NULL,
+    production_chain text NOT NULL,
+    time_shift integer,
+    parameters json
+);
+
+
+ALTER TABLE internal.task_rule OWNER TO srv_dpmc;
+
+--
+-- Name: temp_seq; Type: SEQUENCE; Schema: internal; Owner: srv_dpmc
+--
+
+CREATE SEQUENCE internal.temp_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE internal.temp_seq OWNER TO srv_dpmc;
+
+--
+-- Name: hosts; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.hosts (
     host_id integer DEFAULT nextval(('processing.processing_hosts_host_id'::text)::regclass) NOT NULL,
     hostname character varying NOT NULL,
     ncpu smallint,
@@ -6006,10 +4841,10 @@ CREATE TABLE hosts (
 ALTER TABLE processing.hosts OWNER TO srv_dpmc;
 
 --
--- Name: top; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: top; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE top (
+CREATE TABLE processing.top (
     batch_id integer NOT NULL,
     hostname_id integer,
     started timestamp without time zone,
@@ -6023,7 +4858,7 @@ ALTER TABLE processing.top OWNER TO srv_dpmc;
 -- Name: available_hosts; Type: VIEW; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW available_hosts AS
+CREATE VIEW processing.available_hosts AS
  SELECT ((hosts.ncpu)::integer -
         CASE
             WHEN (temp_used_processor.occ IS NOT NULL) THEN temp_used_processor.occ
@@ -6033,9 +4868,9 @@ CREATE VIEW available_hosts AS
     hosts.hostname
    FROM (( SELECT top.hostname_id,
             count(*) AS occ
-           FROM top
+           FROM processing.top
           GROUP BY top.hostname_id) temp_used_processor
-     RIGHT JOIN hosts ON ((temp_used_processor.hostname_id = hosts.host_id)))
+     RIGHT JOIN processing.hosts ON ((temp_used_processor.hostname_id = hosts.host_id)))
   WHERE ((((hosts.ncpu)::integer -
         CASE
             WHEN (temp_used_processor.occ IS NOT NULL) THEN temp_used_processor.occ
@@ -6045,56 +4880,73 @@ CREATE VIEW available_hosts AS
   ORDER BY hosts.bogomips DESC;
 
 
-ALTER TABLE processing.available_hosts OWNER TO srv_dpmc;
+ALTER VIEW processing.available_hosts OWNER TO srv_dpmc;
 
 --
--- Name: batch; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: batch; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE batch (
-    batch_id integer DEFAULT nextval(('processing.processing_batch_batch_id'::text)::regclass) NOT NULL,
-    file_input_id integer NOT NULL,
-    processing_set_id integer NOT NULL,
-    state character varying DEFAULT 'Planned'::character varying,
-    output_dir character varying,
+CREATE TABLE processing.batch (
+    id integer NOT NULL,
     request_id integer NOT NULL,
-    output_media_catalog integer
+    constraints jsonb,
+    input jsonb,
+    output jsonb,
+    status text,
+    priority integer,
+    configuration jsonb,
+    cdate timestamp without time zone,
+    center_id integer DEFAULT 0,
+    CONSTRAINT batch_check_status CHECK ((status = ANY (ARRAY['EDITED'::text, 'QUEUED'::text, 'DISPATCHED'::text, 'LAUNCHED'::text, 'RUNNING'::text, 'DONE'::text, 'ERROR'::text, 'PAUSED'::text, 'TIME-OUT'::text, 'RESET_QUEUED'::text])))
 );
 
 
 ALTER TABLE processing.batch OWNER TO srv_dpmc;
 
 --
--- Name: batch_x_product; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: batch_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE batch_x_product (
-    batch integer NOT NULL,
-    product integer NOT NULL
+ALTER TABLE processing.batch ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME processing.batch_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
 
-ALTER TABLE processing.batch_x_product OWNER TO srv_dpmc;
-
 --
--- Name: cache_lock; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: batch_x_center; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE cache_lock (
-    id integer DEFAULT nextval(('processing.cache_lock_seq'::text)::regclass) NOT NULL,
-    product_id integer NOT NULL,
-    server_id integer NOT NULL,
-    batch_id integer NOT NULL
+CREATE TABLE processing.batch_x_center (
+    batch_id integer NOT NULL,
+    center_id integer NOT NULL
 );
 
 
-ALTER TABLE processing.cache_lock OWNER TO srv_dpmc;
+ALTER TABLE processing.batch_x_center OWNER TO srv_dpmc;
+
+--
+-- Name: block_parameters; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.block_parameters (
+    pdc_run_tag text,
+    tag text,
+    params jsonb
+);
+
+
+ALTER TABLE processing.block_parameters OWNER TO srv_dpmc;
 
 --
 -- Name: cache_lock_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE cache_lock_seq
+CREATE SEQUENCE processing.cache_lock_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -6102,22 +4954,53 @@ CREATE SEQUENCE cache_lock_seq
     CACHE 1;
 
 
-ALTER TABLE processing.cache_lock_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.cache_lock_seq OWNER TO srv_dpmc;
 
 --
--- Name: history; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: center; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE history (
+CREATE TABLE processing.center (
+    id integer NOT NULL,
+    name character varying(255),
+    location character varying(255),
+    emission_factor double precision,
+    energy_intensity double precision,
+    pue double precision,
+    code character varying(255)
+);
+
+
+ALTER TABLE processing.center OWNER TO srv_dpmc;
+
+--
+-- Name: center_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE processing.center ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME processing.center_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 0
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: history; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.history (
     history_id integer DEFAULT nextval(('processing.history_history_id'::text)::regclass) NOT NULL,
-    processing_set_id integer,
+    processing_script integer,
     host_id integer,
     started timestamp without time zone,
     ended timestamp without time zone,
     file_input_id integer,
     request_id integer,
     batch_id integer,
-    state character varying,
+    status character varying,
     output_dir character varying(255),
     software_id integer,
     auxiliary_configuration_id integer,
@@ -6125,7 +5008,10 @@ CREATE TABLE history (
     tag character varying,
     processing_configuration_id integer,
     log_file character varying,
-    batch_parameters json
+    batch_parameters json,
+    avg_power double precision,
+    data_volume double precision,
+    center_id integer
 );
 
 
@@ -6135,7 +5021,7 @@ ALTER TABLE processing.history OWNER TO srv_dpmc;
 -- Name: history_history_id; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE history_history_id
+CREATE SEQUENCE processing.history_history_id
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -6143,13 +5029,13 @@ CREATE SEQUENCE history_history_id
     CACHE 1;
 
 
-ALTER TABLE processing.history_history_id OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.history_history_id OWNER TO srv_dpmc;
 
 --
--- Name: history_x_product; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: history_x_product; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE history_x_product (
+CREATE TABLE processing.history_x_product (
     history integer NOT NULL,
     product integer NOT NULL
 );
@@ -6157,66 +5043,25 @@ CREATE TABLE history_x_product (
 
 ALTER TABLE processing.history_x_product OWNER TO srv_dpmc;
 
-SET default_with_oids = false;
-
 --
--- Name: hosts_comment; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: orchestrator_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE hosts_comment (
-    host_id integer NOT NULL,
-    description character varying
-);
+CREATE SEQUENCE processing.orchestrator_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
-ALTER TABLE processing.hosts_comment OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: mutex; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE mutex (
-    hosts integer NOT NULL,
-    proc character varying NOT NULL,
-    mutex integer DEFAULT 1
-);
-
-
-ALTER TABLE processing.mutex OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.orchestrator_id_seq OWNER TO srv_dpmc;
 
 --
--- Name: output_file; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: parameters_set; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE output_file (
-    directory_name character varying(255) NOT NULL,
-    file_name character varying(255) NOT NULL,
-    date_time timestamp without time zone NOT NULL,
-    batch_id integer
-);
-
-
-ALTER TABLE processing.output_file OWNER TO srv_dpmc;
-
---
--- Name: parameters_comment; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE parameters_comment (
-    id integer NOT NULL,
-    pcomment character varying
-);
-
-
-ALTER TABLE processing.parameters_comment OWNER TO srv_dpmc;
-
---
--- Name: parameters_set; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE parameters_set (
+CREATE TABLE processing.parameters_set (
     id integer NOT NULL,
     keyword_index integer NOT NULL,
     keyword character varying,
@@ -6227,10 +5072,37 @@ CREATE TABLE parameters_set (
 ALTER TABLE processing.parameters_set OWNER TO srv_dpmc;
 
 --
--- Name: pool_x_hosts; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: pdc_x_pcc; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE pool_x_hosts (
+CREATE TABLE processing.pdc_x_pcc (
+    pdc_id integer NOT NULL,
+    pcc_id integer NOT NULL,
+    parent_pcc_id integer,
+    parent_dependency_mode text,
+    CONSTRAINT pdc_x_pcc_parent_dependency_mode_check CHECK ((parent_dependency_mode = ANY (ARRAY['ON_SUCCESS'::text, 'ON_FAILURE'::text, 'ALWAYS'::text])))
+);
+
+
+ALTER TABLE processing.pdc_x_pcc OWNER TO srv_dpmc;
+
+--
+-- Name: pool; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.pool (
+    id integer DEFAULT nextval(('processing.processing_pool_id'::text)::regclass) NOT NULL,
+    comment character varying NOT NULL
+);
+
+
+ALTER TABLE processing.pool OWNER TO srv_dpmc;
+
+--
+-- Name: pool_x_hosts; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.pool_x_hosts (
     pool integer NOT NULL,
     hosts integer NOT NULL
 );
@@ -6239,10 +5111,25 @@ CREATE TABLE pool_x_hosts (
 ALTER TABLE processing.pool_x_hosts OWNER TO srv_dpmc;
 
 --
+-- Name: processing_baseline; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_baseline (
+    baseline text NOT NULL,
+    active boolean DEFAULT false NOT NULL,
+    parameters json,
+    order_priority integer DEFAULT 0 NOT NULL,
+    plateform character varying DEFAULT 'O'::character varying
+);
+
+
+ALTER TABLE processing.processing_baseline OWNER TO srv_dpmc;
+
+--
 -- Name: processing_batch_batch_id; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE processing_batch_batch_id
+CREATE SEQUENCE processing.processing_batch_batch_id
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -6250,13 +5137,141 @@ CREATE SEQUENCE processing_batch_batch_id
     CACHE 1;
 
 
-ALTER TABLE processing.processing_batch_batch_id OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.processing_batch_batch_id OWNER TO srv_dpmc;
 
 --
--- Name: processing_comment_x_product_type; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_chain; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE processing_comment_x_product_type (
+CREATE TABLE processing.processing_chain (
+    id integer NOT NULL,
+    name text,
+    processing_script_id integer NOT NULL,
+    comment text,
+    configuration jsonb
+);
+
+
+ALTER TABLE processing.processing_chain OWNER TO srv_dpmc;
+
+--
+-- Name: processing_chain_baseline; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_chain_baseline (
+    id integer NOT NULL,
+    processing_chain text NOT NULL,
+    sxac integer NOT NULL,
+    baseline text NOT NULL,
+    pool integer NOT NULL,
+    processing_configuration integer NOT NULL,
+    output_path text,
+    active boolean DEFAULT true,
+    input_parameters json
+);
+
+
+ALTER TABLE processing.processing_chain_baseline OWNER TO srv_dpmc;
+
+--
+-- Name: processing_chain_baseline_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE SEQUENCE processing.processing_chain_baseline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE processing.processing_chain_baseline_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: processing_chain_baseline_id_seq; Type: SEQUENCE OWNED BY; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER SEQUENCE processing.processing_chain_baseline_id_seq OWNED BY processing.processing_chain_baseline.id;
+
+
+--
+-- Name: processing_chain_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE processing.processing_chain ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME processing.processing_chain_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: processing_chain_input_selection; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_chain_input_selection (
+    id integer NOT NULL,
+    processing_chain_baseline_id integer NOT NULL,
+    input_selection_filters jsonb NOT NULL,
+    run_type jsonb NOT NULL,
+    job_order_parameters jsonb DEFAULT '{}'::jsonb
+);
+
+
+ALTER TABLE processing.processing_chain_input_selection OWNER TO srv_dpmc;
+
+--
+-- Name: processing_chain_input_selection_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE SEQUENCE processing.processing_chain_input_selection_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE processing.processing_chain_input_selection_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: processing_chain_input_selection_id_seq; Type: SEQUENCE OWNED BY; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER SEQUENCE processing.processing_chain_input_selection_id_seq OWNED BY processing.processing_chain_input_selection.id;
+
+
+--
+-- Name: processing_chain_run; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_chain_run (
+    pdc_run_tag text,
+    pcc_id integer,
+    block_index integer NOT NULL,
+    tag text NOT NULL,
+    sxac_id integer NOT NULL,
+    input jsonb,
+    output jsonb,
+    request_id integer,
+    status text,
+    start_time timestamp without time zone,
+    stop_time timestamp without time zone
+);
+
+
+ALTER TABLE processing.processing_chain_run OWNER TO srv_dpmc;
+
+--
+-- Name: processing_comment_x_product_type; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_comment_x_product_type (
     processing_comment integer NOT NULL,
     product_type integer NOT NULL,
     is_input boolean DEFAULT false
@@ -6269,7 +5284,7 @@ ALTER TABLE processing.processing_comment_x_product_type OWNER TO srv_dpmc;
 -- Name: processing_hosts_host_id; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE processing_hosts_host_id
+CREATE SEQUENCE processing.processing_hosts_host_id
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -6277,13 +5292,13 @@ CREATE SEQUENCE processing_hosts_host_id
     CACHE 1;
 
 
-ALTER TABLE processing.processing_hosts_host_id OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.processing_hosts_host_id OWNER TO srv_dpmc;
 
 --
 -- Name: processing_pool_id; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE processing_pool_id
+CREATE SEQUENCE processing.processing_pool_id
     START WITH 10
     INCREMENT BY 1
     NO MINVALUE
@@ -6291,13 +5306,40 @@ CREATE SEQUENCE processing_pool_id
     CACHE 1;
 
 
-ALTER TABLE processing.processing_pool_id OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.processing_pool_id OWNER TO srv_dpmc;
 
 --
--- Name: processing_type; Type: TABLE; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_script; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE processing_type (
+CREATE TABLE processing.processing_script (
+    id integer NOT NULL,
+    pcomment character varying,
+    acronym character varying(255)
+);
+
+
+ALTER TABLE processing.processing_script OWNER TO srv_dpmc;
+
+--
+-- Name: processing_script_detail; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_script_detail (
+    id integer NOT NULL,
+    seq_index integer NOT NULL,
+    type integer,
+    function_name character varying
+);
+
+
+ALTER TABLE processing.processing_script_detail OWNER TO srv_dpmc;
+
+--
+-- Name: processing_type; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.processing_type (
     id integer NOT NULL,
     s_type character varying
 );
@@ -6306,362 +5348,266 @@ CREATE TABLE processing_type (
 ALTER TABLE processing.processing_type OWNER TO srv_dpmc;
 
 --
--- Name: queued_generic_batch; Type: VIEW; Schema: processing; Owner: srv_dpmc
+-- Name: production_chain; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW queued_generic_batch AS
- SELECT b.batch_id,
-    pa.value AS generic_command,
-    r.submission_date_time,
-    r.pool
-   FROM batch b,
-    parameters_set pa,
-    internal.request r
-  WHERE ((((b.request_id = r.id) AND (pa.id = b.batch_id)) AND (r.id = 0)) AND ((b.state)::text ~~ 'Queued'::text));
-
-
-ALTER TABLE processing.queued_generic_batch OWNER TO srv_dpmc;
-
---
--- Name: VIEW queued_generic_batch; Type: COMMENT; Schema: processing; Owner: srv_dpmc
---
-
-COMMENT ON VIEW queued_generic_batch IS 'give the list of waiting generic batches';
-
-
---
--- Name: running_generic_batch; Type: VIEW; Schema: processing; Owner: srv_dpmc
---
-
-CREATE VIEW running_generic_batch AS
- SELECT b.batch_id,
-    pa.value AS generic_command,
-    r.submission_date_time,
-    r.pool
-   FROM batch b,
-    parameters_set pa,
-    internal.request r
-  WHERE ((((b.request_id = r.id) AND (pa.id = b.batch_id)) AND (r.id = 0)) AND ((b.state)::text ~~ 'Running'::text));
-
-
-ALTER TABLE processing.running_generic_batch OWNER TO srv_dpmc;
-
---
--- Name: waiting_batch; Type: VIEW; Schema: processing; Owner: srv_dpmc
---
-
-CREATE VIEW waiting_batch AS
- SELECT b.batch_id,
-    b.output_dir,
-    ps.function_name AS processing_scripts,
-    pro.name AS product_input,
-    pt.acronym,
-    s.name AS soft_name,
-    s.version AS soft_version,
-    a.name AS aux_conf_name,
-    pc.pcomment,
-    r.id AS request_id,
-    r.min_date_time,
-    r.submission_date_time,
-    r.pool
-   FROM batch b,
-    internal.request r,
-    processing_set ps,
-    internal.product pro,
-    internal.product_type pt,
-    internal.software s,
-    internal.auxiliary_configuration a,
-    processing_comment pc
-  WHERE ((((((((b.request_id = r.id) AND (b.processing_set_id = ps.id)) AND (b.file_input_id = pro.id)) AND (r.product_type = pt.id)) AND (r.software = s.id)) AND (r.auxiliary_configuration = a.id)) AND (r.processing_comment = pc.id)) AND ((b.state)::text ~~ 'Waiting for input'::text));
-
-
-ALTER TABLE processing.waiting_batch OWNER TO srv_dpmc;
-
---
--- Name: VIEW waiting_batch; Type: COMMENT; Schema: processing; Owner: srv_dpmc
---
-
-COMMENT ON VIEW waiting_batch IS 'give information on the batchs in the state "waiting for input" ';
-
-
---
--- Name: waiting_generic_batchs; Type: VIEW; Schema: processing; Owner: srv_dpmc
---
-
-CREATE VIEW waiting_generic_batchs AS
- SELECT b.batch_id,
-    pa.value AS generic_command,
-    r.submission_date_time,
-    r.pool
-   FROM batch b,
-    parameters_set pa,
-    internal.request r
-  WHERE ((((b.request_id = r.id) AND (pa.id = b.batch_id)) AND (r.id = 0)) AND ((b.state)::text ~~ 'Waiting for input'::text));
-
-
-ALTER TABLE processing.waiting_generic_batchs OWNER TO srv_dpmc;
-
---
--- Name: VIEW waiting_generic_batchs; Type: COMMENT; Schema: processing; Owner: srv_dpmc
---
-
-COMMENT ON VIEW waiting_generic_batchs IS 'give information on the generic batchs in the state "waiting for input" ';
-
-
-SET search_path = public, pg_catalog;
-
---
--- Name: active_transactions; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW active_transactions AS
- SELECT t.id,
-    t.transaction_name,
-    t.received_date,
-    t.status,
-    t.client_name,
-    t.request_outcome,
-    t.reason,
-    t.retry_after,
-    d.transaction_id,
-    d.product_name,
-    d.filesize
-   FROM lta.transaction t,
-    lta.direct d
-  WHERE ((t.id = d.transaction_id) AND (((t.status = 'NEW'::lta.enum_transaction_status) OR (t.status = 'PENDING'::lta.enum_transaction_status)) OR (t.status = 'ACTIVE'::lta.enum_transaction_status)));
-
-
-ALTER TABLE public.active_transactions OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: anomalies_sat; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
---
-
-CREATE TABLE anomalies_sat (
-    doc_source character varying,
-    unavailability character varying,
-    type character varying,
-    instrument character varying,
-    subsystem character varying,
-    start_time timestamp without time zone NOT NULL,
-    stop_time timestamp without time zone NOT NULL,
-    duration time without time zone,
-    comments character varying
+CREATE TABLE processing.production_chain (
+    id integer NOT NULL,
+    name text,
+    comment text,
+    configuration jsonb
 );
 
 
-ALTER TABLE public.anomalies_sat OWNER TO postgres;
+ALTER TABLE processing.production_chain OWNER TO srv_dpmc;
 
 --
--- Name: archived_and_online; Type: VIEW; Schema: public; Owner: srv_dpmc
+-- Name: production_chain_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW archived_and_online AS
- SELECT sm.name AS media_name,
-    sm.id AS media_id,
-    pxsm.product AS product_id,
-    mce.name AS product_name,
-    (((((m.name)::text || ('/'::character varying)::text) || (mc.name)::text) || ('/'::character varying)::text) || (mce.name)::text) AS path
-   FROM internal.media sm,
-    internal.product_x_sequential_media pxsm,
-    internal.product_x_media_catalog_entry x,
-    internal.media_catalog_entry mce,
-    internal.media_catalog mc,
-    internal.media m
-  WHERE ((((((sm.id = pxsm.media) AND (pxsm.product = x.product)) AND (x.media_catalog_entry = mce.id)) AND (mc.id = mce.media_catalog)) AND (m.id = mc.media)) AND (EXISTS ( SELECT xx.media,
-            xx."position",
-            xx.product
-           FROM internal.product_x_sequential_media xx
-          WHERE ((xx.product = pxsm.product) AND (xx."position" >= 0)))));
-
-
-ALTER TABLE public.archived_and_online OWNER TO srv_dpmc;
-
---
--- Name: batch; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW batch AS
- SELECT product.id AS product_id,
-    product.name AS product_name,
-    batch.state,
-    batch.batch_id,
-    batch.request_id
-   FROM (processing.batch
-     JOIN internal.product ON ((batch.file_input_id = product.id)));
-
-
-ALTER TABLE public.batch OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: check_adf; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
---
-
-CREATE TABLE check_adf (
-    processor_name character varying,
-    index integer,
-    rank integer,
-    mode character varying,
-    product_type character varying,
-    selection_rule character varying,
-    t1 real,
-    t2 real,
-    frequency integer,
-    mandatory character varying,
-    version_ipf character varying
+ALTER TABLE processing.production_chain ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME processing.production_chain_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
 
-ALTER TABLE public.check_adf OWNER TO postgres;
-
 --
--- Name: detail_top; Type: VIEW; Schema: public; Owner: srv_dpmc
+-- Name: production_chain_run; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW detail_top AS
- SELECT batch.batch_id AS batch,
-    batch.request_id AS request,
-    site.name AS site,
-    product.name AS product,
-    processing_comment.acronym AS chain,
-    split_part((hosts.hostname)::text, '.'::text, 1) AS node,
-    top.pid,
-    date_trunc('seconds'::text, (now() - (top.started)::timestamp with time zone)) AS elapsed,
-    batch.output_dir,
-    (sp.stop_date_time - sp.start_date_time) AS duration
-   FROM processing.top,
-    processing.batch,
-    processing.hosts,
-    internal.request,
-    internal.site,
-    internal.product,
-    processing.processing_comment,
-    internal.sensing_product sp
-  WHERE ((((((((batch.batch_id = top.batch_id) AND (hosts.host_id = top.hostname_id)) AND (request.id = batch.request_id)) AND (site.id = request.site)) AND (product.id = batch.file_input_id)) AND (processing_comment.id = batch.processing_set_id)) AND (batch.processing_set_id = 5)) AND (sp.product = product.id))
-UNION
- SELECT batch.batch_id AS batch,
-    batch.request_id AS request,
-    site.name AS site,
-    product.name AS product,
-    processing_comment.acronym AS chain,
-    split_part((hosts.hostname)::text, '.'::text, 1) AS node,
-    top.pid,
-    date_trunc('seconds'::text, (now() - (top.started)::timestamp with time zone)) AS elapsed,
-    batch.output_dir,
-    (sensing_product.stop_date_time - sensing_product.start_date_time) AS duration
-   FROM processing.top,
-    processing.batch,
-    processing.hosts,
-    internal.request,
-    internal.site,
-    internal.product,
-    internal.sensing_product,
-    processing.processing_comment,
-    processing.parameters_set ps1,
-    processing.parameters_set ps2
-  WHERE (((((((((((((batch.batch_id = top.batch_id) AND (hosts.host_id = top.hostname_id)) AND (request.id = batch.request_id)) AND (site.id = request.site)) AND (product.id = batch.file_input_id)) AND (processing_comment.id = batch.processing_set_id)) AND (batch.processing_set_id >= 1)) AND (batch.processing_set_id <= 3)) AND (ps1.id = batch.batch_id)) AND (ps1.keyword_index = 1)) AND (ps2.id = batch.batch_id)) AND (ps2.keyword_index = 2)) AND (sensing_product.product = product.id));
+CREATE TABLE processing.production_chain_run (
+    tag text NOT NULL,
+    task_id integer NOT NULL,
+    pdc_id integer NOT NULL,
+    status text,
+    start_time timestamp without time zone,
+    stop_time timestamp without time zone,
+    input jsonb
+);
 
 
-ALTER TABLE public.detail_top OWNER TO srv_dpmc;
+ALTER TABLE processing.production_chain_run OWNER TO srv_dpmc;
 
 --
--- Name: detail_top_old; Type: VIEW; Schema: public; Owner: srv_dpmc
+-- Name: request; Type: TABLE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW detail_top_old AS
- SELECT batch.batch_id AS batch,
-    batch.request_id AS request,
-    site.name AS site,
-    product.name AS product,
-    processing_comment.acronym AS chain,
-    split_part((hosts.hostname)::text, '.'::text, 1) AS node,
-    top.pid,
-    date_trunc('seconds'::text, (now() - (top.started)::timestamp with time zone)) AS elapsed,
-    batch.output_dir,
-    ' '::character varying AS extra
-   FROM ((((((processing.top
-     JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-     JOIN processing.hosts ON ((hosts.host_id = top.hostname_id)))
-     JOIN internal.request ON ((request.id = batch.request_id)))
-     JOIN internal.site ON ((site.id = request.site)))
-     JOIN internal.product ON ((product.id = batch.file_input_id)))
-     JOIN processing.processing_comment ON ((processing_comment.id = batch.processing_set_id)));
+CREATE TABLE processing.request (
+    id integer NOT NULL,
+    product_type_id integer,
+    processing_script_id integer NOT NULL,
+    sxac_id integer NOT NULL,
+    pool integer NOT NULL
+);
 
 
-ALTER TABLE public.detail_top_old OWNER TO srv_dpmc;
+ALTER TABLE processing.request OWNER TO srv_dpmc;
 
 --
--- Name: detail_top_s3; Type: VIEW; Schema: public; Owner: srv_dpmc
+-- Name: s3ps_processing_chain_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW detail_top_s3 AS
- SELECT batch.batch_id AS batch,
-    batch.request_id AS request,
-    product.name AS product,
-    processing_comment.acronym AS chain,
-    (((software.name)::text || ' ; '::text) || request.auxiliary_configuration) AS software_aux_conf,
-    hosts.host_id,
-    date_trunc('seconds'::text, (now() - (top.started)::timestamp with time zone)) AS elapsed,
-        CASE
-            WHEN (parameters_set.value IS NULL) THEN 'No dataset out'::character varying
-            ELSE parameters_set.value
-        END AS dataset_out,
-        CASE
-            WHEN (parameters_set_2.value IS NULL) THEN 'No tag'::character varying
-            ELSE parameters_set_2.value
-        END AS history_tag
-   FROM (((((((((processing.top
-     JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-     LEFT JOIN processing.parameters_set ON (((parameters_set.id = batch.batch_id) AND ((parameters_set.keyword)::text = 'dataset_out'::text))))
-     LEFT JOIN processing.parameters_set parameters_set_2 ON (((parameters_set_2.id = batch.batch_id) AND ((parameters_set_2.keyword)::text = 'tag'::text))))
-     JOIN processing.hosts ON ((hosts.host_id = top.hostname_id)))
-     JOIN internal.request ON ((request.id = batch.request_id)))
-     JOIN internal.product ON ((product.id = batch.file_input_id)))
-     JOIN internal.software ON ((software.id = request.software)))
-     JOIN internal.auxiliary_configuration ON ((auxiliary_configuration.id = request.auxiliary_configuration)))
-     JOIN processing.processing_comment ON ((request.processing_comment = processing_comment.id)));
+CREATE SEQUENCE processing.s3ps_processing_chain_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
-ALTER TABLE public.detail_top_s3 OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.s3ps_processing_chain_id_seq OWNER TO srv_dpmc;
 
 --
--- Name: detail_top_s3_old; Type: VIEW; Schema: public; Owner: srv_dpmc
+-- Name: s3ps_processing_details_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE VIEW detail_top_s3_old AS
- SELECT batch.batch_id AS batch,
-    batch.request_id AS request,
-    site.name AS site,
-    product.name AS product,
-    processing_comment.acronym AS chain,
-    software.name AS software,
-    request.auxiliary_configuration AS aux_conf,
-    hosts.host_id,
-    top.pid,
-    date_trunc('seconds'::text, (now() - (top.started)::timestamp with time zone)) AS elapsed,
-    ' '::character varying AS extra
-   FROM ((((((((processing.top
-     JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-     JOIN processing.hosts ON ((hosts.host_id = top.hostname_id)))
-     JOIN internal.request ON ((request.id = batch.request_id)))
-     JOIN internal.site ON ((site.id = request.site)))
-     JOIN internal.product ON ((product.id = batch.file_input_id)))
-     JOIN internal.software ON ((software.id = request.software)))
-     JOIN internal.auxiliary_configuration ON ((auxiliary_configuration.id = request.auxiliary_configuration)))
-     JOIN processing.processing_comment ON ((request.processing_comment = processing_comment.id)));
+CREATE SEQUENCE processing.s3ps_processing_details_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
-ALTER TABLE public.detail_top_s3_old OWNER TO srv_dpmc;
+ALTER SEQUENCE processing.s3ps_processing_details_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: s3ps_production_chain_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE SEQUENCE processing.s3ps_production_chain_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE processing.s3ps_production_chain_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: scheduler; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.scheduler (
+    id integer DEFAULT nextval('processing.orchestrator_id_seq'::regclass) NOT NULL,
+    sleep integer NOT NULL,
+    comment text,
+    active boolean
+);
+
+
+ALTER TABLE processing.scheduler OWNER TO srv_dpmc;
+
+--
+-- Name: scheduler_x_pool; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.scheduler_x_pool (
+    scheduler_id integer NOT NULL,
+    pool_id integer NOT NULL
+);
+
+
+ALTER TABLE processing.scheduler_x_pool OWNER TO srv_dpmc;
+
+--
+-- Name: task; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.task (
+    id integer NOT NULL,
+    pdc_id integer,
+    cdate timestamp without time zone DEFAULT now(),
+    expected_start_time timestamp without time zone,
+    input jsonb,
+    output jsonb,
+    start_time timestamp without time zone,
+    status text,
+    comment text,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY['NEW'::text, 'EDITED'::text, 'SCHEDULED'::text, 'RUNNING'::text, 'DONE'::text, 'ERROR'::text, 'PAUSED'::text])))
+);
+
+
+ALTER TABLE processing.task OWNER TO srv_dpmc;
+
+--
+-- Name: task_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE processing.task ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME processing.task_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: task_record; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.task_record (
+    id integer NOT NULL,
+    task_record_uuid uuid NOT NULL,
+    production_chain text NOT NULL,
+    orbit integer NOT NULL,
+    satellite integer NOT NULL,
+    status public.task_record_status DEFAULT 'RUNNING'::public.task_record_status NOT NULL,
+    failed_reason text,
+    created_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    end_time timestamp without time zone
+);
+
+
+ALTER TABLE processing.task_record OWNER TO srv_dpmc;
+
+--
+-- Name: task_record_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE SEQUENCE processing.task_record_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE processing.task_record_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: task_record_id_seq; Type: SEQUENCE OWNED BY; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER SEQUENCE processing.task_record_id_seq OWNED BY processing.task_record.id;
+
+
+--
+-- Name: task_record_x_batch; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.task_record_x_batch (
+    id integer NOT NULL,
+    task_record_id integer NOT NULL,
+    batch_id integer NOT NULL,
+    tag text NOT NULL,
+    created_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    history_id integer,
+    status text
+);
+
+
+ALTER TABLE processing.task_record_x_batch OWNER TO srv_dpmc;
+
+--
+-- Name: task_record_x_batch_id_seq; Type: SEQUENCE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE SEQUENCE processing.task_record_x_batch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE processing.task_record_x_batch_id_seq OWNER TO srv_dpmc;
+
+--
+-- Name: task_record_x_batch_id_seq; Type: SEQUENCE OWNED BY; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER SEQUENCE processing.task_record_x_batch_id_seq OWNED BY processing.task_record_x_batch.id;
+
+
+--
+-- Name: watcher; Type: TABLE; Schema: processing; Owner: srv_dpmc
+--
+
+CREATE TABLE processing.watcher (
+    "time" timestamp without time zone NOT NULL,
+    name character varying NOT NULL,
+    flag_ok boolean NOT NULL,
+    comment character varying
+);
+
+
+ALTER TABLE processing.watcher OWNER TO srv_dpmc;
 
 --
 -- Name: disk_location; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW disk_location AS
+CREATE VIEW public.disk_location AS
  SELECT product.id AS product_id,
     product.name AS official_name,
     (((((media.name)::text || ('/'::character varying)::text) || (media_catalog.name)::text) || ('/'::character varying)::text) || (media_catalog_entry.name)::text) AS path,
@@ -6679,13 +5625,13 @@ CREATE VIEW disk_location AS
   WHERE ((NOT media_type.removable) AND (NOT media_type.sequential));
 
 
-ALTER TABLE public.disk_location OWNER TO srv_dpmc;
+ALTER VIEW public.disk_location OWNER TO srv_dpmc;
 
 --
 -- Name: files_location; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW files_location AS
+CREATE VIEW public.files_location AS
  SELECT product.id AS product_id,
     product.name AS official_name,
     (((((media.name)::text || ('/'::character varying)::text) || (media_catalog.name)::text) || ('/'::character varying)::text) || (media_catalog_entry.name)::text) AS disk_location
@@ -6694,16 +5640,16 @@ CREATE VIEW files_location AS
     internal.media_catalog_entry,
     internal.media_catalog,
     internal.media
-  WHERE ((((product_x_media_catalog_entry.product = product.id) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id)) AND (media_catalog_entry.media_catalog = media_catalog.id)) AND (media_catalog.media = media.id));
+  WHERE ((product_x_media_catalog_entry.product = product.id) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id) AND (media_catalog_entry.media_catalog = media_catalog.id) AND (media_catalog.media = media.id));
 
 
-ALTER TABLE public.files_location OWNER TO srv_dpmc;
+ALTER VIEW public.files_location OWNER TO srv_dpmc;
 
 --
 -- Name: files_location_in_cmg_project; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW files_location_in_cmg_project AS
+CREATE VIEW public.files_location_in_cmg_project AS
  SELECT product.id AS product_id,
     product.name AS official_name,
     (((((media.name)::text || ('/'::character varying)::text) || (media_catalog.name)::text) || ('/'::character varying)::text) || (media_catalog_entry.name)::text) AS disk_location
@@ -6712,16 +5658,16 @@ CREATE VIEW files_location_in_cmg_project AS
     internal.media_catalog_entry,
     internal.media_catalog,
     internal.media
-  WHERE (((((((product.name)::text !~~ 'GOM%.N1'::text) AND ((media.name)::text ~~ '/cmg_project%'::text)) AND (product_x_media_catalog_entry.product = product.id)) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id)) AND (media_catalog_entry.media_catalog = media_catalog.id)) AND (media_catalog.media = media.id));
+  WHERE (((product.name)::text !~~ 'GOM%.N1'::text) AND ((media.name)::text ~~ '/cmg_project%'::text) AND (product_x_media_catalog_entry.product = product.id) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id) AND (media_catalog_entry.media_catalog = media_catalog.id) AND (media_catalog.media = media.id));
 
 
-ALTER TABLE public.files_location_in_cmg_project OWNER TO srv_dpmc;
+ALTER VIEW public.files_location_in_cmg_project OWNER TO srv_dpmc;
 
 --
 -- Name: VIEW files_location_in_cmg_project; Type: COMMENT; Schema: public; Owner: srv_dpmc
 --
 
-COMMENT ON VIEW files_location_in_cmg_project IS 'This view is used to get the pathnames of products stored in the /cmg_project directory
+COMMENT ON VIEW public.files_location_in_cmg_project IS 'This view is used to get the pathnames of products stored in the /cmg_project directory
 (GOM*.N1 products are also excluded to speed up the request)';
 
 
@@ -6729,7 +5675,7 @@ COMMENT ON VIEW files_location_in_cmg_project IS 'This view is used to get the p
 -- Name: files_path; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW files_path AS
+CREATE VIEW public.files_path AS
  SELECT product.id AS product_id,
     (((((media.name)::text || ('/'::character varying)::text) || (media_catalog.name)::text) || ('/'::character varying)::text) || (media_catalog_entry.name)::text) AS disk_location
    FROM internal.product,
@@ -6737,17 +5683,17 @@ CREATE VIEW files_path AS
     internal.media_catalog_entry,
     internal.media_catalog,
     internal.media
-  WHERE ((((product_x_media_catalog_entry.product = product.id) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id)) AND (media_catalog_entry.media_catalog = media_catalog.id)) AND (media_catalog.media = media.id))
+  WHERE ((product_x_media_catalog_entry.product = product.id) AND (product_x_media_catalog_entry.media_catalog_entry = media_catalog_entry.id) AND (media_catalog_entry.media_catalog = media_catalog.id) AND (media_catalog.media = media.id))
   ORDER BY product.id;
 
 
-ALTER TABLE public.files_path OWNER TO srv_dpmc;
+ALTER VIEW public.files_path OWNER TO srv_dpmc;
 
 --
 -- Name: hosts_current_ncpu; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW hosts_current_ncpu AS
+CREATE VIEW public.hosts_current_ncpu AS
  SELECT hosts.host_id,
     ((hosts.ncpu)::bigint - sum(
         CASE
@@ -6759,202 +5705,45 @@ CREATE VIEW hosts_current_ncpu AS
   GROUP BY hosts.host_id, hosts.ncpu;
 
 
-ALTER TABLE public.hosts_current_ncpu OWNER TO srv_dpmc;
-
---
--- Name: image_request_x_product; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW image_request_x_product AS
- SELECT request.id AS request,
-        CASE
-            WHEN ((orbit.anx_date_time + site_coverage.start_anx_interval) > sensing_product.start_date_time) THEN (orbit.anx_date_time + site_coverage.start_anx_interval)
-            ELSE sensing_product.start_date_time
-        END AS start_date_time,
-        CASE
-            WHEN ((orbit.anx_date_time + site_coverage.stop_anx_interval) < sensing_product.stop_date_time) THEN (orbit.anx_date_time + site_coverage.stop_anx_interval)
-            ELSE sensing_product.stop_date_time
-        END AS stop_date_time,
-    request.site,
-    product.id AS product
-   FROM internal.request,
-    internal.site_coverage,
-    internal.orbit,
-    internal.sensing_product,
-    internal.product,
-    internal.mode_x_product_type,
-    processing.processing_comment_x_product_type x
-  WHERE ((((((((((((((((site_coverage.site = request.site) AND (orbit.satellite = site_coverage.satellite)) AND (orbit.cycle_relative_number = site_coverage.relative_orbit_number)) AND (sensing_product.start_absolute_orbit_number = orbit.absolute_number)) AND (sensing_product.start_date_time < (orbit.anx_date_time + site_coverage.stop_anx_interval))) AND ((orbit.anx_date_time + site_coverage.start_anx_interval) < sensing_product.stop_date_time)) AND (product.id = sensing_product.product)) AND (mode_x_product_type.product_type = product.product_type)) AND (mode_x_product_type.satellite = site_coverage.satellite)) AND (mode_x_product_type.instrument = site_coverage.instrument)) AND (request.min_date_time <= sensing_product.start_date_time)) AND (sensing_product.stop_date_time <= request.max_date_time)) AND (x.processing_comment = request.processing_comment)) AND x.is_input) AND (x.product_type = product.product_type)) AND (product.obsolescence_date_time IS NULL))
-UNION
- SELECT request.id AS request,
-    sensing_product.start_date_time,
-    sensing_product.stop_date_time,
-    request.site,
-    product.id AS product
-   FROM internal.global,
-    internal.request,
-    internal.sensing_product,
-    internal.product,
-    internal.mode_x_product_type,
-    internal.imaging_instrument,
-    processing.processing_comment_x_product_type xx
-  WHERE (((((((((((request.site = global.global_site) AND (xx.processing_comment = request.processing_comment)) AND xx.is_input) AND (mode_x_product_type.satellite = imaging_instrument.satellite)) AND (mode_x_product_type.instrument = imaging_instrument.instrument)) AND (mode_x_product_type.product_type = product.product_type)) AND (xx.product_type = product.product_type)) AND (product.id = sensing_product.product)) AND (request.min_date_time < sensing_product.stop_date_time)) AND (sensing_product.start_date_time < request.max_date_time)) AND (product.obsolescence_date_time IS NULL));
-
-
-ALTER TABLE public.image_request_x_product OWNER TO srv_dpmc;
+ALTER VIEW public.hosts_current_ncpu OWNER TO srv_dpmc;
 
 --
 -- Name: last_product; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW last_product AS
+CREATE VIEW public.last_product AS
  SELECT product.id,
     product.name,
     files_location.disk_location
    FROM (internal.product
-     JOIN files_location ON ((files_location.product_id = product.id)))
+     JOIN public.files_location ON ((files_location.product_id = product.id)))
   WHERE (product.generation_date_time IS NOT NULL)
   ORDER BY product.generation_date_time DESC
  LIMIT 20;
 
 
-ALTER TABLE public.last_product OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
+ALTER VIEW public.last_product OWNER TO srv_dpmc;
 
 --
--- Name: max_id_baseline; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
+-- Name: nc_1txy__Sheet1; Type: TABLE; Schema: public; Owner: srv_dpmc
 --
 
-CREATE TABLE max_id_baseline (
-    max integer
+CREATE TABLE public."nc_1txy__Sheet1" (
+    id integer NOT NULL,
+    title character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
 );
 
 
-ALTER TABLE public.max_id_baseline OWNER TO srv_dpmc;
+ALTER TABLE public."nc_1txy__Sheet1" OWNER TO srv_dpmc;
 
 --
--- Name: media_current_capacity; Type: VIEW; Schema: public; Owner: srv_dpmc
+-- Name: nc_1txy__Sheet1_id_seq; Type: SEQUENCE; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW media_current_capacity AS
- SELECT static.id,
-    (static.current_capacity -
-        CASE
-            WHEN (dynamic.running_size IS NOT NULL) THEN dynamic.running_size
-            WHEN (0 IS NOT NULL) THEN (0)::real
-            ELSE NULL::real
-        END) AS current_capacity
-   FROM (( SELECT media.id,
-            ((media.capacity - media.reserved_capacity) - (
-                CASE
-                    WHEN (sum(product.size) IS NOT NULL) THEN sum(product.size)
-                    WHEN (0 IS NOT NULL) THEN (0)::numeric
-                    ELSE NULL::numeric
-                END)::double precision) AS current_capacity
-           FROM (internal.media
-             LEFT JOIN (((internal.media_catalog
-             JOIN internal.media_catalog_entry ON ((media_catalog_entry.media_catalog = media_catalog.id)))
-             JOIN internal.product_x_media_catalog_entry x ON ((media_catalog_entry.id = x.media_catalog_entry)))
-             JOIN internal.product ON ((product.id = x.product))) ON ((media_catalog.media = media.id)))
-          WHERE (media.media_type = 8)
-          GROUP BY media.id, media.capacity, media.reserved_capacity) static
-     LEFT JOIN ( SELECT media_catalog.media AS id,
-            sum(product_type.mean_size) AS running_size
-           FROM ((((processing.top
-             JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-             JOIN internal.media_catalog ON ((media_catalog.id = batch.output_media_catalog)))
-             JOIN processing.processing_comment_x_product_type x ON (((NOT x.is_input) AND (x.processing_comment = batch.processing_set_id))))
-             JOIN internal.product_type ON ((product_type.id = x.product_type)))
-          GROUP BY media_catalog.media) dynamic ON ((static.id = dynamic.id)));
-
-
-ALTER TABLE public.media_current_capacity OWNER TO srv_dpmc;
-
---
--- Name: media_current_physical_capacity; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW media_current_physical_capacity AS
- SELECT static.id,
-    (static.current_capacity -
-        CASE
-            WHEN (dynamic.running_size IS NOT NULL) THEN dynamic.running_size
-            WHEN (0 IS NOT NULL) THEN (0)::real
-            ELSE NULL::real
-        END) AS current_physical_capacity
-   FROM (( SELECT media.id,
-            (media.current_physical_capacity - media.reserved_capacity) AS current_capacity
-           FROM internal.media
-          WHERE (media.media_type = 8)) static
-     LEFT JOIN ( SELECT media_catalog.media AS id,
-            sum(product_type.mean_size) AS running_size
-           FROM ((((processing.top
-             JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-             JOIN internal.media_catalog ON ((media_catalog.id = batch.output_media_catalog)))
-             JOIN processing.processing_comment_x_product_type x ON (((NOT x.is_input) AND (x.processing_comment = batch.processing_set_id))))
-             JOIN internal.product_type ON ((product_type.id = x.product_type)))
-          GROUP BY media_catalog.media) dynamic ON ((static.id = dynamic.id)));
-
-
-ALTER TABLE public.media_current_physical_capacity OWNER TO srv_dpmc;
-
---
--- Name: media_current_physical_capacity_with_count; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW media_current_physical_capacity_with_count AS
- SELECT static.id,
-    (static.current_capacity -
-        CASE
-            WHEN (dynamic.running_size IS NOT NULL) THEN dynamic.running_size
-            WHEN (0 IS NOT NULL) THEN (0)::real
-            ELSE NULL::real
-        END) AS current_physical_capacity,
-        CASE
-            WHEN (dynamic.running_count IS NOT NULL) THEN dynamic.running_count
-            WHEN (0 IS NOT NULL) THEN (0)::bigint
-            ELSE NULL::bigint
-        END AS access_count
-   FROM (( SELECT media.id,
-            (media.current_physical_capacity - media.reserved_capacity) AS current_capacity
-           FROM internal.media
-          WHERE (media.media_type = 8)) static
-     LEFT JOIN ( SELECT media_catalog.media AS id,
-            sum(product_type.mean_size) AS running_size,
-            count(DISTINCT top.batch_id) AS running_count
-           FROM ((((processing.top
-             JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-             JOIN internal.media_catalog ON ((media_catalog.id = batch.output_media_catalog)))
-             JOIN processing.processing_comment_x_product_type x ON (((NOT x.is_input) AND (x.processing_comment = batch.processing_set_id))))
-             JOIN internal.product_type ON ((product_type.id = x.product_type)))
-          GROUP BY media_catalog.media) dynamic ON ((static.id = dynamic.id)));
-
-
-ALTER TABLE public.media_current_physical_capacity_with_count OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: media_delivered; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media_delivered (
-    tag character varying NOT NULL,
-    disk_type character varying NOT NULL,
-    disk_name character varying NOT NULL,
-    current_physical_capacity bigint DEFAULT 0,
-    id integer NOT NULL
-);
-
-
-ALTER TABLE public.media_delivered OWNER TO srv_dpmc;
-
---
--- Name: media_delivered_id_seq; Type: SEQUENCE; Schema: public; Owner: srv_dpmc
---
-
-CREATE SEQUENCE media_delivered_id_seq
+CREATE SEQUENCE public."nc_1txy__Sheet1_id_seq"
+    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -6962,85 +5751,20 @@ CREATE SEQUENCE media_delivered_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.media_delivered_id_seq OWNER TO srv_dpmc;
+ALTER SEQUENCE public."nc_1txy__Sheet1_id_seq" OWNER TO srv_dpmc;
 
 --
--- Name: media_delivered_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: srv_dpmc
+-- Name: nc_1txy__Sheet1_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: srv_dpmc
 --
 
-ALTER SEQUENCE media_delivered_id_seq OWNED BY media_delivered.id;
+ALTER SEQUENCE public."nc_1txy__Sheet1_id_seq" OWNED BY public."nc_1txy__Sheet1".id;
 
-
---
--- Name: media_running_size; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW media_running_size AS
- SELECT media_catalog.media AS id,
-    sum(product_type.mean_size) AS running_size
-   FROM ((((processing.top
-     JOIN processing.batch ON ((batch.batch_id = top.batch_id)))
-     JOIN internal.media_catalog ON ((media_catalog.id = batch.output_media_catalog)))
-     JOIN processing.processing_comment_x_product_type x ON (((NOT x.is_input) AND (x.processing_comment = batch.processing_set_id))))
-     JOIN internal.product_type ON ((product_type.id = x.product_type)))
-  GROUP BY media_catalog.media;
-
-
-ALTER TABLE public.media_running_size OWNER TO srv_dpmc;
-
---
--- Name: product_archive; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW product_archive AS
- SELECT product.id,
-    product.name AS product,
-    media.name AS media_name,
-    product_x_sequential_media."position" AS media_index
-   FROM internal.product,
-    internal.product_x_sequential_media,
-    internal.media
-  WHERE ((product_x_sequential_media.product = product.id) AND (product_x_sequential_media.media = media.id));
-
-
-ALTER TABLE public.product_archive OWNER TO srv_dpmc;
-
---
--- Name: missing_file_for_order; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW missing_file_for_order AS
- SELECT DISTINCT product_archive.id,
-    product_archive.product,
-    product_archive.media_name,
-    product_archive.media_index
-   FROM product_archive,
-    processing.batch
-  WHERE ((batch.file_input_id = product_archive.id) AND ((batch.state)::text = ('Waiting for input'::character varying)::text))
-  ORDER BY product_archive.media_name, product_archive.media_index, product_archive.id, product_archive.product;
-
-
-ALTER TABLE public.missing_file_for_order OWNER TO srv_dpmc;
-
---
--- Name: not_archived; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW not_archived AS
- SELECT files_location.product_id AS id,
-    files_location.official_name AS name
-   FROM (files_location
-     LEFT JOIN product_archive ON ((files_location.product_id = product_archive.id)))
-  WHERE ((product_archive.id IS NULL) AND ((files_location.official_name)::text ~~ 'MER_RR__0P%'::text));
-
-
-ALTER TABLE public.not_archived OWNER TO srv_dpmc;
 
 --
 -- Name: overlap_product; Type: VIEW; Schema: public; Owner: srv_dpmc
 --
 
-CREATE VIEW overlap_product AS
+CREATE VIEW public.overlap_product AS
  SELECT p1.id AS main_id,
     p1.name AS main_name,
     sp1.start_date_time AS main_start_date_time,
@@ -7055,282 +5779,16 @@ CREATE VIEW overlap_product AS
     internal.sensing_product sp1,
     internal.product p2,
     internal.sensing_product sp2
-  WHERE (((((((p1.id <> p2.id) AND (p1.product_type = p2.product_type)) AND ("substring"((p1.name)::text, 11, 1) = "substring"((p2.name)::text, 11, 1))) AND (sp1.product = p1.id)) AND (sp2.product = p2.id)) AND (sp1.start_date_time < sp2.stop_date_time)) AND (sp2.start_date_time < sp1.stop_date_time));
+  WHERE ((p1.id <> p2.id) AND (p1.product_type = p2.product_type) AND ("substring"((p1.name)::text, 11, 1) = "substring"((p2.name)::text, 11, 1)) AND (sp1.product = p1.id) AND (sp2.product = p2.id) AND (sp1.start_date_time < sp2.stop_date_time) AND (sp2.start_date_time < sp1.stop_date_time));
 
 
-ALTER TABLE public.overlap_product OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: prd_external; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE prd_external (
-    name character varying NOT NULL,
-    start timestamp without time zone,
-    stop timestamp without time zone,
-    tag character varying NOT NULL
-);
-
-
-ALTER TABLE public.prd_external OWNER TO srv_dpmc;
-
---
--- Name: prd_geoloc; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE prd_geoloc (
-    product_id integer NOT NULL,
-    west real,
-    east real,
-    south real,
-    north real,
-    footprint character varying,
-    center_lon real,
-    center_lat real
-);
-
-
-ALTER TABLE public.prd_geoloc OWNER TO srv_dpmc;
-
-SET default_with_oids = true;
-
---
--- Name: prd_md5; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE prd_md5 (
-    product character varying,
-    md5 character varying
-);
-
-
-ALTER TABLE public.prd_md5 OWNER TO srv_dpmc;
-
-SET default_with_oids = false;
-
---
--- Name: prd_path; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE prd_path (
-    path text
-);
-
-
-ALTER TABLE public.prd_path OWNER TO srv_dpmc;
-
---
--- Name: prd_period; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE prd_period (
-    name character varying NOT NULL,
-    start timestamp without time zone,
-    stop timestamp without time zone
-);
-
-
-ALTER TABLE public.prd_period OWNER TO srv_dpmc;
-
---
--- Name: products_delivered; Type: TABLE; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE products_delivered (
-    id integer NOT NULL,
-    tag character varying NOT NULL,
-    is_product_locked boolean DEFAULT false,
-    product_id integer NOT NULL,
-    disk_type character varying NOT NULL,
-    disk_name character varying,
-    product_size bigint DEFAULT 0,
-    checksum_md5 text,
-    creation_date timestamp without time zone,
-    is_product_processed boolean DEFAULT false,
-    copied_date timestamp without time zone,
-    number_disk_copied integer DEFAULT 0,
-    product_name character varying DEFAULT ''::character varying
-);
-
-
-ALTER TABLE public.products_delivered OWNER TO srv_dpmc;
-
---
--- Name: products_delivered_id_seq; Type: SEQUENCE; Schema: public; Owner: srv_dpmc
---
-
-CREATE SEQUENCE products_delivered_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.products_delivered_id_seq OWNER TO srv_dpmc;
-
---
--- Name: products_delivered_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: srv_dpmc
---
-
-ALTER SEQUENCE products_delivered_id_seq OWNED BY products_delivered.id;
-
-
---
--- Name: products_info; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW products_info AS
- SELECT p.name,
-    p.size,
-    ps.status,
-    ps.status_date,
-    p.id,
-    pt.acronym AS product_type,
-    p.generation_date_time,
-    ps.reason
-   FROM internal.product p,
-    lta.product_status ps,
-    internal.product_type pt
-  WHERE ((p.id = ps.product_id) AND (p.product_type = pt.id));
-
-
-ALTER TABLE public.products_info OWNER TO srv_dpmc;
-
---
--- Name: VIEW products_info; Type: COMMENT; Schema: public; Owner: srv_dpmc
---
-
-COMMENT ON VIEW products_info IS 'Provides general information of referenced products';
-
-
---
--- Name: rectangular_site; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW rectangular_site AS
- SELECT site.id,
-    site.name,
-    site.min_latitude,
-    site.min_longitude,
-    site.max_latitude,
-    site.max_longitude,
-    site.min_point_count,
-    site.point_count,
-    site.owner,
-    ((NOT (EXISTS ( SELECT request.id,
-            request.site,
-            request.requester,
-            request.min_date_time,
-            request.max_date_time,
-            request.center,
-            request.submission_date_time,
-            request.answer_date_time,
-            request.priority,
-            request.lock,
-            request.product_type,
-            request.media_catalog
-           FROM internal.request
-          WHERE (request.site = site.id)))) AND ((requester.login)::text = (("current_user"())::character varying)::text)) AS updatable
-   FROM internal.site,
-    internal.rectangular_site,
-    internal.requester
-  WHERE ((requester.id = site.owner) AND (rectangular_site.site = site.id));
-
-
-ALTER TABLE public.rectangular_site OWNER TO srv_dpmc;
-
---
--- Name: request; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW request AS
- SELECT request.id,
-    request.site,
-    request.min_date_time,
-    request.max_date_time,
-    request.center,
-    request.submission_date_time,
-    request.answer_date_time,
-    request.priority,
-    request.lock
-   FROM internal.request,
-    internal.requester
-  WHERE (((requester.login)::text = (("current_user"())::character varying)::text) AND (request.requester = requester.id));
-
-
-ALTER TABLE public.request OWNER TO srv_dpmc;
-
---
--- Name: request_x_product; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW request_x_product AS
- SELECT request.id AS request,
-        CASE
-            WHEN ((orbit.anx_date_time + site_coverage.start_anx_interval) > sensing_product.start_date_time) THEN (orbit.anx_date_time + site_coverage.start_anx_interval)
-            ELSE sensing_product.start_date_time
-        END AS start_date_time,
-        CASE
-            WHEN ((orbit.anx_date_time + site_coverage.stop_anx_interval) < sensing_product.stop_date_time) THEN (orbit.anx_date_time + site_coverage.stop_anx_interval)
-            ELSE sensing_product.stop_date_time
-        END AS stop_date_time,
-    request.site,
-    product.id AS product,
-    product.product_type
-   FROM internal.request,
-    internal.site_coverage,
-    internal.orbit,
-    internal.sensing_product,
-    internal.product,
-    internal.mode_x_product_type
-  WHERE ((((((((((((site_coverage.site = request.site) AND (orbit.satellite = site_coverage.satellite)) AND (orbit.cycle_relative_number = site_coverage.relative_orbit_number)) AND (sensing_product.start_absolute_orbit_number = orbit.absolute_number)) AND (sensing_product.start_date_time < (orbit.anx_date_time + site_coverage.stop_anx_interval))) AND ((orbit.anx_date_time + site_coverage.start_anx_interval) < sensing_product.stop_date_time)) AND (product.id = sensing_product.product)) AND (mode_x_product_type.product_type = product.product_type)) AND (mode_x_product_type.satellite = site_coverage.satellite)) AND (mode_x_product_type.instrument = site_coverage.instrument)) AND (request.min_date_time <= sensing_product.start_date_time)) AND (sensing_product.stop_date_time <= request.max_date_time));
-
-
-ALTER TABLE public.request_x_product OWNER TO srv_dpmc;
-
---
--- Name: runnable_batch; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW runnable_batch AS
- SELECT batch.batch_id,
-    hosts.host_id,
-    hosts.bogomips,
-    hosts_current_ncpu.current_ncpu
-   FROM hosts_current_ncpu,
-    processing.hosts,
-    processing.pool_x_hosts,
-    internal.request,
-    processing.batch
-  WHERE (((((((hosts_current_ncpu.current_ncpu > 0) AND hosts.available) AND ((batch.state)::text = ('Queued'::character varying)::text)) AND (hosts.host_id = hosts_current_ncpu.host_id)) AND (pool_x_hosts.hosts = hosts.host_id)) AND (request.pool = pool_x_hosts.pool)) AND (batch.request_id = request.id));
-
-
-ALTER TABLE public.runnable_batch OWNER TO srv_dpmc;
-
---
--- Name: running_job; Type: VIEW; Schema: public; Owner: srv_dpmc
---
-
-CREATE VIEW running_job AS
- SELECT batch.batch_id AS batch,
-    product.name AS product_name,
-    batch.output_dir AS output_directory,
-    batch.request_id AS request
-   FROM processing.batch,
-    internal.product
-  WHERE (((batch.state)::text = ('Running'::character varying)::text) AND (batch.file_input_id = product.id));
-
-
-ALTER TABLE public.running_job OWNER TO srv_dpmc;
+ALTER VIEW public.overlap_product OWNER TO srv_dpmc;
 
 --
 -- Name: seq_test_quantum; Type: SEQUENCE; Schema: public; Owner: srv_dpmc
 --
 
-CREATE SEQUENCE seq_test_quantum
+CREATE SEQUENCE public.seq_test_quantum
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -7338,5250 +5796,2568 @@ CREATE SEQUENCE seq_test_quantum
     CACHE 1;
 
 
-ALTER TABLE public.seq_test_quantum OWNER TO srv_dpmc;
+ALTER SEQUENCE public.seq_test_quantum OWNER TO srv_dpmc;
 
 --
--- Name: test; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+-- Name: processing_chain_baseline id; Type: DEFAULT; Schema: processing; Owner: srv_dpmc
 --
 
-CREATE TABLE test (
-    id integer,
-    name character varying
-);
-
-
-ALTER TABLE public.test OWNER TO postgres;
-
-SET search_path = s3ome, pg_catalog;
-
---
--- Name: ext_product; Type: TABLE; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE ext_product (
-    name character varying,
-    start_date timestamp without time zone,
-    stop_date timestamp without time zone,
-    tag character varying
-);
-
-
-ALTER TABLE s3ome.ext_product OWNER TO srv_dpmc;
-
---
--- Name: hsm_copy; Type: TABLE; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE hsm_copy (
-    product_id integer NOT NULL,
-    product_name character varying,
-    cdate timestamp without time zone
-);
-
-
-ALTER TABLE s3ome.hsm_copy OWNER TO srv_dpmc;
-
---
--- Name: media; Type: TABLE; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE media (
-    id integer NOT NULL,
-    media_type integer NOT NULL,
-    name character varying(255) NOT NULL,
-    capacity double precision,
-    comment character varying(255),
-    recipient integer
-);
-
-
-ALTER TABLE s3ome.media OWNER TO srv_dpmc;
-
---
--- Name: product_x_media; Type: TABLE; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE product_x_media (
-    media integer NOT NULL,
-    path character varying NOT NULL,
-    md5 character varying,
-    size bigint,
-    checked boolean
-);
-
-
-ALTER TABLE s3ome.product_x_media OWNER TO srv_dpmc;
-
---
--- Name: viscal_info; Type: TABLE; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE TABLE viscal_info (
-    abs_orbit integer NOT NULL,
-    start_time timestamp without time zone,
-    stop_time timestamp without time zone,
-    satellite integer NOT NULL
-);
-
-
-ALTER TABLE s3ome.viscal_info OWNER TO srv_dpmc;
-
---
--- Name: TABLE viscal_info; Type: COMMENT; Schema: s3ome; Owner: srv_dpmc
---
-
-COMMENT ON TABLE viscal_info IS 'Contains start and stop time of the time range per orbit where calibration occurs';
-
-
-SET search_path = lta, pg_catalog;
-
---
--- Name: id; Type: DEFAULT; Schema: lta; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY global ALTER COLUMN id SET DEFAULT nextval('global_id_seq'::regclass);
+ALTER TABLE ONLY processing.processing_chain_baseline ALTER COLUMN id SET DEFAULT nextval('processing.processing_chain_baseline_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: lta; Owner: srv_dpmc
+-- Name: processing_chain_input_selection id; Type: DEFAULT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_status ALTER COLUMN id SET DEFAULT nextval('product_status_id_seq'::regclass);
-
-
---
--- Name: id; Type: DEFAULT; Schema: lta; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY transaction ALTER COLUMN id SET DEFAULT nextval('transaction_id_seq'::regclass);
+ALTER TABLE ONLY processing.processing_chain_input_selection ALTER COLUMN id SET DEFAULT nextval('processing.processing_chain_input_selection_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: lta; Owner: srv_dpmc
+-- Name: task_record id; Type: DEFAULT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY transaction_type ALTER COLUMN id SET DEFAULT nextval('transaction_type_id_seq'::regclass);
-
-
-SET search_path = public, pg_catalog;
-
---
--- Name: id; Type: DEFAULT; Schema: public; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media_delivered ALTER COLUMN id SET DEFAULT nextval('media_delivered_id_seq'::regclass);
+ALTER TABLE ONLY processing.task_record ALTER COLUMN id SET DEFAULT nextval('processing.task_record_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: srv_dpmc
+-- Name: task_record_x_batch id; Type: DEFAULT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY products_delivered ALTER COLUMN id SET DEFAULT nextval('products_delivered_id_seq'::regclass);
-
-
-SET search_path = internal, pg_catalog;
-
---
--- Name: acquisition_chain_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY acquisition_chain
-    ADD CONSTRAINT acquisition_chain_pkey PRIMARY KEY (product, center);
+ALTER TABLE ONLY processing.task_record_x_batch ALTER COLUMN id SET DEFAULT nextval('processing.task_record_x_batch_id_seq'::regclass);
 
 
 --
--- Name: acquisition_chain_product_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: nc_1txy__Sheet1 id; Type: DEFAULT; Schema: public; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY acquisition_chain
-    ADD CONSTRAINT acquisition_chain_product_key UNIQUE (product, center_rank);
+ALTER TABLE ONLY public."nc_1txy__Sheet1" ALTER COLUMN id SET DEFAULT nextval('public."nc_1txy__Sheet1_id_seq"'::regclass);
 
 
 --
--- Name: auxiliary_configuration_detail_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Data for Name: adf_baseline; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY auxiliary_configuration_detail
+COPY internal.adf_baseline (aux_id, version, generation_date, insertion_date, document_id, comment) FROM stdin;
+\.
+
+
+--
+-- Data for Name: auxiliary_configuration; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.auxiliary_configuration (id, name, comment, index_media_catalog) FROM stdin;
+0	dummy	dummy	0
+\.
+
+
+--
+-- Data for Name: auxiliary_configuration_detail; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.auxiliary_configuration_detail (configuration, product_type, version) FROM stdin;
+\.
+
+
+--
+-- Data for Name: auxiliary_product; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.auxiliary_product (product, validity_start_date_time, validity_stop_date_time, version) FROM stdin;
+\.
+
+
+--
+-- Data for Name: center; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.center (id, latitude, longitude, code, name, code_in_product_name) FROM stdin;
+14	0	0	F-ACRI	ACRI Processing Centre	ACR
+\.
+
+
+--
+-- Data for Name: constant; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.constant (id, name, value) FROM stdin;
+\.
+
+
+--
+-- Data for Name: dataset; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.dataset (id, cdate, name, comment) FROM stdin;
+\.
+
+
+--
+-- Data for Name: dataset_x_product; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.dataset_x_product (dataset_id, product_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: global; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.global (center, output_media_catalog, idl_token_count, global_site, launch_time_out, min_input_processing_stage, default_output_processing_stage, stage_shift_interval, stage_shift_count, run_time_out, last_schedule_date_time, scheduler_time_out, max_time_cache, max_time_lock, s3_cots, task_rule_id, executor_pause_flag) FROM stdin;
+14	0	40	645	00:02:00	O	T	00:05:00	5	96:00:00	2026-01-29 16:33:48.129165	00:15:00	48	10	/exports/dpmc/scripts/specific-package/S3/cots_path.sh	0	t
+\.
+
+
+--
+-- Data for Name: instrument; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.instrument (satellite, id, acronym, name) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ipf_processing_baseline; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.ipf_processing_baseline (id, document, creation_date, comment, version) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ipf_processing_baseline_x_sxa; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.ipf_processing_baseline_x_sxa (id, ipf_processing_baseline_id, soft_x_aux_conf_id, comment) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ipf_x_dynamic_adf; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.ipf_x_dynamic_adf (ipf, acronym, type, mode, retrieval_mode, backup_of) FROM stdin;
+\.
+
+
+--
+-- Data for Name: living_request; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.living_request (request) FROM stdin;
+\.
+
+
+--
+-- Data for Name: media; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.media (id, media_type, name, capacity, reserved_capacity, current_physical_capacity, comment, source_media, recipient, available) FROM stdin;
+0	8	/exports/s3ps/tmp	0	0	0	dummy	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: media_catalog; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.media_catalog (media, name, id) FROM stdin;
+0	dummy	0
+\.
+
+
+--
+-- Data for Name: media_catalog_entry; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.media_catalog_entry (id, media_catalog, name, md5_checksum) FROM stdin;
+\.
+
+
+--
+-- Data for Name: media_type; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.media_type (id, capacity, sequential, name, removable) FROM stdin;
+9	2.2	t	LTO6	t
+10	7	f	HDD_8	f
+8	0	f	HARD-DISK	f
+11	0.00341796875	t	USB_4	t
+12	54	f	NAS_60	t
+13	7	t	HDD_TEST	t
+14	36	f	HDD_40	t
+\.
+
+
+--
+-- Data for Name: orbit; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.orbit (satellite, absolute_number, mission_phase, phase_cycle, cycle_relative_number, anx_date_time, theoretical_anx_date_time, anx_date_time_source_product) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.processing (id, center, software, stage, state, product_type) FROM stdin;
+0	14	0	0	0	0
+\.
+
+
+--
+-- Data for Name: processing_configuration; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.processing_configuration (id, cdate, sxac_id, processing_comment_id, parameter, comment) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_product_x_tag; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.processing_product_x_tag (product_name, tag) FROM stdin;
+\.
+
+
+--
+-- Data for Name: product; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.product (id, processing, product_type, generation_date_time, size, checked, name, obsolescence_date_time) FROM stdin;
+0	0	0	2001-01-01 01:00:00	0	f	dummy	\N
+\.
+
+
+--
+-- Data for Name: product_type; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.product_type (id, sph_size, mean_size, acronym, name, processing_level, cache_duration, gap_type, gap_nominal, retention_time) FROM stdin;
+0	\N	\N	dummy	dummy type	0	24	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: product_x_media_catalog_entry; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.product_x_media_catalog_entry (media_catalog_entry, product) FROM stdin;
+\.
+
+
+--
+-- Data for Name: production_chain_x_product_type; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.production_chain_x_product_type (production_chain, product_type) FROM stdin;
+\.
+
+
+--
+-- Data for Name: requester; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.requester (id, name, group_name, email, address, login, password, media_catalog, ftp_login, ftp_password, ftp_server, ftp_directory) FROM stdin;
+0	Operator	ACRI	gilbert.barrot@acri-st.fr	\N	cmg	project	0	\N	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: satellite; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.satellite (id, acronym, name, launch_date_time) FROM stdin;
+\.
+
+
+--
+-- Data for Name: sensing_product; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.sensing_product (product, start_date_time, stop_date_time, start_absolute_orbit_number, product_type_counter, error, state_vector) FROM stdin;
+\.
+
+
+--
+-- Data for Name: software; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.software (id, name, version, default_auxiliary_configuration, processing_stage, image_tag) FROM stdin;
+0	dummy	0	0	\N	\N
+\.
+
+
+--
+-- Data for Name: software_x_auxiliary_configuration; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.software_x_auxiliary_configuration (id, software, auxiliary_configuration, ipf_baseline, creation_date, comment) FROM stdin;
+0	0	0	\N	2025-12-15 14:36:04.308709	DUMMY
+\.
+
+
+--
+-- Data for Name: software_x_binary; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.software_x_binary (software_id, rank, binary_name) FROM stdin;
+\.
+
+
+--
+-- Data for Name: software_x_image_tag; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.software_x_image_tag (software_id, image_tag) FROM stdin;
+\.
+
+
+--
+-- Data for Name: state_vector; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.state_vector (satellite, absolute_orbit_number, date_time, delta_ut1, x_position, y_position, z_position, x_velocity, y_velocity, z_velocity, source, id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: task; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.task (start_time, production_chain, orbit, satellite, status, end_time, baseline, pool, extra_params) FROM stdin;
+\.
+
+
+--
+-- Data for Name: task_rule; Type: TABLE DATA; Schema: internal; Owner: srv_dpmc
+--
+
+COPY internal.task_rule (task_rule, production_chain, time_shift, parameters) FROM stdin;
+\.
+
+
+--
+-- Data for Name: batch; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.batch (id, request_id, constraints, input, output, status, priority, configuration, cdate, center_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: batch_x_center; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.batch_x_center (batch_id, center_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: block_parameters; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.block_parameters (pdc_run_tag, tag, params) FROM stdin;
+\.
+
+
+--
+-- Data for Name: center; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.center (id, name, location, emission_factor, energy_intensity, pue, code) FROM stdin;
+0	Dummy	\N	0	0	0	__
+1	AcriST	France	0.05	0.02	1.5	ACR
+\.
+
+
+--
+-- Data for Name: history; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.history (history_id, processing_script, host_id, started, ended, file_input_id, request_id, batch_id, status, output_dir, software_id, auxiliary_configuration_id, processing_comment_id, tag, processing_configuration_id, log_file, batch_parameters, avg_power, data_volume, center_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: history_x_product; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.history_x_product (history, product) FROM stdin;
+\.
+
+
+--
+-- Data for Name: hosts; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.hosts (host_id, hostname, ncpu, bogomips, nice, os_type, os_version, processing_dir, available, ip_address, cache_dir, ram, nb_cores) FROM stdin;
+0	DISCARDED	0	0	0	\N	\N	\N	f	\N	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: parameters_set; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.parameters_set (id, keyword_index, keyword, value) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pdc_x_pcc; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.pdc_x_pcc (pdc_id, pcc_id, parent_pcc_id, parent_dependency_mode) FROM stdin;
+\.
+
+
+--
+-- Data for Name: pool; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.pool (id, comment) FROM stdin;
+0	Generic
+\.
+
+
+--
+-- Data for Name: pool_x_hosts; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.pool_x_hosts (pool, hosts) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_baseline; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_baseline (baseline, active, parameters, order_priority, plateform) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_chain; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_chain (id, name, processing_script_id, comment, configuration) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_chain_baseline; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_chain_baseline (id, processing_chain, sxac, baseline, pool, processing_configuration, output_path, active, input_parameters) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_chain_input_selection; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_chain_input_selection (id, processing_chain_baseline_id, input_selection_filters, run_type, job_order_parameters) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_chain_run; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_chain_run (pdc_run_tag, pcc_id, block_index, tag, sxac_id, input, output, request_id, status, start_time, stop_time) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_comment_x_product_type; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_comment_x_product_type (processing_comment, product_type, is_input) FROM stdin;
+\.
+
+
+--
+-- Data for Name: processing_script; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_script (id, pcomment, acronym) FROM stdin;
+0	Generic process	Generic_process
+\.
+
+
+--
+-- Data for Name: processing_script_detail; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_script_detail (id, seq_index, type, function_name) FROM stdin;
+0	1	1	generic/generic_processing.sh
+\.
+
+
+--
+-- Data for Name: processing_type; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.processing_type (id, s_type) FROM stdin;
+1	bash
+2	pgbash
+3	plsql
+4	sql
+5	python
+6	docker
+\.
+
+
+--
+-- Data for Name: production_chain; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.production_chain (id, name, comment, configuration) FROM stdin;
+\.
+
+
+--
+-- Data for Name: production_chain_run; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.production_chain_run (tag, task_id, pdc_id, status, start_time, stop_time, input) FROM stdin;
+\.
+
+
+--
+-- Data for Name: request; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.request (id, product_type_id, processing_script_id, sxac_id, pool) FROM stdin;
+0	0	0	0	0
+\.
+
+
+--
+-- Data for Name: scheduler; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.scheduler (id, sleep, comment, active) FROM stdin;
+\.
+
+
+--
+-- Data for Name: scheduler_x_pool; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.scheduler_x_pool (scheduler_id, pool_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: task; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.task (id, pdc_id, cdate, expected_start_time, input, output, start_time, status, comment) FROM stdin;
+1	1	\N	\N	\N	\N	2026-01-29 11:19:36.069958	DONE	\N
+3	2	2026-01-15 09:15:29.754885	\N	{"MODE": "hue", "INPUT": "/work/image.png", "GRID_H": 3, "GRID_W": 3, "TILE_H": 326, "TILE_W": 326, "FINAL_H": 1000, "FINAL_W": 1000, "MOD_HUE": 100, "MOD_SAT": 160, "SPACING": 10, "POSTERIZE": 6, "MOD_BRIGHT": 110}	{"image": "work/warhol.png"}	2026-01-29 16:32:00.371753	RUNNING	\N
+2	1	2026-01-13 11:55:09.905977	\N	{"params": {"MODE": "hue", "GRID_H": 4, "GRID_W": 4, "FINAL_H": 1500, "FINAL_W": 1500, "MOD_HUE": 100, "MOD_SAT": 160, "SPAWING": 10, "POSTERIZE": 6, "MOD_BRIGHT": 110}}	\N	2026-01-19 10:22:44.033724	DONE	\N
+\.
+
+
+--
+-- Data for Name: task_record; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.task_record (id, task_record_uuid, production_chain, orbit, satellite, status, failed_reason, created_time, end_time) FROM stdin;
+\.
+
+
+--
+-- Data for Name: task_record_x_batch; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.task_record_x_batch (id, task_record_id, batch_id, tag, created_time, history_id, status) FROM stdin;
+\.
+
+
+--
+-- Data for Name: top; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.top (batch_id, hostname_id, started, pid) FROM stdin;
+\.
+
+
+--
+-- Data for Name: watcher; Type: TABLE DATA; Schema: processing; Owner: srv_dpmc
+--
+
+COPY processing.watcher ("time", name, flag_ok, comment) FROM stdin;
+\.
+
+
+--
+-- Data for Name: nc_1txy__Sheet1; Type: TABLE DATA; Schema: public; Owner: srv_dpmc
+--
+
+COPY public."nc_1txy__Sheet1" (id, title, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Name: attribute_dictionary_id_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.attribute_dictionary_id_seq', 1, false);
+
+
+--
+-- Name: auxiliary_configuration_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.auxiliary_configuration_seq', 371, true);
+
+
+--
+-- Name: dataset_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.dataset_seq', 543916, true);
+
+
+--
+-- Name: document_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.document_seq', 1, true);
+
+
+--
+-- Name: downlink_orbit_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.downlink_orbit_seq', 5398, true);
+
+
+--
+-- Name: gen_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.gen_seq', 1, true);
+
+
+--
+-- Name: media_catalog_entry_sequence; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.media_catalog_entry_sequence', 11528411, true);
+
+
+--
+-- Name: media_catalog_sequence; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.media_catalog_sequence', 9995770, true);
+
+
+--
+-- Name: media_id; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.media_id', 996160, true);
+
+
+--
+-- Name: media_sequence; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.media_sequence', 1000, true);
+
+
+--
+-- Name: platform_id_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.platform_id_seq', 1, false);
+
+
+--
+-- Name: priority_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.priority_seq', 1, true);
+
+
+--
+-- Name: processing_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.processing_seq', 1, true);
+
+
+--
+-- Name: product_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.product_seq', 11550826, true);
+
+
+--
+-- Name: request_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.request_seq', 16904, true);
+
+
+--
+-- Name: requester_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.requester_seq', 50, true);
+
+
+--
+-- Name: server_account_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.server_account_seq', 2, true);
+
+
+--
+-- Name: software_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.software_seq', 336, true);
+
+
+--
+-- Name: status_type_id_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.status_type_id_seq', 1, false);
+
+
+--
+-- Name: temp_seq; Type: SEQUENCE SET; Schema: internal; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('internal.temp_seq', 204043, true);
+
+
+--
+-- Name: batch_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.batch_id_seq', 1002, true);
+
+
+--
+-- Name: cache_lock_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.cache_lock_seq', 1, false);
+
+
+--
+-- Name: center_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.center_id_seq', 1, true);
+
+
+--
+-- Name: history_history_id; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.history_history_id', 17629618, true);
+
+
+--
+-- Name: orchestrator_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.orchestrator_id_seq', 1, false);
+
+
+--
+-- Name: processing_batch_batch_id; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.processing_batch_batch_id', 18775655, true);
+
+
+--
+-- Name: processing_chain_baseline_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.processing_chain_baseline_id_seq', 146, true);
+
+
+--
+-- Name: processing_chain_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.processing_chain_id_seq', 7, true);
+
+
+--
+-- Name: processing_chain_input_selection_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.processing_chain_input_selection_id_seq', 134, true);
+
+
+--
+-- Name: processing_hosts_host_id; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.processing_hosts_host_id', 167, true);
+
+
+--
+-- Name: processing_pool_id; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.processing_pool_id', 13, true);
+
+
+--
+-- Name: production_chain_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.production_chain_id_seq', 2, true);
+
+
+--
+-- Name: s3ps_processing_chain_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.s3ps_processing_chain_id_seq', 7, true);
+
+
+--
+-- Name: s3ps_processing_details_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.s3ps_processing_details_id_seq', 1, false);
+
+
+--
+-- Name: s3ps_production_chain_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.s3ps_production_chain_id_seq', 12, true);
+
+
+--
+-- Name: task_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.task_id_seq', 3, true);
+
+
+--
+-- Name: task_record_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.task_record_id_seq', 34526, true);
+
+
+--
+-- Name: task_record_x_batch_id_seq; Type: SEQUENCE SET; Schema: processing; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('processing.task_record_x_batch_id_seq', 60585, true);
+
+
+--
+-- Name: nc_1txy__Sheet1_id_seq; Type: SEQUENCE SET; Schema: public; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('public."nc_1txy__Sheet1_id_seq"', 1, false);
+
+
+--
+-- Name: seq_test_quantum; Type: SEQUENCE SET; Schema: public; Owner: srv_dpmc
+--
+
+SELECT pg_catalog.setval('public.seq_test_quantum', 76769, true);
+
+
+--
+-- Name: auxiliary_configuration_detail auxiliary_configuration_detail_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.auxiliary_configuration_detail
     ADD CONSTRAINT auxiliary_configuration_detail_pkey PRIMARY KEY (configuration, product_type);
 
 
 --
--- Name: auxiliary_configuration_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: auxiliary_configuration auxiliary_configuration_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY auxiliary_configuration
+ALTER TABLE ONLY internal.auxiliary_configuration
     ADD CONSTRAINT auxiliary_configuration_name_key UNIQUE (name);
 
 
 --
--- Name: auxiliary_configuration_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: auxiliary_configuration auxiliary_configuration_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY auxiliary_configuration
+ALTER TABLE ONLY internal.auxiliary_configuration
     ADD CONSTRAINT auxiliary_configuration_pkey PRIMARY KEY (id);
 
 
 --
--- Name: baseline2_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: adf_baseline baseline2_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY adf_baseline
+ALTER TABLE ONLY internal.adf_baseline
     ADD CONSTRAINT baseline2_pkey PRIMARY KEY (aux_id);
 
 
 --
--- Name: center_code_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: center center_code_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY center
+ALTER TABLE ONLY internal.center
     ADD CONSTRAINT center_code_key UNIQUE (name);
 
 
 --
--- Name: center_code_product_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: center center_code_product_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY center
+ALTER TABLE ONLY internal.center
     ADD CONSTRAINT center_code_product_name_key UNIQUE (code_in_product_name);
 
 
 --
--- Name: center_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: center center_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY center
+ALTER TABLE ONLY internal.center
     ADD CONSTRAINT center_name_key UNIQUE (code);
 
 
 --
--- Name: center_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: center center_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY center
+ALTER TABLE ONLY internal.center
     ADD CONSTRAINT center_pkey PRIMARY KEY (id);
 
 
 --
--- Name: center_x_software_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: constant constant_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY center_x_software
-    ADD CONSTRAINT center_x_software_pkey PRIMARY KEY (center, software);
-
-
---
--- Name: communication_request_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY communication_request
-    ADD CONSTRAINT communication_request_pkey PRIMARY KEY (request);
+ALTER TABLE ONLY internal.constant
+    ADD CONSTRAINT constant_pkey PRIMARY KEY (id);
 
 
 --
--- Name: ct_unique_requester_name; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: requester ct_unique_requester_name; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY requester
+ALTER TABLE ONLY internal.requester
     ADD CONSTRAINT ct_unique_requester_name UNIQUE (name);
 
 
 --
--- Name: data_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: dataset dataset_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY data_type
-    ADD CONSTRAINT data_type_pkey PRIMARY KEY (id);
-
-
---
--- Name: dataset_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY dataset
+ALTER TABLE ONLY internal.dataset
     ADD CONSTRAINT dataset_name_key UNIQUE (name);
 
 
 --
--- Name: dataset_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: dataset dataset_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset
+ALTER TABLE ONLY internal.dataset
     ADD CONSTRAINT dataset_pkey PRIMARY KEY (id);
 
 
 --
--- Name: dataset_x_dataset_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: dataset_x_product dataset_x_product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_dataset
-    ADD CONSTRAINT dataset_x_dataset_pkey PRIMARY KEY (master_dataset_id, sub_dataset_id);
-
-
---
--- Name: dataset_x_product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY dataset_x_product
+ALTER TABLE ONLY internal.dataset_x_product
     ADD CONSTRAINT dataset_x_product_pkey PRIMARY KEY (dataset_id, product_id);
 
 
 --
--- Name: default_center_x_product_type_software_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: instrument instrument_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY default_center_x_product_type_software
-    ADD CONSTRAINT default_center_x_product_type_software_pkey PRIMARY KEY (center, product_type);
-
-
---
--- Name: document_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY document
-    ADD CONSTRAINT document_name_key UNIQUE (name);
-
-
---
--- Name: document_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY document
-    ADD CONSTRAINT document_pkey PRIMARY KEY (id);
-
-
---
--- Name: error_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY error_type
-    ADD CONSTRAINT error_type_pkey PRIMARY KEY (id);
-
-
---
--- Name: error_type_x_product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY error_type_x_product
-    ADD CONSTRAINT error_type_x_product_pkey PRIMARY KEY (error_type, product);
-
-
---
--- Name: first_nadir_point_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY first_nadir_point
-    ADD CONSTRAINT first_nadir_point_pkey PRIMARY KEY (id);
-
-
---
--- Name: imager_processing_input_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY image_processing_input
-    ADD CONSTRAINT imager_processing_input_pkey PRIMARY KEY (processing, product);
-
-
---
--- Name: imaging_instrument_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY imaging_instrument
-    ADD CONSTRAINT imaging_instrument_pkey PRIMARY KEY (satellite, instrument);
-
-
---
--- Name: instrument_history_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY instrument_calibration_history
-    ADD CONSTRAINT instrument_history_pkey PRIMARY KEY (satellite, instrument, orbit_absolute_number);
-
-
---
--- Name: instrument_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY instrument
+ALTER TABLE ONLY internal.instrument
     ADD CONSTRAINT instrument_pkey PRIMARY KEY (satellite, id);
 
 
 --
--- Name: instrument_unavailability_period_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: living_request living_request_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY instrument_unavailability_period
-    ADD CONSTRAINT instrument_unavailability_period_pkey PRIMARY KEY (satellite, instrument, start_date_time);
-
-
---
--- Name: living_request_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY living_request
+ALTER TABLE ONLY internal.living_request
     ADD CONSTRAINT living_request_pkey PRIMARY KEY (request);
 
 
 --
--- Name: mailing_list_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_catalog_entry media_catalog_entry_media_catalog_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY mailing_list
-    ADD CONSTRAINT mailing_list_pkey PRIMARY KEY (request, requester);
-
-
---
--- Name: media_catalog_entry_media_catalog_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_catalog_entry
+ALTER TABLE ONLY internal.media_catalog_entry
     ADD CONSTRAINT media_catalog_entry_media_catalog_key UNIQUE (media_catalog, name);
 
 
 --
--- Name: media_catalog_entry_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_catalog_entry media_catalog_entry_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_catalog_entry
+ALTER TABLE ONLY internal.media_catalog_entry
     ADD CONSTRAINT media_catalog_entry_pkey PRIMARY KEY (id);
 
 
 --
--- Name: media_catalog_media_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_catalog media_catalog_media_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_catalog
+ALTER TABLE ONLY internal.media_catalog
     ADD CONSTRAINT media_catalog_media_key UNIQUE (media, name);
 
 
 --
--- Name: media_catalog_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_catalog media_catalog_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_catalog
+ALTER TABLE ONLY internal.media_catalog
     ADD CONSTRAINT media_catalog_pkey PRIMARY KEY (id);
 
 
 --
--- Name: media_history_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media media_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_history
-    ADD CONSTRAINT media_history_pkey PRIMARY KEY (media, date_time);
-
-
---
--- Name: media_history_type_code_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_history_type
-    ADD CONSTRAINT media_history_type_code_key UNIQUE (code);
-
-
---
--- Name: media_history_type_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_history_type
-    ADD CONSTRAINT media_history_type_name_key UNIQUE (name);
-
-
---
--- Name: media_history_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_history_type
-    ADD CONSTRAINT media_history_type_pkey PRIMARY KEY (id);
-
-
---
--- Name: media_info_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_info
-    ADD CONSTRAINT media_info_pkey PRIMARY KEY (media, transcription_report, media_status);
-
-
---
--- Name: media_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media
+ALTER TABLE ONLY internal.media
     ADD CONSTRAINT media_name_key UNIQUE (name);
 
 
 --
--- Name: media_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media media_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media
+ALTER TABLE ONLY internal.media
     ADD CONSTRAINT media_pkey PRIMARY KEY (id);
 
 
 --
--- Name: media_status_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_type media_type_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_status
-    ADD CONSTRAINT media_status_pkey PRIMARY KEY (id);
-
-
---
--- Name: media_type_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_type
+ALTER TABLE ONLY internal.media_type
     ADD CONSTRAINT media_type_name_key UNIQUE (name);
 
 
 --
--- Name: media_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: media_type media_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_type
+ALTER TABLE ONLY internal.media_type
     ADD CONSTRAINT media_type_pkey PRIMARY KEY (id);
 
 
 --
--- Name: mode_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: orbit orbit_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY mode
-    ADD CONSTRAINT mode_pkey PRIMARY KEY (satellite, instrument, mode);
-
-
---
--- Name: mode_x_product_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY mode_x_product_type
-    ADD CONSTRAINT mode_x_product_type_pkey PRIMARY KEY (satellite, instrument, mode, product_type);
-
-
---
--- Name: on_board_time_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY on_board_time
-    ADD CONSTRAINT on_board_time_pkey PRIMARY KEY (id);
-
-
---
--- Name: orbit_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY orbit
+ALTER TABLE ONLY internal.orbit
     ADD CONSTRAINT orbit_pkey PRIMARY KEY (satellite, absolute_number);
 
 
 --
--- Name: pk_dataset_x_document_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software_x_auxiliary_configuration pk_id_solftware_x_auxiliary_configuration; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_document
-    ADD CONSTRAINT pk_dataset_x_document_id PRIMARY KEY (id);
-
-
---
--- Name: pk_default_processing_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY default_processing
-    ADD CONSTRAINT pk_default_processing_id PRIMARY KEY (id);
-
-
---
--- Name: pk_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY distribution
-    ADD CONSTRAINT pk_id PRIMARY KEY (id);
-
-
---
--- Name: pk_id_solftware_x_auxiliary_configuration; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY software_x_auxiliary_configuration
+ALTER TABLE ONLY internal.software_x_auxiliary_configuration
     ADD CONSTRAINT pk_id_solftware_x_auxiliary_configuration PRIMARY KEY (id);
 
 
 --
--- Name: pk_ipf_baseline_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: ipf_processing_baseline pk_ipf_baseline_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY ipf_processing_baseline
+ALTER TABLE ONLY internal.ipf_processing_baseline
     ADD CONSTRAINT pk_ipf_baseline_id PRIMARY KEY (id);
 
 
 --
--- Name: pk_ipf_baseline_x_sxa_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: ipf_processing_baseline_x_sxa pk_ipf_baseline_x_sxa_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY ipf_processing_baseline_x_sxa
+ALTER TABLE ONLY internal.ipf_processing_baseline_x_sxa
     ADD CONSTRAINT pk_ipf_baseline_x_sxa_id PRIMARY KEY (id);
 
 
 --
--- Name: pk_product_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: processing processing_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY footprint
-    ADD CONSTRAINT pk_product_id PRIMARY KEY (product_id);
-
-
---
--- Name: pk_reprocessing_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY reprocessing
-    ADD CONSTRAINT pk_reprocessing_id PRIMARY KEY (id);
-
-
---
--- Name: processing_chain_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY processing_chain
-    ADD CONSTRAINT processing_chain_pkey PRIMARY KEY (before, after);
-
-
---
--- Name: processing_input_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY processing_input
-    ADD CONSTRAINT processing_input_pkey PRIMARY KEY (processing, product);
-
-
---
--- Name: processing_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY processing
+ALTER TABLE ONLY internal.processing
     ADD CONSTRAINT processing_pkey PRIMARY KEY (id);
 
 
 --
--- Name: product_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_product_x_tag processing_product_x_tag_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product
+ALTER TABLE ONLY internal.processing_product_x_tag
+    ADD CONSTRAINT processing_product_x_tag_pkey PRIMARY KEY (product_name, tag);
+
+
+--
+-- Name: product product_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.product
     ADD CONSTRAINT product_name_key UNIQUE (name);
 
 
 --
--- Name: product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product
+ALTER TABLE ONLY internal.product
     ADD CONSTRAINT product_pkey PRIMARY KEY (id);
 
 
 --
--- Name: product_type_acronym_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product_type product_type_acronym_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_type
+ALTER TABLE ONLY internal.product_type
     ADD CONSTRAINT product_type_acronym_key UNIQUE (acronym);
 
 
 --
--- Name: product_type_chain_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product_type product_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_type_chain
-    ADD CONSTRAINT product_type_chain_pkey PRIMARY KEY (target, id);
-
-
---
--- Name: product_type_dependency_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY product_type_dependency
-    ADD CONSTRAINT product_type_dependency_pkey PRIMARY KEY (target, source);
-
-
---
--- Name: product_type_dependency_target_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY product_type_dependency
-    ADD CONSTRAINT product_type_dependency_target_key UNIQUE (target, dependency_group, source_rank);
-
-
---
--- Name: product_type_link_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY product_type_link
-    ADD CONSTRAINT product_type_link_pkey PRIMARY KEY (product_type);
-
-
---
--- Name: product_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY product_type
+ALTER TABLE ONLY internal.product_type
     ADD CONSTRAINT product_type_pkey PRIMARY KEY (id);
 
 
 --
--- Name: product_x_media_catalog_entry_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: product_x_media_catalog_entry product_x_media_catalog_entry_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_x_media_catalog_entry
+ALTER TABLE ONLY internal.product_x_media_catalog_entry
     ADD CONSTRAINT product_x_media_catalog_entry_pkey PRIMARY KEY (media_catalog_entry, product);
 
 
 --
--- Name: product_x_sequential_media_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: production_chain_x_product_type production_chain_x_product_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_x_sequential_media
-    ADD CONSTRAINT product_x_sequential_media_pkey PRIMARY KEY (media, "position");
-
-
---
--- Name: recipient_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY recipient
-    ADD CONSTRAINT recipient_pkey PRIMARY KEY (communication_request, requester);
+ALTER TABLE ONLY internal.production_chain_x_product_type
+    ADD CONSTRAINT production_chain_x_product_type_pkey PRIMARY KEY (production_chain, product_type);
 
 
 --
--- Name: rectangular_site_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_configuration reprocessing_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY rectangular_site
-    ADD CONSTRAINT rectangular_site_pkey PRIMARY KEY (site);
-
-
---
--- Name: reference_tie_frame_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY reference_tie_frame
-    ADD CONSTRAINT reference_tie_frame_pkey PRIMARY KEY (satellite, instrument, id);
-
-
---
--- Name: reference_tie_frame_satellite_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY reference_tie_frame
-    ADD CONSTRAINT reference_tie_frame_satellite_key UNIQUE (satellite, instrument, anx_interval);
-
-
---
--- Name: relative_orbit_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY relative_orbit
-    ADD CONSTRAINT relative_orbit_pkey PRIMARY KEY (satellite, id);
-
-
---
--- Name: reprocessing_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY processing_configuration
+ALTER TABLE ONLY internal.processing_configuration
     ADD CONSTRAINT reprocessing_pkey PRIMARY KEY (id);
 
 
 --
--- Name: request_description_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: requester requester_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY request_description
-    ADD CONSTRAINT request_description_pkey PRIMARY KEY (request);
-
-
---
--- Name: request_group_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request_group
-    ADD CONSTRAINT request_group_name_key UNIQUE (name);
-
-
---
--- Name: request_group_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request_group
-    ADD CONSTRAINT request_group_pkey PRIMARY KEY (id);
-
-
---
--- Name: request_group_x_request_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request_group_x_request
-    ADD CONSTRAINT request_group_x_request_pkey PRIMARY KEY (request_group, request);
-
-
---
--- Name: request_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT request_pkey PRIMARY KEY (id);
-
-
---
--- Name: request_x_data_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request_x_data_type
-    ADD CONSTRAINT request_x_data_type_pkey PRIMARY KEY (data_type, request);
-
-
---
--- Name: request_x_processing_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request_x_processing
-    ADD CONSTRAINT request_x_processing_pkey PRIMARY KEY (request, processing);
-
-
---
--- Name: request_x_product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY request_x_product
-    ADD CONSTRAINT request_x_product_pkey PRIMARY KEY (request, product);
-
-
---
--- Name: requester_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY requester
+ALTER TABLE ONLY internal.requester
     ADD CONSTRAINT requester_pkey PRIMARY KEY (id);
 
 
 --
--- Name: satellite_acronym_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: satellite satellite_acronym_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY satellite
+ALTER TABLE ONLY internal.satellite
     ADD CONSTRAINT satellite_acronym_key UNIQUE (acronym);
 
 
 --
--- Name: satellite_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: satellite satellite_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY satellite
+ALTER TABLE ONLY internal.satellite
     ADD CONSTRAINT satellite_name_key UNIQUE (name);
 
 
 --
--- Name: satellite_phase_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: satellite satellite_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY satellite_phase
-    ADD CONSTRAINT satellite_phase_pkey PRIMARY KEY (id);
-
-
---
--- Name: satellite_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY satellite
+ALTER TABLE ONLY internal.satellite
     ADD CONSTRAINT satellite_pkey PRIMARY KEY (id);
 
 
 --
--- Name: sensing_product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: sensing_product sensing_product_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY sensing_product
+ALTER TABLE ONLY internal.sensing_product
     ADD CONSTRAINT sensing_product_pkey PRIMARY KEY (product);
 
 
 --
--- Name: server_account_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software software_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY server_account
-    ADD CONSTRAINT server_account_pkey PRIMARY KEY (id);
-
-
---
--- Name: server_account_server_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY server_account
-    ADD CONSTRAINT server_account_server_name_key UNIQUE (server_name, login);
-
-
---
--- Name: site_coverage_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY site_coverage
-    ADD CONSTRAINT site_coverage_pkey PRIMARY KEY (site, satellite, instrument, relative_orbit_number);
-
-
---
--- Name: site_owner_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY site
-    ADD CONSTRAINT site_owner_key UNIQUE (owner, name);
-
-
---
--- Name: site_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY site
-    ADD CONSTRAINT site_pkey PRIMARY KEY (id);
-
-
---
--- Name: software_name_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY software
+ALTER TABLE ONLY internal.software
     ADD CONSTRAINT software_name_key UNIQUE (name, version);
 
 
 --
--- Name: software_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software software_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY software
+ALTER TABLE ONLY internal.software
     ADD CONSTRAINT software_pkey PRIMARY KEY (id);
 
 
 --
--- Name: software_x_binary_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software_x_binary software_x_binary_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY software_x_binary
+ALTER TABLE ONLY internal.software_x_binary
     ADD CONSTRAINT software_x_binary_pkey PRIMARY KEY (software_id, rank);
 
 
 --
--- Name: software_x_product_type_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: software_x_image_tag software_x_image_tag_software_id_image_tag_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY software_x_product_type
-    ADD CONSTRAINT software_x_product_type_pkey PRIMARY KEY (product_type, software);
+ALTER TABLE ONLY internal.software_x_image_tag
+    ADD CONSTRAINT software_x_image_tag_software_id_image_tag_key UNIQUE (software_id, image_tag);
 
 
 --
--- Name: state_vector_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: state_vector state_vector_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY state_vector
+ALTER TABLE ONLY internal.state_vector
     ADD CONSTRAINT state_vector_pkey PRIMARY KEY (id);
 
 
 --
--- Name: state_vector_source_code_key; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: task task_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY state_vector_source
-    ADD CONSTRAINT state_vector_source_code_key UNIQUE (code);
-
-
---
--- Name: state_vector_source_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY state_vector_source
-    ADD CONSTRAINT state_vector_source_pkey PRIMARY KEY (product_type);
+ALTER TABLE ONLY internal.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (production_chain, orbit, satellite);
 
 
 --
--- Name: un_product_id; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc; Tablespace: 
+-- Name: task_rule task_rule_pkey; Type: CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY footprint
-    ADD CONSTRAINT un_product_id UNIQUE (product_id);
-
-
-SET search_path = lta, pg_catalog;
-
---
--- Name: abort_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY abort
-    ADD CONSTRAINT abort_pkey PRIMARY KEY (transaction_id);
+ALTER TABLE ONLY internal.task_rule
+    ADD CONSTRAINT task_rule_pkey PRIMARY KEY (task_rule, production_chain);
 
 
 --
--- Name: check_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
+-- Name: batch batch_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY "check"
-    ADD CONSTRAINT check_pkey PRIMARY KEY (transaction_id);
-
-
---
--- Name: ct_transaction_type_name; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY transaction_type
-    ADD CONSTRAINT ct_transaction_type_name UNIQUE (transaction_name);
+ALTER TABLE ONLY processing.batch
+    ADD CONSTRAINT batch_pkey PRIMARY KEY (id);
 
 
 --
--- Name: ct_unique_global_param; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
+-- Name: center center_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY global
-    ADD CONSTRAINT ct_unique_global_param UNIQUE (param);
-
-
---
--- Name: delete_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY delete
-    ADD CONSTRAINT delete_pkey PRIMARY KEY (transaction_id);
+ALTER TABLE ONLY processing.center
+    ADD CONSTRAINT center_pkey PRIMARY KEY (id);
 
 
 --
--- Name: direct_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
+-- Name: history history_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY direct
-    ADD CONSTRAINT direct_pkey PRIMARY KEY (transaction_id);
-
-
---
--- Name: global_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY global
-    ADD CONSTRAINT global_pkey PRIMARY KEY (id);
-
-
---
--- Name: ingestion_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY ingestion
-    ADD CONSTRAINT ingestion_pkey PRIMARY KEY (transaction_id);
-
-
---
--- Name: monitoring_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY monitoring
-    ADD CONSTRAINT monitoring_pkey PRIMARY KEY (transaction_id);
-
-
---
--- Name: primary_key_id; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY product_status
-    ADD CONSTRAINT primary_key_id PRIMARY KEY (id);
-
-
---
--- Name: query_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY query
-    ADD CONSTRAINT query_pkey PRIMARY KEY (transaction_id);
-
-
---
--- Name: retrieval_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY retrieval
-    ADD CONSTRAINT retrieval_pkey PRIMARY KEY (transaction_id);
-
-
---
--- Name: transaction_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY transaction
-    ADD CONSTRAINT transaction_pkey PRIMARY KEY (id);
-
-
---
--- Name: transaction_type_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY transaction_type
-    ADD CONSTRAINT transaction_type_pkey PRIMARY KEY (id);
-
-
---
--- Name: transaction_type_x_request_pkey; Type: CONSTRAINT; Schema: lta; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY transaction_type_x_request
-    ADD CONSTRAINT transaction_type_x_request_pkey PRIMARY KEY (id);
-
-
-SET search_path = processing, pg_catalog;
-
---
--- Name: batch_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY batch
-    ADD CONSTRAINT batch_pkey PRIMARY KEY (batch_id);
-
-
---
--- Name: batch_x_product_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY batch_x_product
-    ADD CONSTRAINT batch_x_product_pkey PRIMARY KEY (batch, product);
-
-
---
--- Name: cache_lock_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY cache_lock
-    ADD CONSTRAINT cache_lock_pkey PRIMARY KEY (id);
-
-
---
--- Name: history_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY history
+ALTER TABLE ONLY processing.history
     ADD CONSTRAINT history_pkey PRIMARY KEY (history_id);
 
 
 --
--- Name: history_x_product_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: history_x_product history_x_product_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY history_x_product
+ALTER TABLE ONLY processing.history_x_product
     ADD CONSTRAINT history_x_product_pkey PRIMARY KEY (history, product);
 
 
 --
--- Name: hosts_comment_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: hosts hosts_hostname; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY hosts_comment
-    ADD CONSTRAINT hosts_comment_pkey PRIMARY KEY (host_id);
-
-
---
--- Name: hosts_hostname; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY hosts
+ALTER TABLE ONLY processing.hosts
     ADD CONSTRAINT hosts_hostname UNIQUE (hostname);
 
 
 --
--- Name: hosts_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: hosts hosts_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY hosts
+ALTER TABLE ONLY processing.hosts
     ADD CONSTRAINT hosts_pkey PRIMARY KEY (host_id);
 
 
 --
--- Name: mutex_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: scheduler orchestrator_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY mutex
-    ADD CONSTRAINT mutex_pkey PRIMARY KEY (hosts, proc);
-
-
---
--- Name: output_file_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY output_file
-    ADD CONSTRAINT output_file_pkey PRIMARY KEY (date_time, directory_name, file_name);
+ALTER TABLE ONLY processing.scheduler
+    ADD CONSTRAINT orchestrator_pkey PRIMARY KEY (id);
 
 
 --
--- Name: parameters_comment_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: parameters_set parameters_set_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY parameters_comment
-    ADD CONSTRAINT parameters_comment_pkey PRIMARY KEY (id);
-
-
---
--- Name: parameters_set_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY parameters_set
+ALTER TABLE ONLY processing.parameters_set
     ADD CONSTRAINT parameters_set_pkey PRIMARY KEY (id, keyword_index);
 
 
 --
--- Name: pool_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: pool pool_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY pool
+ALTER TABLE ONLY processing.pool
     ADD CONSTRAINT pool_pkey PRIMARY KEY (id);
 
 
 --
--- Name: pool_x_hosts_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: pool_x_hosts pool_x_hosts_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY pool_x_hosts
+ALTER TABLE ONLY processing.pool_x_hosts
     ADD CONSTRAINT pool_x_hosts_pkey PRIMARY KEY (pool, hosts);
 
 
 --
--- Name: processing_comment_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_baseline processing_baseline_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_comment
+ALTER TABLE ONLY processing.processing_baseline
+    ADD CONSTRAINT processing_baseline_pkey PRIMARY KEY (baseline);
+
+
+--
+-- Name: processing_chain_baseline processing_chain_baseline_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.processing_chain_baseline
+    ADD CONSTRAINT processing_chain_baseline_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: processing_chain_input_selection processing_chain_input_selection_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.processing_chain_input_selection
+    ADD CONSTRAINT processing_chain_input_selection_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: processing_chain processing_chain_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.processing_chain
+    ADD CONSTRAINT processing_chain_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: processing_chain_run processing_chain_run_status_check; Type: CHECK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE processing.processing_chain_run
+    ADD CONSTRAINT processing_chain_run_status_check CHECK ((status = ANY (ARRAY['SCHEDULED'::text, 'RUNNING'::text, 'DONE'::text, 'ERROR'::text, 'PAUSED'::text, 'TIME-OUT'::text]))) NOT VALID;
+
+
+--
+-- Name: processing_script processing_comment_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.processing_script
     ADD CONSTRAINT processing_comment_pkey PRIMARY KEY (id);
 
 
 --
--- Name: processing_comment_x_product_type_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_comment_x_product_type processing_comment_x_product_type_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_comment_x_product_type
+ALTER TABLE ONLY processing.processing_comment_x_product_type
     ADD CONSTRAINT processing_comment_x_product_type_pkey PRIMARY KEY (processing_comment, product_type);
 
 
 --
--- Name: processing_set_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_script_detail processing_set_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_set
+ALTER TABLE ONLY processing.processing_script_detail
     ADD CONSTRAINT processing_set_pkey PRIMARY KEY (id, seq_index);
 
 
 --
--- Name: processing_type_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: processing_type processing_type_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_type
+ALTER TABLE ONLY processing.processing_type
     ADD CONSTRAINT processing_type_pkey PRIMARY KEY (id);
 
 
 --
--- Name: top_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc; Tablespace: 
+-- Name: production_chain production_chain_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY top
+ALTER TABLE ONLY processing.production_chain
+    ADD CONSTRAINT production_chain_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: production_chain_run production_chain_run_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.production_chain_run
+    ADD CONSTRAINT production_chain_run_pkey PRIMARY KEY (tag);
+
+
+--
+-- Name: production_chain_run production_chain_run_status_check; Type: CHECK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE processing.production_chain_run
+    ADD CONSTRAINT production_chain_run_status_check CHECK ((status = ANY (ARRAY['SCHEDULED'::text, 'RUNNING'::text, 'DONE'::text, 'ERROR'::text, 'PAUSED'::text, 'TIME-OUT'::text]))) NOT VALID;
+
+
+--
+-- Name: request request_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.request
+    ADD CONSTRAINT request_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: task task_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: task_record task_record_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.task_record
+    ADD CONSTRAINT task_record_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: task_record_x_batch task_record_x_batch_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.task_record_x_batch
+    ADD CONSTRAINT task_record_x_batch_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: top top_pkey; Type: CONSTRAINT; Schema: processing; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY processing.top
     ADD CONSTRAINT top_pkey PRIMARY KEY (batch_id);
 
 
-SET search_path = public, pg_catalog;
-
---
--- Name: pk_name; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY prd_period
-    ADD CONSTRAINT pk_name PRIMARY KEY (name);
-
-
---
--- Name: prk_name_id; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY prd_external
-    ADD CONSTRAINT prk_name_id PRIMARY KEY (name, tag);
-
-
---
--- Name: product_id_pkey; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY prd_geoloc
-    ADD CONSTRAINT product_id_pkey PRIMARY KEY (product_id);
-
-
---
--- Name: products_delivered_pkey; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY products_delivered
-    ADD CONSTRAINT products_delivered_pkey PRIMARY KEY (id);
-
-
---
--- Name: u_constraint_media_delivered; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media_delivered
-    ADD CONSTRAINT u_constraint_media_delivered UNIQUE (tag, disk_type, disk_name);
-
-
---
--- Name: u_constraint_product; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY products_delivered
-    ADD CONSTRAINT u_constraint_product UNIQUE (product_id, disk_type, disk_name, tag);
-
-
-SET search_path = s3ome, pg_catalog;
-
---
--- Name: media_name_key; Type: CONSTRAINT; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media
-    ADD CONSTRAINT media_name_key UNIQUE (name);
-
-
---
--- Name: media_pkey; Type: CONSTRAINT; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY media
-    ADD CONSTRAINT media_pkey PRIMARY KEY (id);
-
-
---
--- Name: pkey_product_id; Type: CONSTRAINT; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY hsm_copy
-    ADD CONSTRAINT pkey_product_id PRIMARY KEY (product_id);
-
-
---
--- Name: viscal_info_pkey; Type: CONSTRAINT; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-ALTER TABLE ONLY viscal_info
-    ADD CONSTRAINT viscal_info_pkey PRIMARY KEY (abs_orbit, satellite);
-
-
-SET search_path = internal, pg_catalog;
-
---
--- Name: dataset_name_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX dataset_name_idx ON dataset USING btree (name);
-
-
---
--- Name: dataset_x_product_dataset_id_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX dataset_x_product_dataset_id_idx ON dataset_x_product USING btree (dataset_id);
-
-
---
--- Name: dataset_x_product_dataset_id_product_id_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX dataset_x_product_dataset_id_product_id_idx ON dataset_x_product USING btree (dataset_id, product_id);
-
-
---
--- Name: dataset_x_product_product_id_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX dataset_x_product_product_id_idx ON dataset_x_product USING btree (product_id);
-
-
---
--- Name: idx_acquisition_chain_center; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_acquisition_chain_center ON acquisition_chain USING btree (center);
-
-
---
--- Name: idx_acquisition_chain_product; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_acquisition_chain_product ON acquisition_chain USING btree (product);
-
-
---
--- Name: idx_auxiliary_product_double_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_auxiliary_product_double_date_time ON auxiliary_product USING btree (validity_start_date_time, validity_stop_date_time);
-
-
---
--- Name: idx_auxiliary_product_double_date_time2; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_auxiliary_product_double_date_time2 ON auxiliary_product USING btree (validity_stop_date_time, validity_start_date_time);
-
-
---
--- Name: idx_auxiliary_product_validity_start_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_auxiliary_product_validity_start_date_time ON auxiliary_product USING btree (validity_start_date_time);
-
-
---
--- Name: idx_auxiliary_product_validity_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_auxiliary_product_validity_stop_date_time ON auxiliary_product USING btree (validity_stop_date_time);
-
-
---
--- Name: idx_auxiliary_product_version; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_auxiliary_product_version ON auxiliary_product USING btree (version);
-
-
---
--- Name: idx_center_x_software_software; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_center_x_software_software ON center_x_software USING btree (software);
-
-
---
--- Name: idx_error_type_x_product_product; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_error_type_x_product_product ON product USING btree (id);
-
-
---
--- Name: idx_first_nadir_point_latitude_longitude; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_first_nadir_point_latitude_longitude ON first_nadir_point USING btree (latitude, longitude);
-
-
---
--- Name: idx_first_nadir_point_satellite; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_first_nadir_point_satellite ON first_nadir_point USING btree (satellite);
-
-
---
--- Name: idx_imager_processing_input_processing; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_imager_processing_input_processing ON image_processing_input USING btree (processing);
-
-
---
--- Name: idx_imager_processing_input_product; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_imager_processing_input_product ON image_processing_input USING btree (product);
-
-
---
--- Name: idx_instrument_unavailability_period_instrument_comment; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_instrument_unavailability_period_instrument_comment ON instrument_unavailability_period USING btree (instrument, comment);
-
-
---
--- Name: idx_instrument_unavailability_period_start_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_instrument_unavailability_period_start_date_time ON instrument_unavailability_period USING btree (satellite, instrument, start_date_time);
-
-
---
--- Name: idx_instrument_unavailability_period_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_instrument_unavailability_period_stop_date_time ON instrument_unavailability_period USING btree (satellite, instrument, stop_date_time);
-
-
---
--- Name: idx_internal_request_pool; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_internal_request_pool ON request USING btree (pool);
-
-
---
--- Name: idx_media_catalog_entry_media_catalog; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_media_catalog_entry_media_catalog ON media_catalog_entry USING btree (media_catalog);
-
-
---
--- Name: idx_media_catalog_entry_media_catalog_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_media_catalog_entry_media_catalog_name ON media_catalog_entry USING btree (media_catalog, name);
-
-
---
--- Name: idx_media_catalog_entry_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_media_catalog_entry_name ON media_catalog_entry USING btree (name);
-
-
---
--- Name: idx_media_catalog_media_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_media_catalog_media_name ON media_catalog USING btree (media, name);
-
-
---
--- Name: idx_media_catalog_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_media_catalog_name ON media_catalog USING btree (name);
-
-
---
--- Name: idx_media_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_media_name ON media USING btree (name);
-
-
---
--- Name: idx_mode_x_product_type_product_type; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_mode_x_product_type_product_type ON mode_x_product_type USING btree (product_type);
-
-
---
--- Name: idx_orbit_satellite_anx_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_orbit_satellite_anx_date_time ON orbit USING btree (satellite, anx_date_time);
-
-
---
--- Name: idx_orbit_satellite_cycle_relative_number; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_orbit_satellite_cycle_relative_number ON orbit USING btree (satellite, cycle_relative_number);
-
-
---
--- Name: idx_processing_center; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_center ON processing USING btree (center);
-
-
---
--- Name: idx_processing_input_processing; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_input_processing ON processing_input USING btree (processing);
-
-
---
--- Name: idx_processing_input_product; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_input_product ON processing_input USING btree (product);
-
-
---
--- Name: idx_processing_product_type; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_product_type ON processing USING btree (product_type);
-
-
---
--- Name: idx_processing_software; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_software ON processing USING btree (software);
-
-
---
--- Name: idx_product_document; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_document ON product USING btree (document);
-
-
---
--- Name: idx_product_generation_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_generation_date_time ON product USING btree (generation_date_time);
-
-
---
--- Name: idx_product_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_name ON product USING btree (name);
-
-
---
--- Name: idx_product_obsolescence_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_obsolescence_date_time ON product USING btree (obsolescence_date_time);
-
-
---
--- Name: idx_product_processing; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_processing ON product USING btree (processing);
-
-
---
--- Name: idx_product_product_type; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_product_type ON product USING btree (product_type);
-
-
---
--- Name: idx_product_type_dependency_source; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_type_dependency_source ON product_type_dependency USING btree (source);
-
-
---
--- Name: idx_product_type_dependency_target; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_type_dependency_target ON product_type_dependency USING btree (target);
-
-
---
--- Name: idx_product_x_media_catalog_entry_mce; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_media_catalog_entry_mce ON product_x_media_catalog_entry USING btree (media_catalog_entry);
-
-
---
--- Name: idx_product_x_media_catalog_entry_product; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_media_catalog_entry_product ON product_x_media_catalog_entry USING btree (product);
-
-
---
--- Name: idx_product_x_sequential_media; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_sequential_media ON product_x_sequential_media USING btree (media, product);
-
-
---
--- Name: idx_product_x_sequential_media_product; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_sequential_media_product ON product_x_sequential_media USING btree (product);
-
-
---
--- Name: idx_reference_tie_frame_region; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_reference_tie_frame_region ON reference_tie_frame USING gist (region);
-
-
---
--- Name: idx_relative_orbit; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_relative_orbit ON relative_orbit USING btree (satellite, id, reference_trace_translation_longitude);
-
-
---
--- Name: idx_request_group_name; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE UNIQUE INDEX idx_request_group_name ON request_group USING btree (name);
-
-
---
--- Name: idx_request_group_x_request_request; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_request_group_x_request_request ON request_group_x_request USING btree (request);
-
-
---
--- Name: idx_request_media_catalog; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_request_media_catalog ON request USING btree (media_catalog);
-
-
---
--- Name: idx_request_server_account; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_request_server_account ON request USING btree (server_account);
-
-
---
--- Name: idx_request_x_processing_processing; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_request_x_processing_processing ON request_x_processing USING btree (processing);
-
-
---
--- Name: idx_request_x_processing_request; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_request_x_processing_request ON request_x_processing USING btree (request);
-
-
---
--- Name: idx_requester_media_catalog; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_requester_media_catalog ON requester USING btree (media_catalog);
-
-
---
--- Name: idx_sensing_product_start_absolute_orbit_number; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_sensing_product_start_absolute_orbit_number ON sensing_product USING btree (start_absolute_orbit_number);
-
-
---
--- Name: idx_sensing_product_start_date_time_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_sensing_product_start_date_time_stop_date_time ON sensing_product USING btree (start_date_time, stop_date_time);
-
-
---
--- Name: idx_sensing_product_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_sensing_product_stop_date_time ON sensing_product USING btree (stop_date_time);
-
-
---
--- Name: idx_site_owner; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_site_owner ON site USING btree (owner);
-
-
---
--- Name: idx_site_sys_polygon; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_site_sys_polygon ON site USING gist (sys_polygon);
-
-
---
--- Name: idx_state_vector_position; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_state_vector_position ON state_vector USING btree (x_position, y_position, z_position);
-
-
---
--- Name: idx_state_vector_satellite_absolute_orbit_number; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_state_vector_satellite_absolute_orbit_number ON state_vector USING btree (satellite, absolute_orbit_number);
-
-
---
--- Name: idx_state_vector_satellite_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_state_vector_satellite_date_time ON state_vector USING btree (satellite, date_time);
-
-
---
--- Name: idx_state_vector_source; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_state_vector_source ON state_vector USING btree (source);
-
-
---
--- Name: idx_state_vector_velocity; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_state_vector_velocity ON state_vector USING btree (x_velocity, y_velocity, z_velocity);
-
-
---
--- Name: idx_uniq_product_type_acronym; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE UNIQUE INDEX idx_uniq_product_type_acronym ON product_type USING btree (acronym);
-
-
---
--- Name: internal_processing_stage_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX internal_processing_stage_idx ON processing USING btree (stage);
-
-
---
--- Name: media_catalog_media_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX media_catalog_media_idx ON media_catalog USING btree (media);
-
-
---
--- Name: media_history_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX media_history_idx ON media_history USING btree (media);
-
-
---
--- Name: product_x_sequential_media_media_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX product_x_sequential_media_media_idx ON product_x_sequential_media USING btree (media);
-
-
---
--- Name: request_software_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX request_software_idx ON request USING btree (software);
-
-
---
--- Name: sensing_product_product_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX sensing_product_product_idx ON sensing_product USING btree (product);
-
-
---
--- Name: sensing_product_start_date_time_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX sensing_product_start_date_time_idx ON sensing_product USING btree (start_date_time);
-
-
-SET search_path = processing, pg_catalog;
-
---
--- Name: history_file_input_id_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX history_file_input_id_idx ON history USING btree (file_input_id);
-
-
---
--- Name: history_history_id_file_input_id_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX history_history_id_file_input_id_idx ON history USING btree (history_id, file_input_id);
-
-
---
--- Name: history_x_product_product_history_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX history_x_product_product_history_idx ON history_x_product USING btree (product, history);
-
-
---
--- Name: idx_batch_output_media_catalog; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_batch_output_media_catalog ON batch USING btree (output_media_catalog);
-
-
---
--- Name: idx_history_batch_id; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_history_batch_id ON history USING btree (batch_id);
-
-
---
--- Name: idx_history_request_id; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_history_request_id ON history USING btree (request_id);
-
-
---
--- Name: idx_history_request_id_file_input_id; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_history_request_id_file_input_id ON history USING btree (request_id, file_input_id);
-
-
---
--- Name: idx_history_tag; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_history_tag ON history USING btree (tag);
-
-ALTER TABLE history CLUSTER ON idx_history_tag;
-
-
---
--- Name: idx_history_x_product_product; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_history_x_product_product ON history_x_product USING btree (product);
-
-
---
--- Name: idx_processing_batch; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_batch ON batch USING btree (file_input_id);
-
-
---
--- Name: idx_processing_batch_processing_set_id; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_batch_processing_set_id ON batch USING btree (processing_set_id);
-
-
---
--- Name: idx_processing_batch_request_id; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_batch_request_id ON batch USING btree (request_id);
-
-
---
--- Name: idx_processing_batch_request_id_state; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_batch_request_id_state ON batch USING btree (request_id, state);
-
-
---
--- Name: idx_processing_batch_state; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_batch_state ON batch USING btree (state);
-
-
---
--- Name: idx_processing_output_file_batch_id_date_time; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_output_file_batch_id_date_time ON output_file USING btree (batch_id, date_time);
-
-
---
--- Name: idx_processing_output_file_date_time; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_output_file_date_time ON output_file USING btree (date_time);
-
-
---
--- Name: idx_processing_output_file_disk_location; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_output_file_disk_location ON output_file USING btree (directory_name, file_name);
-
-
---
--- Name: idx_processing_pool_x_hosts_hosts; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_pool_x_hosts_hosts ON pool_x_hosts USING btree (hosts);
-
-
---
--- Name: idx_processing_pool_x_hosts_pool; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_pool_x_hosts_pool ON pool_x_hosts USING btree (pool);
-
-
---
--- Name: idx_processing_top_hosts; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_top_hosts ON top USING btree (hostname_id);
-
-
---
--- Name: idx_processing_top_started; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_processing_top_started ON top USING btree (started);
-
-
---
--- Name: processing_batch_request_id_file_input_id; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX processing_batch_request_id_file_input_id ON batch USING btree (request_id, file_input_id);
-
-
---
--- Name: processing_batch_x_product_batch_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX processing_batch_x_product_batch_idx ON batch_x_product USING btree (batch);
-
-
---
--- Name: processing_batch_x_product_product_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX processing_batch_x_product_product_idx ON batch_x_product USING btree (product);
-
-
---
--- Name: processing_history_output_dir_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX processing_history_output_dir_idx ON history USING btree (output_dir);
-
-
---
--- Name: processing_history_x_product_history_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX processing_history_x_product_history_idx ON history_x_product USING btree (history);
-
-
---
--- Name: processing_parameters_set_id_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX processing_parameters_set_id_idx ON parameters_set USING btree (id);
-
-
-SET search_path = public, pg_catalog;
-
---
--- Name: idx_prd_md5_product; Type: INDEX; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_prd_md5_product ON prd_md5 USING btree (product);
-
-
---
--- Name: idx_tag; Type: INDEX; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_tag ON prd_external USING btree (tag);
-
-
---
--- Name: products_delivered_product_id_idx; Type: INDEX; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX products_delivered_product_id_idx ON products_delivered USING btree (product_id);
-
-
---
--- Name: products_delivered_product_id_tag_idx; Type: INDEX; Schema: public; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX products_delivered_product_id_tag_idx ON products_delivered USING btree (product_id, tag);
-
-
-SET search_path = s3ome, pg_catalog;
-
---
--- Name: idx_product_x_media; Type: INDEX; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_media ON product_x_media USING btree (media, path);
-
-
---
--- Name: idx_product_x_media_media; Type: INDEX; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_media_media ON product_x_media USING btree (media);
-
-
---
--- Name: idx_product_x_media_product; Type: INDEX; Schema: s3ome; Owner: srv_dpmc; Tablespace: 
---
-
-CREATE INDEX idx_product_x_media_product ON product_x_media USING btree (path);
-
-
-SET search_path = internal, pg_catalog;
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY instrument
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES satellite(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY mode
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite, instrument) REFERENCES instrument(satellite, id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY acquisition_chain
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY center_x_software
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product
-    ADD CONSTRAINT "$1" FOREIGN KEY (document) REFERENCES document(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_x_sequential_media
-    ADD CONSTRAINT "$1" FOREIGN KEY (media) REFERENCES media(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media_catalog
-    ADD CONSTRAINT "$1" FOREIGN KEY (media) REFERENCES media(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media
-    ADD CONSTRAINT "$1" FOREIGN KEY (media_type) REFERENCES media_type(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing_input
-    ADD CONSTRAINT "$1" FOREIGN KEY (processing) REFERENCES processing(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY software_x_product_type
-    ADD CONSTRAINT "$1" FOREIGN KEY (software) REFERENCES software(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY auxiliary_product
-    ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY state_vector
-    ADD CONSTRAINT "$1" FOREIGN KEY (source) REFERENCES product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY error_type_x_product
-    ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES sensing_product(product) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_x_product
-    ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES sensing_product(product) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_x_data_type
-    ADD CONSTRAINT "$1" FOREIGN KEY (request) REFERENCES request(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_x_media_catalog_entry
-    ADD CONSTRAINT "$1" FOREIGN KEY (media_catalog_entry) REFERENCES media_catalog_entry(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY first_nadir_point
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES satellite(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY mode_x_product_type
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite, instrument, mode) REFERENCES mode(satellite, instrument, mode);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY on_board_time
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES satellite(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY orbit
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES satellite(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_type_link
-    ADD CONSTRAINT "$1" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY relative_orbit
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES satellite(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY imaging_instrument
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite, instrument) REFERENCES instrument(satellite, id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY reference_tie_frame
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite, instrument) REFERENCES imaging_instrument(satellite, instrument);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY site_coverage
-    ADD CONSTRAINT "$1" FOREIGN KEY (site) REFERENCES site(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_x_processing
-    ADD CONSTRAINT "$1" FOREIGN KEY (request) REFERENCES request(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY rectangular_site
-    ADD CONSTRAINT "$1" FOREIGN KEY (site) REFERENCES site(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing_chain
-    ADD CONSTRAINT "$1" FOREIGN KEY (before) REFERENCES processing(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_type_chain
-    ADD CONSTRAINT "$1" FOREIGN KEY (target) REFERENCES product_type(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY global
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY current_software
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY image_processing_input
-    ADD CONSTRAINT "$1" FOREIGN KEY (processing, product) REFERENCES processing_input(processing, product);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY living_request
-    ADD CONSTRAINT "$1" FOREIGN KEY (request) REFERENCES request(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY site
-    ADD CONSTRAINT "$1" FOREIGN KEY (owner) REFERENCES requester(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY mailing_list
-    ADD CONSTRAINT "$1" FOREIGN KEY (request) REFERENCES request(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_group_x_request
-    ADD CONSTRAINT "$1" FOREIGN KEY (request_group) REFERENCES request_group(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY communication_request
-    ADD CONSTRAINT "$1" FOREIGN KEY (request) REFERENCES request(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY recipient
-    ADD CONSTRAINT "$1" FOREIGN KEY (communication_request) REFERENCES communication_request(request);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY auxiliary_configuration_detail
-    ADD CONSTRAINT "$1" FOREIGN KEY (configuration) REFERENCES auxiliary_configuration(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
-
-ALTER TABLE ONLY instrument_calibration_history
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite, instrument) REFERENCES instrument(satellite, id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY software
-    ADD CONSTRAINT "$1" FOREIGN KEY (default_auxiliary_configuration) REFERENCES auxiliary_configuration(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY instrument_unavailability_period
-    ADD CONSTRAINT "$1" FOREIGN KEY (satellite, instrument) REFERENCES instrument(satellite, id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY auxiliary_configuration
-    ADD CONSTRAINT "$1" FOREIGN KEY (index_media_catalog) REFERENCES media_catalog(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY requester
-    ADD CONSTRAINT "$1" FOREIGN KEY (media_catalog) REFERENCES media_catalog(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media_catalog_entry
-    ADD CONSTRAINT "$1" FOREIGN KEY (media_catalog) REFERENCES media_catalog(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media_history
-    ADD CONSTRAINT "$1" FOREIGN KEY (media) REFERENCES media(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY sensing_product
-    ADD CONSTRAINT "$1" FOREIGN KEY (state_vector) REFERENCES state_vector(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY default_center_x_product_type_software
-    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES center(id);
-
-
---
--- Name: $10; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$10" FOREIGN KEY (processing_comment) REFERENCES processing.processing_comment(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product
-    ADD CONSTRAINT "$2" FOREIGN KEY (processing) REFERENCES processing(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing
-    ADD CONSTRAINT "$2" FOREIGN KEY (software) REFERENCES software(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY center_x_software
-    ADD CONSTRAINT "$2" FOREIGN KEY (software) REFERENCES software(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing_input
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY acquisition_chain
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_x_sequential_media
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY sensing_product
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY error_type_x_product
-    ADD CONSTRAINT "$2" FOREIGN KEY (error_type) REFERENCES error_type(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$2" FOREIGN KEY (site) REFERENCES site(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_x_product
-    ADD CONSTRAINT "$2" FOREIGN KEY (request) REFERENCES request(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_x_data_type
-    ADD CONSTRAINT "$2" FOREIGN KEY (data_type) REFERENCES data_type(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_x_media_catalog_entry
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY mode_x_product_type
-    ADD CONSTRAINT "$2" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY site_coverage
-    ADD CONSTRAINT "$2" FOREIGN KEY (satellite, instrument) REFERENCES instrument(satellite, id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_x_processing
-    ADD CONSTRAINT "$2" FOREIGN KEY (processing) REFERENCES processing(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing_chain
-    ADD CONSTRAINT "$2" FOREIGN KEY (after) REFERENCES processing(id);
-
-
+-- Name: nc_1txy__Sheet1 nc_1txy__Sheet1_pkey; Type: CONSTRAINT; Schema: public; Owner: srv_dpmc
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product_type_chain
-    ADD CONSTRAINT "$2" FOREIGN KEY (source) REFERENCES product_type(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY mailing_list
-    ADD CONSTRAINT "$2" FOREIGN KEY (requester) REFERENCES requester(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request_group_x_request
-    ADD CONSTRAINT "$2" FOREIGN KEY (request) REFERENCES request(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY recipient
-    ADD CONSTRAINT "$2" FOREIGN KEY (requester) REFERENCES requester(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY auxiliary_configuration_detail
-    ADD CONSTRAINT "$2" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY instrument_calibration_history
-    ADD CONSTRAINT "$2" FOREIGN KEY (satellite, orbit_absolute_number) REFERENCES orbit(satellite, absolute_number);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY orbit
-    ADD CONSTRAINT "$2" FOREIGN KEY (anx_date_time_source_product) REFERENCES product(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY global
-    ADD CONSTRAINT "$2" FOREIGN KEY (output_media_catalog) REFERENCES media_catalog(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media
-    ADD CONSTRAINT "$2" FOREIGN KEY (source_media) REFERENCES media(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media_history
-    ADD CONSTRAINT "$2" FOREIGN KEY (history_type) REFERENCES media_history_type(id);
-
-
---
--- Name: $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY default_center_x_product_type_software
-    ADD CONSTRAINT "$2" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$3" FOREIGN KEY (requester) REFERENCES requester(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY processing
-    ADD CONSTRAINT "$3" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY current_software
-    ADD CONSTRAINT "$3" FOREIGN KEY (software) REFERENCES software(id);
-
-
---
--- Name: $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY media
-    ADD CONSTRAINT "$3" FOREIGN KEY (recipient) REFERENCES requester(id);
-
-
---
--- Name: $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY product
-    ADD CONSTRAINT "$3" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY default_center_x_product_type_software
-    ADD CONSTRAINT "$3" FOREIGN KEY (software) REFERENCES software(id);
-
-
---
--- Name: $4; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$4" FOREIGN KEY (product_type) REFERENCES product_type(id);
-
-
---
--- Name: $5; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$5" FOREIGN KEY (media_catalog) REFERENCES media_catalog(id);
-
-
---
--- Name: $6; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
---
 
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$6" FOREIGN KEY (server_account) REFERENCES server_account(id);
+ALTER TABLE ONLY public."nc_1txy__Sheet1"
+    ADD CONSTRAINT "nc_1txy__Sheet1_pkey" PRIMARY KEY (id);
 
 
 --
--- Name: $7; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: dataset_name_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$7" FOREIGN KEY (pool) REFERENCES processing.pool(id);
+CREATE INDEX dataset_name_idx ON internal.dataset USING btree (name);
 
 
 --
--- Name: $8; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: dataset_x_product_dataset_id_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$8" FOREIGN KEY (software) REFERENCES software(id);
+CREATE INDEX dataset_x_product_dataset_id_idx ON internal.dataset_x_product USING btree (dataset_id);
 
 
 --
--- Name: $9; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: dataset_x_product_dataset_id_product_id_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY request
-    ADD CONSTRAINT "$9" FOREIGN KEY (auxiliary_configuration) REFERENCES auxiliary_configuration(id);
+CREATE INDEX dataset_x_product_dataset_id_product_id_idx ON internal.dataset_x_product USING btree (dataset_id, product_id);
 
 
 --
--- Name: fk_aux_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: dataset_x_product_product_id_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY adf_baseline
-    ADD CONSTRAINT fk_aux_id FOREIGN KEY (aux_id) REFERENCES auxiliary_configuration(id);
+CREATE INDEX dataset_x_product_product_id_idx ON internal.dataset_x_product USING btree (product_id);
 
 
 --
--- Name: fk_auxiliary_configuration_soft_x_aux; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_auxiliary_product_double_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY software_x_auxiliary_configuration
-    ADD CONSTRAINT fk_auxiliary_configuration_soft_x_aux FOREIGN KEY (auxiliary_configuration) REFERENCES auxiliary_configuration(id);
+CREATE INDEX idx_auxiliary_product_double_date_time ON internal.auxiliary_product USING btree (validity_start_date_time, validity_stop_date_time);
 
 
 --
--- Name: fk_dataset_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_auxiliary_product_double_date_time2; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_product
-    ADD CONSTRAINT fk_dataset_id FOREIGN KEY (dataset_id) REFERENCES dataset(id);
+CREATE INDEX idx_auxiliary_product_double_date_time2 ON internal.auxiliary_product USING btree (validity_stop_date_time, validity_start_date_time);
 
 
 --
--- Name: fk_dataset_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_auxiliary_product_validity_start_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY distribution
-    ADD CONSTRAINT fk_dataset_id FOREIGN KEY (dataset_id) REFERENCES dataset(id);
+CREATE INDEX idx_auxiliary_product_validity_start_date_time ON internal.auxiliary_product USING btree (validity_start_date_time);
 
 
 --
--- Name: fk_dataset_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_auxiliary_product_validity_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_document
-    ADD CONSTRAINT fk_dataset_id FOREIGN KEY (dataset_id) REFERENCES dataset(id);
+CREATE INDEX idx_auxiliary_product_validity_stop_date_time ON internal.auxiliary_product USING btree (validity_stop_date_time);
 
 
 --
--- Name: fk_dataset_in_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_auxiliary_product_version; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY reprocessing
-    ADD CONSTRAINT fk_dataset_in_id FOREIGN KEY (dataset_in_id) REFERENCES dataset(id);
+CREATE INDEX idx_auxiliary_product_version ON internal.auxiliary_product USING btree (version);
 
 
 --
--- Name: fk_dataset_out_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_error_type_x_product_product; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY reprocessing
-    ADD CONSTRAINT fk_dataset_out_id FOREIGN KEY (dataset_out_id) REFERENCES dataset(id);
+CREATE INDEX idx_error_type_x_product_product ON internal.product USING btree (id);
 
 
 --
--- Name: fk_document_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_media_catalog_entry_media_catalog; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY adf_baseline
-    ADD CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES product(id);
+CREATE INDEX idx_media_catalog_entry_media_catalog ON internal.media_catalog_entry USING btree (media_catalog);
 
 
 --
--- Name: fk_document_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_media_catalog_entry_media_catalog_name; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_document
-    ADD CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES document(id);
+CREATE INDEX idx_media_catalog_entry_media_catalog_name ON internal.media_catalog_entry USING btree (media_catalog, name);
 
 
 --
--- Name: fk_ipb_x_sxa_soft_aux_conf_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_media_catalog_entry_name; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY ipf_processing_baseline_x_sxa
-    ADD CONSTRAINT fk_ipb_x_sxa_soft_aux_conf_id FOREIGN KEY (soft_x_aux_conf_id) REFERENCES software_x_auxiliary_configuration(id);
+CREATE INDEX idx_media_catalog_entry_name ON internal.media_catalog_entry USING btree (name);
 
 
 --
--- Name: fk_ipf_processing_baseline_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_media_catalog_media_name; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY ipf_processing_baseline_x_sxa
-    ADD CONSTRAINT fk_ipf_processing_baseline_id FOREIGN KEY (ipf_processing_baseline_id) REFERENCES ipf_processing_baseline(id);
+CREATE INDEX idx_media_catalog_media_name ON internal.media_catalog USING btree (media, name);
 
 
 --
--- Name: fk_master_dataset_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_media_catalog_name; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_dataset
-    ADD CONSTRAINT fk_master_dataset_id FOREIGN KEY (master_dataset_id) REFERENCES dataset(id);
+CREATE INDEX idx_media_catalog_name ON internal.media_catalog USING btree (name);
 
 
 --
--- Name: fk_media_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_media_name; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY distribution
-    ADD CONSTRAINT fk_media_id FOREIGN KEY (media_id) REFERENCES media(id);
+CREATE INDEX idx_media_name ON internal.media USING btree (name);
 
 
 --
--- Name: fk_processing_comment_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_orbit_satellite_anx_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_configuration
-    ADD CONSTRAINT fk_processing_comment_id FOREIGN KEY (processing_comment_id) REFERENCES processing.processing_comment(id);
+CREATE INDEX idx_orbit_satellite_anx_date_time ON internal.orbit USING btree (satellite, anx_date_time);
 
 
 --
--- Name: fk_product_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_orbit_satellite_cycle_relative_number; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_product
-    ADD CONSTRAINT fk_product_id FOREIGN KEY (product_id) REFERENCES product(id);
+CREATE INDEX idx_orbit_satellite_cycle_relative_number ON internal.orbit USING btree (satellite, cycle_relative_number);
 
 
 --
--- Name: fk_product_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_processing_center; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY footprint
-    ADD CONSTRAINT fk_product_id FOREIGN KEY (product_id) REFERENCES product(id);
+CREATE INDEX idx_processing_center ON internal.processing USING btree (center);
 
 
 --
--- Name: fk_product_type_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_processing_product_type; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY default_processing
-    ADD CONSTRAINT fk_product_type_id FOREIGN KEY (product_type_id) REFERENCES product_type(id);
+CREATE INDEX idx_processing_product_type ON internal.processing USING btree (product_type);
 
 
 --
--- Name: fk_reprocessing_configuration_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_processing_software; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY reprocessing
-    ADD CONSTRAINT fk_reprocessing_configuration_id FOREIGN KEY (processing_configuration_id) REFERENCES processing_configuration(id);
+CREATE INDEX idx_processing_software ON internal.processing USING btree (software);
 
 
 --
--- Name: fk_reprocessing_configuration_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_generation_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY default_processing
-    ADD CONSTRAINT fk_reprocessing_configuration_id FOREIGN KEY (processing_configuration_id) REFERENCES processing_configuration(id);
+CREATE INDEX idx_product_generation_date_time ON internal.product USING btree (generation_date_time);
 
 
 --
--- Name: fk_request_request; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_name; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY request_description
-    ADD CONSTRAINT fk_request_request FOREIGN KEY (request) REFERENCES request(id);
+CREATE INDEX idx_product_name ON internal.product USING btree (name);
 
 
 --
--- Name: fk_requester_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_obsolescence_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY distribution
-    ADD CONSTRAINT fk_requester_id FOREIGN KEY (requester_id) REFERENCES requester(id);
+CREATE INDEX idx_product_obsolescence_date_time ON internal.product USING btree (obsolescence_date_time);
 
 
 --
--- Name: fk_software_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_processing; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY software_x_binary
-    ADD CONSTRAINT fk_software_id FOREIGN KEY (software_id) REFERENCES software(id);
+CREATE INDEX idx_product_processing ON internal.product USING btree (processing);
 
 
 --
--- Name: fk_software_soft_x_aux; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_product_type; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY software_x_auxiliary_configuration
-    ADD CONSTRAINT fk_software_soft_x_aux FOREIGN KEY (software) REFERENCES software(id);
+CREATE INDEX idx_product_product_type ON internal.product USING btree (product_type);
 
 
 --
--- Name: fk_sub_dataset_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_x_media_catalog_entry_mce; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY dataset_x_dataset
-    ADD CONSTRAINT fk_sub_dataset_id FOREIGN KEY (sub_dataset_id) REFERENCES dataset(id);
+CREATE INDEX idx_product_x_media_catalog_entry_mce ON internal.product_x_media_catalog_entry USING btree (media_catalog_entry);
 
 
 --
--- Name: fk_sxac_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_product_x_media_catalog_entry_product; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_configuration
-    ADD CONSTRAINT fk_sxac_id FOREIGN KEY (sxac_id) REFERENCES software_x_auxiliary_configuration(id);
+CREATE INDEX idx_product_x_media_catalog_entry_product ON internal.product_x_media_catalog_entry USING btree (product);
 
 
 --
--- Name: fk_sxac_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_requester_media_catalog; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY default_processing
-    ADD CONSTRAINT fk_sxac_id FOREIGN KEY (sxac_id) REFERENCES software_x_auxiliary_configuration(id);
+CREATE INDEX idx_requester_media_catalog ON internal.requester USING btree (media_catalog);
 
 
 --
--- Name: media_id_foreign; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_sensing_product_start_absolute_orbit_number; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_info
-    ADD CONSTRAINT media_id_foreign FOREIGN KEY (media) REFERENCES media(id);
+CREATE INDEX idx_sensing_product_start_absolute_orbit_number ON internal.sensing_product USING btree (start_absolute_orbit_number);
 
 
 --
--- Name: media_status_foreign; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_sensing_product_start_date_time_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_info
-    ADD CONSTRAINT media_status_foreign FOREIGN KEY (media_status) REFERENCES media_status(id);
+CREATE INDEX idx_sensing_product_start_date_time_stop_date_time ON internal.sensing_product USING btree (start_date_time, stop_date_time);
 
 
 --
--- Name: product_priority_x_product_foreign_key; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_sensing_product_stop_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY priority_x_product
-    ADD CONSTRAINT product_priority_x_product_foreign_key FOREIGN KEY (product_id) REFERENCES product(id);
+CREATE INDEX idx_sensing_product_stop_date_time ON internal.sensing_product USING btree (stop_date_time);
 
 
 --
--- Name: transcription_report_foreign; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+-- Name: idx_state_vector_position; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media_info
-    ADD CONSTRAINT transcription_report_foreign FOREIGN KEY (transcription_report) REFERENCES product(id);
+CREATE INDEX idx_state_vector_position ON internal.state_vector USING btree (x_position, y_position, z_position);
 
 
-SET search_path = lta, pg_catalog;
-
---
--- Name: fk_abort_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY abort
-    ADD CONSTRAINT fk_abort_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
-
-
---
--- Name: fk_archive_primary_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY archive
-    ADD CONSTRAINT fk_archive_primary_id FOREIGN KEY (primary_id) REFERENCES internal.media(id);
-
-
---
--- Name: fk_archive_secondary_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY archive
-    ADD CONSTRAINT fk_archive_secondary_id FOREIGN KEY (secondary_id) REFERENCES internal.media(id);
-
-
 --
--- Name: fk_check_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: idx_state_vector_satellite_absolute_orbit_number; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY "check"
-    ADD CONSTRAINT fk_check_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX idx_state_vector_satellite_absolute_orbit_number ON internal.state_vector USING btree (satellite, absolute_orbit_number);
 
 
 --
--- Name: fk_direct_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: idx_state_vector_satellite_date_time; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY direct
-    ADD CONSTRAINT fk_direct_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX idx_state_vector_satellite_date_time ON internal.state_vector USING btree (satellite, date_time);
 
 
 --
--- Name: fk_ingestion_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: idx_state_vector_source; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY ingestion
-    ADD CONSTRAINT fk_ingestion_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX idx_state_vector_source ON internal.state_vector USING btree (source);
 
 
 --
--- Name: fk_monitoring_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: idx_state_vector_velocity; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY monitoring
-    ADD CONSTRAINT fk_monitoring_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX idx_state_vector_velocity ON internal.state_vector USING btree (x_velocity, y_velocity, z_velocity);
 
 
 --
--- Name: fk_product_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: idx_uniq_product_type_acronym; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_status
-    ADD CONSTRAINT fk_product_id FOREIGN KEY (product_id) REFERENCES internal.product(id);
+CREATE UNIQUE INDEX idx_uniq_product_type_acronym ON internal.product_type USING btree (acronym);
 
 
 --
--- Name: fk_query_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: internal_processing_stage_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY query
-    ADD CONSTRAINT fk_query_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX internal_processing_stage_idx ON internal.processing USING btree (stage);
 
 
 --
--- Name: fk_request_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: media_catalog_media_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY transaction_type_x_request
-    ADD CONSTRAINT fk_request_id FOREIGN KEY (request_id) REFERENCES internal.request(id);
+CREATE INDEX media_catalog_media_idx ON internal.media_catalog USING btree (media);
 
 
 --
--- Name: fk_retrieval_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: sensing_product_product_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY retrieval
-    ADD CONSTRAINT fk_retrieval_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX sensing_product_product_idx ON internal.sensing_product USING btree (product);
 
 
 --
--- Name: fk_transaction_client_name_requester_name; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: sensing_product_start_date_time_idx; Type: INDEX; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY transaction
-    ADD CONSTRAINT fk_transaction_client_name_requester_name FOREIGN KEY (client_name) REFERENCES internal.requester(name);
+CREATE INDEX sensing_product_start_date_time_idx ON internal.sensing_product USING btree (start_date_time);
 
 
 --
--- Name: fk_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: history_file_input_id_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY delete
-    ADD CONSTRAINT fk_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX history_file_input_id_idx ON processing.history USING btree (file_input_id);
 
 
 --
--- Name: fk_transaction_id; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: history_history_id_file_input_id_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_status
-    ADD CONSTRAINT fk_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction(id);
+CREATE INDEX history_history_id_file_input_id_idx ON processing.history USING btree (history_id, file_input_id);
 
 
 --
--- Name: fk_transaction_name; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: history_x_product_product_history_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY transaction_type_x_request
-    ADD CONSTRAINT fk_transaction_name FOREIGN KEY (transaction_name) REFERENCES transaction_type(transaction_name);
+CREATE INDEX history_x_product_product_history_idx ON processing.history_x_product USING btree (product, history);
 
 
 --
--- Name: fk_transaction_type; Type: FK CONSTRAINT; Schema: lta; Owner: srv_dpmc
+-- Name: idx_history_batch_id; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY transaction
-    ADD CONSTRAINT fk_transaction_type FOREIGN KEY (transaction_name) REFERENCES transaction_type(transaction_name);
+CREATE INDEX idx_history_batch_id ON processing.history USING btree (batch_id);
 
 
-SET search_path = processing, pg_catalog;
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY batch
-    ADD CONSTRAINT "$1" FOREIGN KEY (file_input_id) REFERENCES internal.product(id);
-
-
---
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
---
-
-ALTER TABLE ONLY top
-    ADD CONSTRAINT "$1" FOREIGN KEY (batch_id) REFERENCES batch(batch_id);
-
-
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_history_request_id; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY pool_x_hosts
-    ADD CONSTRAINT "$1" FOREIGN KEY (pool) REFERENCES pool(id);
+CREATE INDEX idx_history_request_id ON processing.history USING btree (request_id);
 
 
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_history_request_id_file_input_id; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY mutex
-    ADD CONSTRAINT "$1" FOREIGN KEY (hosts) REFERENCES hosts(host_id);
+CREATE INDEX idx_history_request_id_file_input_id ON processing.history USING btree (request_id, file_input_id);
 
 
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_history_tag; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
-
-ALTER TABLE ONLY processing_comment_x_product_type
-    ADD CONSTRAINT "$1" FOREIGN KEY (processing_comment) REFERENCES processing_comment(id);
 
+CREATE INDEX idx_history_tag ON processing.history USING btree (tag);
 
---
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
---
+ALTER TABLE processing.history CLUSTER ON idx_history_tag;
 
-ALTER TABLE ONLY processing_set
-    ADD CONSTRAINT "$1" FOREIGN KEY (id) REFERENCES processing_comment(id);
 
-
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_history_x_product_product; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY batch_x_product
-    ADD CONSTRAINT "$1" FOREIGN KEY (batch) REFERENCES batch(batch_id);
+CREATE INDEX idx_history_x_product_product ON processing.history_x_product USING btree (product);
 
 
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_processing_pool_x_hosts_hosts; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY hosts_comment
-    ADD CONSTRAINT "$1" FOREIGN KEY (host_id) REFERENCES hosts(host_id);
+CREATE INDEX idx_processing_pool_x_hosts_hosts ON processing.pool_x_hosts USING btree (hosts);
 
 
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_processing_pool_x_hosts_pool; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY history_x_product
-    ADD CONSTRAINT "$1" FOREIGN KEY (history) REFERENCES history(history_id);
+CREATE INDEX idx_processing_pool_x_hosts_pool ON processing.pool_x_hosts USING btree (pool);
 
 
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_processing_top_hosts; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY top
-    ADD CONSTRAINT "$2" FOREIGN KEY (hostname_id) REFERENCES hosts(host_id);
+CREATE INDEX idx_processing_top_hosts ON processing.top USING btree (hostname_id);
 
 
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: idx_processing_top_started; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY pool_x_hosts
-    ADD CONSTRAINT "$2" FOREIGN KEY (hosts) REFERENCES hosts(host_id);
+CREATE INDEX idx_processing_top_started ON processing.top USING btree (started);
 
 
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: processing_history_output_dir_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY processing_comment_x_product_type
-    ADD CONSTRAINT "$2" FOREIGN KEY (product_type) REFERENCES internal.product_type(id);
+CREATE INDEX processing_history_output_dir_idx ON processing.history USING btree (output_dir);
 
 
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: processing_history_x_product_history_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY batch_x_product
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES internal.product(id);
+CREATE INDEX processing_history_x_product_history_idx ON processing.history_x_product USING btree (history);
 
 
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: processing_parameters_set_id_idx; Type: INDEX; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY batch
-    ADD CONSTRAINT "$2" FOREIGN KEY (output_media_catalog) REFERENCES internal.media_catalog(id);
+CREATE INDEX processing_parameters_set_id_idx ON processing.parameters_set USING btree (id);
 
 
 --
--- Name: $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: nc_1txy__Sheet1 xc_trigger_nc_1txy__Sheet1_updated_at; Type: TRIGGER; Schema: public; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY history_x_product
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES internal.product(id);
+CREATE TRIGGER "xc_trigger_nc_1txy__Sheet1_updated_at" BEFORE UPDATE ON public."nc_1txy__Sheet1" FOR EACH ROW EXECUTE FUNCTION public."xc_au_nc_1txy__Sheet1_updated_at"();
 
 
 --
--- Name: $3; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: instrument $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY batch
-    ADD CONSTRAINT "$3" FOREIGN KEY (processing_set_id) REFERENCES processing_comment(id);
+ALTER TABLE ONLY internal.instrument
+    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES internal.satellite(id);
 
 
 --
--- Name: parameters_sets_id; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
+-- Name: processing $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY parameters_set
-    ADD CONSTRAINT parameters_sets_id FOREIGN KEY (id) REFERENCES batch(batch_id);
+ALTER TABLE ONLY internal.processing
+    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES internal.center(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 
-SET search_path = public, pg_catalog;
-
 --
--- Name: prd_geoloc_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: srv_dpmc
+-- Name: media_catalog $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
-
-ALTER TABLE ONLY prd_geoloc
-    ADD CONSTRAINT prd_geoloc_product_id_fkey FOREIGN KEY (product_id) REFERENCES internal.product(id);
 
+ALTER TABLE ONLY internal.media_catalog
+    ADD CONSTRAINT "$1" FOREIGN KEY (media) REFERENCES internal.media(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-SET search_path = s3ome, pg_catalog;
 
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: s3ome; Owner: srv_dpmc
+-- Name: media $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media
+ALTER TABLE ONLY internal.media
     ADD CONSTRAINT "$1" FOREIGN KEY (media_type) REFERENCES internal.media_type(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 
 --
--- Name: $1; Type: FK CONSTRAINT; Schema: s3ome; Owner: srv_dpmc
+-- Name: auxiliary_product $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY product_x_media
-    ADD CONSTRAINT "$1" FOREIGN KEY (media) REFERENCES media(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+ALTER TABLE ONLY internal.auxiliary_product
+    ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES internal.product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 
 --
--- Name: $3; Type: FK CONSTRAINT; Schema: s3ome; Owner: srv_dpmc
+-- Name: state_vector $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY media
+ALTER TABLE ONLY internal.state_vector
+    ADD CONSTRAINT "$1" FOREIGN KEY (source) REFERENCES internal.product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
+-- Name: product_x_media_catalog_entry $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.product_x_media_catalog_entry
+    ADD CONSTRAINT "$1" FOREIGN KEY (media_catalog_entry) REFERENCES internal.media_catalog_entry(id);
+
+
+--
+-- Name: orbit $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.orbit
+    ADD CONSTRAINT "$1" FOREIGN KEY (satellite) REFERENCES internal.satellite(id);
+
+
+--
+-- Name: global $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.global
+    ADD CONSTRAINT "$1" FOREIGN KEY (center) REFERENCES internal.center(id);
+
+
+--
+-- Name: auxiliary_configuration_detail $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.auxiliary_configuration_detail
+    ADD CONSTRAINT "$1" FOREIGN KEY (configuration) REFERENCES internal.auxiliary_configuration(id);
+
+
+--
+-- Name: software $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.software
+    ADD CONSTRAINT "$1" FOREIGN KEY (default_auxiliary_configuration) REFERENCES internal.auxiliary_configuration(id);
+
+
+--
+-- Name: auxiliary_configuration $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.auxiliary_configuration
+    ADD CONSTRAINT "$1" FOREIGN KEY (index_media_catalog) REFERENCES internal.media_catalog(id);
+
+
+--
+-- Name: requester $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.requester
+    ADD CONSTRAINT "$1" FOREIGN KEY (media_catalog) REFERENCES internal.media_catalog(id);
+
+
+--
+-- Name: media_catalog_entry $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.media_catalog_entry
+    ADD CONSTRAINT "$1" FOREIGN KEY (media_catalog) REFERENCES internal.media_catalog(id);
+
+
+--
+-- Name: sensing_product $1; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.sensing_product
+    ADD CONSTRAINT "$1" FOREIGN KEY (state_vector) REFERENCES internal.state_vector(id);
+
+
+--
+-- Name: product $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.product
+    ADD CONSTRAINT "$2" FOREIGN KEY (processing) REFERENCES internal.processing(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
+-- Name: processing $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.processing
+    ADD CONSTRAINT "$2" FOREIGN KEY (software) REFERENCES internal.software(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
+-- Name: sensing_product $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.sensing_product
+    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES internal.product(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
+-- Name: product_x_media_catalog_entry $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.product_x_media_catalog_entry
+    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES internal.product(id);
+
+
+--
+-- Name: auxiliary_configuration_detail $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.auxiliary_configuration_detail
+    ADD CONSTRAINT "$2" FOREIGN KEY (product_type) REFERENCES internal.product_type(id);
+
+
+--
+-- Name: orbit $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.orbit
+    ADD CONSTRAINT "$2" FOREIGN KEY (anx_date_time_source_product) REFERENCES internal.product(id);
+
+
+--
+-- Name: global $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.global
+    ADD CONSTRAINT "$2" FOREIGN KEY (output_media_catalog) REFERENCES internal.media_catalog(id);
+
+
+--
+-- Name: media $2; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.media
+    ADD CONSTRAINT "$2" FOREIGN KEY (source_media) REFERENCES internal.media(id);
+
+
+--
+-- Name: processing $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.processing
+    ADD CONSTRAINT "$3" FOREIGN KEY (product_type) REFERENCES internal.product_type(id);
+
+
+--
+-- Name: media $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
+--
+
+ALTER TABLE ONLY internal.media
     ADD CONSTRAINT "$3" FOREIGN KEY (recipient) REFERENCES internal.requester(id);
 
 
 --
--- Name: viscal_info_satellite_fkey; Type: FK CONSTRAINT; Schema: s3ome; Owner: srv_dpmc
+-- Name: product $3; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-ALTER TABLE ONLY viscal_info
-    ADD CONSTRAINT viscal_info_satellite_fkey FOREIGN KEY (satellite) REFERENCES internal.satellite(id);
+ALTER TABLE ONLY internal.product
+    ADD CONSTRAINT "$3" FOREIGN KEY (product_type) REFERENCES internal.product_type(id);
 
 
 --
--- Name: internal; Type: ACL; Schema: -; Owner: srv_dpmc
+-- Name: adf_baseline fk_aux_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON SCHEMA internal FROM PUBLIC;
-REVOKE ALL ON SCHEMA internal FROM srv_dpmc;
-GRANT ALL ON SCHEMA internal TO srv_dpmc;
-GRANT ALL ON SCHEMA internal TO srv_s3ome_read;
+ALTER TABLE ONLY internal.adf_baseline
+    ADD CONSTRAINT fk_aux_id FOREIGN KEY (aux_id) REFERENCES internal.auxiliary_configuration(id);
 
 
 --
--- Name: lta; Type: ACL; Schema: -; Owner: srv_dpmc
+-- Name: software_x_auxiliary_configuration fk_auxiliary_configuration_soft_x_aux; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON SCHEMA lta FROM PUBLIC;
-REVOKE ALL ON SCHEMA lta FROM srv_dpmc;
-GRANT ALL ON SCHEMA lta TO srv_dpmc;
-GRANT USAGE ON SCHEMA lta TO srv_s3ome_read;
+ALTER TABLE ONLY internal.software_x_auxiliary_configuration
+    ADD CONSTRAINT fk_auxiliary_configuration_soft_x_aux FOREIGN KEY (auxiliary_configuration) REFERENCES internal.auxiliary_configuration(id);
 
 
 --
--- Name: processing; Type: ACL; Schema: -; Owner: srv_dpmc
+-- Name: dataset_x_product fk_dataset_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON SCHEMA processing FROM PUBLIC;
-REVOKE ALL ON SCHEMA processing FROM srv_dpmc;
-GRANT ALL ON SCHEMA processing TO srv_dpmc;
-GRANT USAGE ON SCHEMA processing TO nagios;
-GRANT USAGE ON SCHEMA processing TO srv_s3ome_read;
+ALTER TABLE ONLY internal.dataset_x_product
+    ADD CONSTRAINT fk_dataset_id FOREIGN KEY (dataset_id) REFERENCES internal.dataset(id);
 
 
 --
--- Name: public; Type: ACL; Schema: -; Owner: postgres
+-- Name: adf_baseline fk_document_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON SCHEMA public FROM postgres;
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO srv_dpmc;
-GRANT ALL ON SCHEMA public TO PUBLIC;
-GRANT USAGE ON SCHEMA public TO srv_s3ome_read;
+ALTER TABLE ONLY internal.adf_baseline
+    ADD CONSTRAINT fk_document_id FOREIGN KEY (document_id) REFERENCES internal.product(id);
 
 
 --
--- Name: s3ome; Type: ACL; Schema: -; Owner: srv_dpmc
+-- Name: ipf_processing_baseline_x_sxa fk_ipb_x_sxa_soft_aux_conf_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON SCHEMA s3ome FROM PUBLIC;
-REVOKE ALL ON SCHEMA s3ome FROM srv_dpmc;
-GRANT ALL ON SCHEMA s3ome TO srv_dpmc;
-GRANT USAGE ON SCHEMA s3ome TO srv_s3ome_read;
+ALTER TABLE ONLY internal.ipf_processing_baseline_x_sxa
+    ADD CONSTRAINT fk_ipb_x_sxa_soft_aux_conf_id FOREIGN KEY (soft_x_aux_conf_id) REFERENCES internal.software_x_auxiliary_configuration(id);
 
 
-SET search_path = internal, pg_catalog;
-
---
--- Name: acquisition_chain; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE acquisition_chain FROM PUBLIC;
-REVOKE ALL ON TABLE acquisition_chain FROM srv_dpmc;
-GRANT ALL ON TABLE acquisition_chain TO srv_dpmc;
-GRANT SELECT ON TABLE acquisition_chain TO srv_s3ome_read;
-
-
---
--- Name: adf_baseline; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE adf_baseline FROM PUBLIC;
-REVOKE ALL ON TABLE adf_baseline FROM srv_dpmc;
-GRANT ALL ON TABLE adf_baseline TO srv_dpmc;
-GRANT SELECT ON TABLE adf_baseline TO srv_s3ome_read;
-
-
---
--- Name: auxiliary_configuration; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE auxiliary_configuration FROM PUBLIC;
-REVOKE ALL ON TABLE auxiliary_configuration FROM srv_dpmc;
-GRANT ALL ON TABLE auxiliary_configuration TO srv_dpmc;
-GRANT SELECT ON TABLE auxiliary_configuration TO srv_s3ome_read;
-
-
---
--- Name: auxiliary_configuration_detail; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE auxiliary_configuration_detail FROM PUBLIC;
-REVOKE ALL ON TABLE auxiliary_configuration_detail FROM srv_dpmc;
-GRANT ALL ON TABLE auxiliary_configuration_detail TO srv_dpmc;
-GRANT SELECT ON TABLE auxiliary_configuration_detail TO srv_s3ome_read;
-
-
---
--- Name: auxiliary_product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE auxiliary_product FROM PUBLIC;
-REVOKE ALL ON TABLE auxiliary_product FROM srv_dpmc;
-GRANT ALL ON TABLE auxiliary_product TO srv_dpmc;
-GRANT SELECT ON TABLE auxiliary_product TO srv_s3ome_read;
-
-
---
--- Name: center; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE center FROM PUBLIC;
-REVOKE ALL ON TABLE center FROM srv_dpmc;
-GRANT ALL ON TABLE center TO srv_dpmc;
-GRANT SELECT ON TABLE center TO srv_s3ome_read;
-
-
---
--- Name: center_x_software; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE center_x_software FROM PUBLIC;
-REVOKE ALL ON TABLE center_x_software FROM srv_dpmc;
-GRANT ALL ON TABLE center_x_software TO srv_dpmc;
-GRANT SELECT ON TABLE center_x_software TO srv_s3ome_read;
-
-
---
--- Name: communication_request; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE communication_request FROM PUBLIC;
-REVOKE ALL ON TABLE communication_request FROM srv_dpmc;
-GRANT ALL ON TABLE communication_request TO srv_dpmc;
-GRANT SELECT ON TABLE communication_request TO srv_s3ome_read;
-
-
---
--- Name: current_software; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE current_software FROM PUBLIC;
-REVOKE ALL ON TABLE current_software FROM srv_dpmc;
-GRANT ALL ON TABLE current_software TO srv_dpmc;
-GRANT SELECT ON TABLE current_software TO srv_s3ome_read;
-
-
---
--- Name: data_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE data_type FROM PUBLIC;
-REVOKE ALL ON TABLE data_type FROM srv_dpmc;
-GRANT ALL ON TABLE data_type TO srv_dpmc;
-GRANT SELECT ON TABLE data_type TO srv_s3ome_read;
-
-
---
--- Name: dataset; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE dataset FROM PUBLIC;
-REVOKE ALL ON TABLE dataset FROM srv_dpmc;
-GRANT ALL ON TABLE dataset TO srv_dpmc;
-GRANT SELECT ON TABLE dataset TO srv_s3ome_read;
-
-
---
--- Name: dataset_x_product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE dataset_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE dataset_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE dataset_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE dataset_x_product TO srv_s3ome_read;
-
-
---
--- Name: product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product FROM PUBLIC;
-REVOKE ALL ON TABLE product FROM srv_dpmc;
-GRANT ALL ON TABLE product TO srv_dpmc;
-GRANT SELECT ON TABLE product TO srv_s3ome_read;
-
-
---
--- Name: dataset_content; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE dataset_content FROM PUBLIC;
-REVOKE ALL ON TABLE dataset_content FROM srv_dpmc;
-GRANT ALL ON TABLE dataset_content TO srv_dpmc;
-GRANT SELECT ON TABLE dataset_content TO srv_s3ome_read;
-
-
---
--- Name: dataset_x_dataset; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE dataset_x_dataset FROM PUBLIC;
-REVOKE ALL ON TABLE dataset_x_dataset FROM srv_dpmc;
-GRANT ALL ON TABLE dataset_x_dataset TO srv_dpmc;
-GRANT SELECT ON TABLE dataset_x_dataset TO srv_s3ome_read;
-
-
---
--- Name: dataset_x_document; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE dataset_x_document FROM PUBLIC;
-REVOKE ALL ON TABLE dataset_x_document FROM srv_dpmc;
-GRANT ALL ON TABLE dataset_x_document TO srv_dpmc;
-GRANT SELECT ON TABLE dataset_x_document TO srv_s3ome_read;
-
-
---
--- Name: default_center_x_product_type_software; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE default_center_x_product_type_software FROM PUBLIC;
-REVOKE ALL ON TABLE default_center_x_product_type_software FROM srv_dpmc;
-GRANT ALL ON TABLE default_center_x_product_type_software TO srv_dpmc;
-GRANT SELECT ON TABLE default_center_x_product_type_software TO srv_s3ome_read;
-
-
---
--- Name: default_processing; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE default_processing FROM PUBLIC;
-REVOKE ALL ON TABLE default_processing FROM srv_dpmc;
-GRANT ALL ON TABLE default_processing TO srv_dpmc;
-GRANT SELECT ON TABLE default_processing TO srv_s3ome_read;
-
-
---
--- Name: distribution; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE distribution FROM PUBLIC;
-REVOKE ALL ON TABLE distribution FROM srv_dpmc;
-GRANT ALL ON TABLE distribution TO srv_dpmc;
-GRANT SELECT ON TABLE distribution TO srv_s3ome_read;
-
-
---
--- Name: document; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE document FROM PUBLIC;
-REVOKE ALL ON TABLE document FROM srv_dpmc;
-GRANT ALL ON TABLE document TO srv_dpmc;
-GRANT SELECT ON TABLE document TO srv_s3ome_read;
-
-
---
--- Name: error_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE error_type FROM PUBLIC;
-REVOKE ALL ON TABLE error_type FROM srv_dpmc;
-GRANT ALL ON TABLE error_type TO srv_dpmc;
-GRANT SELECT ON TABLE error_type TO srv_s3ome_read;
-
-
---
--- Name: error_type_x_product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE error_type_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE error_type_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE error_type_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE error_type_x_product TO srv_s3ome_read;
-
-
---
--- Name: first_nadir_point; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE first_nadir_point FROM PUBLIC;
-REVOKE ALL ON TABLE first_nadir_point FROM srv_dpmc;
-GRANT ALL ON TABLE first_nadir_point TO srv_dpmc;
-GRANT SELECT ON TABLE first_nadir_point TO srv_s3ome_read;
-
-
---
--- Name: footprint; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE footprint FROM PUBLIC;
-REVOKE ALL ON TABLE footprint FROM srv_dpmc;
-GRANT ALL ON TABLE footprint TO srv_dpmc;
-GRANT SELECT ON TABLE footprint TO srv_s3ome_read;
-
-
---
--- Name: ipf_processing_baseline; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE ipf_processing_baseline FROM PUBLIC;
-REVOKE ALL ON TABLE ipf_processing_baseline FROM srv_dpmc;
-GRANT ALL ON TABLE ipf_processing_baseline TO srv_dpmc;
-GRANT SELECT ON TABLE ipf_processing_baseline TO srv_s3ome_read;
-
-
---
--- Name: ipf_processing_baseline_x_sxa; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE ipf_processing_baseline_x_sxa FROM PUBLIC;
-REVOKE ALL ON TABLE ipf_processing_baseline_x_sxa FROM srv_dpmc;
-GRANT ALL ON TABLE ipf_processing_baseline_x_sxa TO srv_dpmc;
-GRANT SELECT ON TABLE ipf_processing_baseline_x_sxa TO srv_s3ome_read;
-
-
---
--- Name: product_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_type FROM PUBLIC;
-REVOKE ALL ON TABLE product_type FROM srv_dpmc;
-GRANT ALL ON TABLE product_type TO srv_dpmc;
-GRANT SELECT ON TABLE product_type TO srv_s3ome_read;
-
-
---
--- Name: software; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE software FROM PUBLIC;
-REVOKE ALL ON TABLE software FROM srv_dpmc;
-GRANT ALL ON TABLE software TO srv_dpmc;
-GRANT SELECT ON TABLE software TO srv_s3ome_read;
-
-
---
--- Name: software_x_auxiliary_configuration; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE software_x_auxiliary_configuration FROM PUBLIC;
-REVOKE ALL ON TABLE software_x_auxiliary_configuration FROM srv_dpmc;
-GRANT ALL ON TABLE software_x_auxiliary_configuration TO srv_dpmc;
-GRANT SELECT ON TABLE software_x_auxiliary_configuration TO srv_s3ome_read;
-
-
---
--- Name: give_ipf_processing_baseline; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE give_ipf_processing_baseline FROM PUBLIC;
-REVOKE ALL ON TABLE give_ipf_processing_baseline FROM srv_dpmc;
-GRANT ALL ON TABLE give_ipf_processing_baseline TO srv_dpmc;
-GRANT SELECT ON TABLE give_ipf_processing_baseline TO srv_s3ome_read;
-
-
---
--- Name: give_ipf_processing_sxac; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE give_ipf_processing_sxac FROM PUBLIC;
-REVOKE ALL ON TABLE give_ipf_processing_sxac FROM srv_dpmc;
-GRANT ALL ON TABLE give_ipf_processing_sxac TO srv_dpmc;
-GRANT SELECT ON TABLE give_ipf_processing_sxac TO srv_s3ome_read;
-
-
---
--- Name: give_one_full_baseline; Type: ACL; Schema: internal; Owner: postgres
---
-
-REVOKE ALL ON TABLE give_one_full_baseline FROM PUBLIC;
-REVOKE ALL ON TABLE give_one_full_baseline FROM postgres;
-GRANT ALL ON TABLE give_one_full_baseline TO postgres;
-GRANT SELECT ON TABLE give_one_full_baseline TO srv_s3ome_read;
-
-
---
--- Name: global; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE global FROM PUBLIC;
-REVOKE ALL ON TABLE global FROM srv_dpmc;
-GRANT ALL ON TABLE global TO srv_dpmc;
-GRANT SELECT ON TABLE global TO srv_s3ome_read;
-
-
---
--- Name: image_processing_input; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE image_processing_input FROM PUBLIC;
-REVOKE ALL ON TABLE image_processing_input FROM srv_dpmc;
-GRANT ALL ON TABLE image_processing_input TO srv_dpmc;
-GRANT SELECT ON TABLE image_processing_input TO srv_s3ome_read;
-
-
---
--- Name: imaging_instrument; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE imaging_instrument FROM PUBLIC;
-REVOKE ALL ON TABLE imaging_instrument FROM srv_dpmc;
-GRANT ALL ON TABLE imaging_instrument TO srv_dpmc;
-GRANT SELECT ON TABLE imaging_instrument TO srv_s3ome_read;
-
-
---
--- Name: instrument; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE instrument FROM PUBLIC;
-REVOKE ALL ON TABLE instrument FROM srv_dpmc;
-GRANT ALL ON TABLE instrument TO srv_dpmc;
-GRANT SELECT ON TABLE instrument TO srv_s3ome_read;
-
-
---
--- Name: instrument_calibration_history; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE instrument_calibration_history FROM PUBLIC;
-REVOKE ALL ON TABLE instrument_calibration_history FROM srv_dpmc;
-GRANT ALL ON TABLE instrument_calibration_history TO srv_dpmc;
-GRANT SELECT ON TABLE instrument_calibration_history TO srv_s3ome_read;
-
-
---
--- Name: instrument_unavailability_period; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE instrument_unavailability_period FROM PUBLIC;
-REVOKE ALL ON TABLE instrument_unavailability_period FROM srv_dpmc;
-GRANT ALL ON TABLE instrument_unavailability_period TO srv_dpmc;
-GRANT SELECT ON TABLE instrument_unavailability_period TO srv_s3ome_read;
-
-
---
--- Name: ipf_x_dynamic_adf; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE ipf_x_dynamic_adf FROM PUBLIC;
-REVOKE ALL ON TABLE ipf_x_dynamic_adf FROM srv_dpmc;
-GRANT ALL ON TABLE ipf_x_dynamic_adf TO srv_dpmc;
-GRANT SELECT ON TABLE ipf_x_dynamic_adf TO srv_s3ome_read;
-
-
---
--- Name: living_request; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE living_request FROM PUBLIC;
-REVOKE ALL ON TABLE living_request FROM srv_dpmc;
-GRANT ALL ON TABLE living_request TO srv_dpmc;
-GRANT SELECT ON TABLE living_request TO srv_s3ome_read;
-
-
---
--- Name: mailing_list; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE mailing_list FROM PUBLIC;
-REVOKE ALL ON TABLE mailing_list FROM srv_dpmc;
-GRANT ALL ON TABLE mailing_list TO srv_dpmc;
-GRANT SELECT ON TABLE mailing_list TO srv_s3ome_read;
-
-
---
--- Name: media; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media FROM PUBLIC;
-REVOKE ALL ON TABLE media FROM srv_dpmc;
-GRANT ALL ON TABLE media TO srv_dpmc;
-GRANT SELECT ON TABLE media TO srv_s3ome_read;
-
-
---
--- Name: media_catalog; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_catalog FROM PUBLIC;
-REVOKE ALL ON TABLE media_catalog FROM srv_dpmc;
-GRANT ALL ON TABLE media_catalog TO srv_dpmc;
-GRANT SELECT ON TABLE media_catalog TO srv_s3ome_read;
-
-
---
--- Name: media_catalog_entry; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_catalog_entry FROM PUBLIC;
-REVOKE ALL ON TABLE media_catalog_entry FROM srv_dpmc;
-GRANT ALL ON TABLE media_catalog_entry TO srv_dpmc;
-GRANT SELECT ON TABLE media_catalog_entry TO srv_s3ome_read;
-
-
---
--- Name: media_history; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_history FROM PUBLIC;
-REVOKE ALL ON TABLE media_history FROM srv_dpmc;
-GRANT ALL ON TABLE media_history TO srv_dpmc;
-GRANT SELECT ON TABLE media_history TO srv_s3ome_read;
-
-
---
--- Name: media_history_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_history_type FROM PUBLIC;
-REVOKE ALL ON TABLE media_history_type FROM srv_dpmc;
-GRANT ALL ON TABLE media_history_type TO srv_dpmc;
-GRANT SELECT ON TABLE media_history_type TO srv_s3ome_read;
-
-
---
--- Name: media_info; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_info FROM PUBLIC;
-REVOKE ALL ON TABLE media_info FROM srv_dpmc;
-GRANT ALL ON TABLE media_info TO srv_dpmc;
-GRANT ALL ON TABLE media_info TO PUBLIC;
-GRANT SELECT ON TABLE media_info TO srv_s3ome_read;
-
-
---
--- Name: media_status; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_status FROM PUBLIC;
-REVOKE ALL ON TABLE media_status FROM srv_dpmc;
-GRANT ALL ON TABLE media_status TO srv_dpmc;
-GRANT ALL ON TABLE media_status TO PUBLIC;
-GRANT SELECT ON TABLE media_status TO srv_s3ome_read;
-
-
---
--- Name: media_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE media_type FROM PUBLIC;
-REVOKE ALL ON TABLE media_type FROM srv_dpmc;
-GRANT ALL ON TABLE media_type TO srv_dpmc;
-GRANT SELECT ON TABLE media_type TO srv_s3ome_read;
-
-
---
--- Name: mode; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE mode FROM PUBLIC;
-REVOKE ALL ON TABLE mode FROM srv_dpmc;
-GRANT ALL ON TABLE mode TO srv_dpmc;
-GRANT SELECT ON TABLE mode TO srv_s3ome_read;
-
-
---
--- Name: mode_x_product_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE mode_x_product_type FROM PUBLIC;
-REVOKE ALL ON TABLE mode_x_product_type FROM srv_dpmc;
-GRANT ALL ON TABLE mode_x_product_type TO srv_dpmc;
-GRANT SELECT ON TABLE mode_x_product_type TO srv_s3ome_read;
-
-
---
--- Name: on_board_time; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE on_board_time FROM PUBLIC;
-REVOKE ALL ON TABLE on_board_time FROM srv_dpmc;
-GRANT ALL ON TABLE on_board_time TO srv_dpmc;
-GRANT SELECT ON TABLE on_board_time TO srv_s3ome_read;
-
-
---
--- Name: orbit; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE orbit FROM PUBLIC;
-REVOKE ALL ON TABLE orbit FROM srv_dpmc;
-GRANT ALL ON TABLE orbit TO srv_dpmc;
-GRANT SELECT ON TABLE orbit TO srv_s3ome_read;
-
-
---
--- Name: priority; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE priority FROM PUBLIC;
-REVOKE ALL ON TABLE priority FROM srv_dpmc;
-GRANT ALL ON TABLE priority TO srv_dpmc;
-GRANT SELECT ON TABLE priority TO srv_s3ome_read;
-
-
---
--- Name: priority_x_product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE priority_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE priority_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE priority_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE priority_x_product TO srv_s3ome_read;
-
-
---
--- Name: processing; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE processing FROM PUBLIC;
-REVOKE ALL ON TABLE processing FROM srv_dpmc;
-GRANT ALL ON TABLE processing TO srv_dpmc;
-GRANT SELECT ON TABLE processing TO srv_s3ome_read;
-
-
---
--- Name: processing_chain; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE processing_chain FROM PUBLIC;
-REVOKE ALL ON TABLE processing_chain FROM srv_dpmc;
-GRANT ALL ON TABLE processing_chain TO srv_dpmc;
-GRANT SELECT ON TABLE processing_chain TO srv_s3ome_read;
-
-
---
--- Name: processing_configuration; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE processing_configuration FROM PUBLIC;
-REVOKE ALL ON TABLE processing_configuration FROM srv_dpmc;
-GRANT ALL ON TABLE processing_configuration TO srv_dpmc;
-GRANT SELECT ON TABLE processing_configuration TO srv_s3ome_read;
-
-
---
--- Name: processing_input; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE processing_input FROM PUBLIC;
-REVOKE ALL ON TABLE processing_input FROM srv_dpmc;
-GRANT ALL ON TABLE processing_input TO srv_dpmc;
-GRANT SELECT ON TABLE processing_input TO srv_s3ome_read;
-
-
---
--- Name: product_media; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_media FROM PUBLIC;
-REVOKE ALL ON TABLE product_media FROM srv_dpmc;
-GRANT ALL ON TABLE product_media TO srv_dpmc;
-GRANT SELECT ON TABLE product_media TO srv_s3ome_read;
-
-
---
--- Name: product_x_media_catalog_entry; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_x_media_catalog_entry FROM PUBLIC;
-REVOKE ALL ON TABLE product_x_media_catalog_entry FROM srv_dpmc;
-GRANT ALL ON TABLE product_x_media_catalog_entry TO srv_dpmc;
-GRANT SELECT ON TABLE product_x_media_catalog_entry TO srv_s3ome_read;
-
-
---
--- Name: sensing_product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE sensing_product FROM PUBLIC;
-REVOKE ALL ON TABLE sensing_product FROM srv_dpmc;
-GRANT ALL ON TABLE sensing_product TO srv_dpmc;
-GRANT SELECT ON TABLE sensing_product TO srv_s3ome_read;
-
-
---
--- Name: product_path; Type: ACL; Schema: internal; Owner: postgres
---
-
-REVOKE ALL ON TABLE product_path FROM PUBLIC;
-REVOKE ALL ON TABLE product_path FROM postgres;
-GRANT ALL ON TABLE product_path TO postgres;
-GRANT SELECT ON TABLE product_path TO srv_s3ome_read;
-
-
---
--- Name: product_time_range; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_time_range FROM PUBLIC;
-REVOKE ALL ON TABLE product_time_range FROM srv_dpmc;
-GRANT ALL ON TABLE product_time_range TO srv_dpmc;
-GRANT SELECT ON TABLE product_time_range TO srv_s3ome_read;
-
-
---
--- Name: product_type_chain; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_type_chain FROM PUBLIC;
-REVOKE ALL ON TABLE product_type_chain FROM srv_dpmc;
-GRANT ALL ON TABLE product_type_chain TO srv_dpmc;
-GRANT SELECT ON TABLE product_type_chain TO srv_s3ome_read;
-
-
---
--- Name: product_type_dependency; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_type_dependency FROM PUBLIC;
-REVOKE ALL ON TABLE product_type_dependency FROM srv_dpmc;
-GRANT ALL ON TABLE product_type_dependency TO srv_dpmc;
-GRANT SELECT ON TABLE product_type_dependency TO srv_s3ome_read;
-
-
---
--- Name: product_type_link; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_type_link FROM PUBLIC;
-REVOKE ALL ON TABLE product_type_link FROM srv_dpmc;
-GRANT ALL ON TABLE product_type_link TO srv_dpmc;
-GRANT SELECT ON TABLE product_type_link TO srv_s3ome_read;
-
-
---
--- Name: product_x_sequential_media; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_x_sequential_media FROM PUBLIC;
-REVOKE ALL ON TABLE product_x_sequential_media FROM srv_dpmc;
-GRANT ALL ON TABLE product_x_sequential_media TO srv_dpmc;
-GRANT SELECT ON TABLE product_x_sequential_media TO srv_s3ome_read;
-
-
---
--- Name: pushed_products; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE pushed_products FROM PUBLIC;
-REVOKE ALL ON TABLE pushed_products FROM srv_dpmc;
-GRANT ALL ON TABLE pushed_products TO srv_dpmc;
-GRANT SELECT ON TABLE pushed_products TO srv_s3ome_read;
-
-
---
--- Name: recipient; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE recipient FROM PUBLIC;
-REVOKE ALL ON TABLE recipient FROM srv_dpmc;
-GRANT ALL ON TABLE recipient TO srv_dpmc;
-GRANT SELECT ON TABLE recipient TO srv_s3ome_read;
-
-
---
--- Name: rectangular_site; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE rectangular_site FROM PUBLIC;
-REVOKE ALL ON TABLE rectangular_site FROM srv_dpmc;
-GRANT ALL ON TABLE rectangular_site TO srv_dpmc;
-GRANT SELECT ON TABLE rectangular_site TO srv_s3ome_read;
-
-
---
--- Name: reference_tie_frame; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE reference_tie_frame FROM PUBLIC;
-REVOKE ALL ON TABLE reference_tie_frame FROM srv_dpmc;
-GRANT ALL ON TABLE reference_tie_frame TO srv_dpmc;
-GRANT SELECT ON TABLE reference_tie_frame TO srv_s3ome_read;
-
-
---
--- Name: relative_orbit; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE relative_orbit FROM PUBLIC;
-REVOKE ALL ON TABLE relative_orbit FROM srv_dpmc;
-GRANT ALL ON TABLE relative_orbit TO srv_dpmc;
-GRANT SELECT ON TABLE relative_orbit TO srv_s3ome_read;
-
-
---
--- Name: reprocessing; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE reprocessing FROM PUBLIC;
-REVOKE ALL ON TABLE reprocessing FROM srv_dpmc;
-GRANT ALL ON TABLE reprocessing TO srv_dpmc;
-GRANT SELECT ON TABLE reprocessing TO srv_s3ome_read;
-
-
---
--- Name: request; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request FROM PUBLIC;
-REVOKE ALL ON TABLE request FROM srv_dpmc;
-GRANT ALL ON TABLE request TO srv_dpmc;
-GRANT SELECT ON TABLE request TO srv_s3ome_read;
-
-
---
--- Name: request_description; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_description FROM PUBLIC;
-REVOKE ALL ON TABLE request_description FROM srv_dpmc;
-GRANT ALL ON TABLE request_description TO srv_dpmc;
-GRANT SELECT ON TABLE request_description TO srv_s3ome_read;
-
-
---
--- Name: site; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE site FROM PUBLIC;
-REVOKE ALL ON TABLE site FROM srv_dpmc;
-GRANT ALL ON TABLE site TO srv_dpmc;
-GRANT SELECT ON TABLE site TO srv_s3ome_read;
-
-
-SET search_path = processing, pg_catalog;
-
---
--- Name: pool; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE pool FROM PUBLIC;
-REVOKE ALL ON TABLE pool FROM srv_dpmc;
-GRANT ALL ON TABLE pool TO srv_dpmc;
-GRANT SELECT ON TABLE pool TO nagios;
-GRANT SELECT ON TABLE pool TO srv_s3ome_read;
-
-
---
--- Name: processing_comment; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE processing_comment FROM PUBLIC;
-REVOKE ALL ON TABLE processing_comment FROM srv_dpmc;
-GRANT ALL ON TABLE processing_comment TO srv_dpmc;
-GRANT SELECT ON TABLE processing_comment TO nagios;
-GRANT SELECT ON TABLE processing_comment TO srv_s3ome_read;
-
-
---
--- Name: processing_set; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE processing_set FROM PUBLIC;
-REVOKE ALL ON TABLE processing_set FROM srv_dpmc;
-GRANT ALL ON TABLE processing_set TO srv_dpmc;
-GRANT SELECT ON TABLE processing_set TO nagios;
-GRANT SELECT ON TABLE processing_set TO srv_s3ome_read;
-
-
-SET search_path = internal, pg_catalog;
-
---
--- Name: request_detail_site; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_detail_site FROM PUBLIC;
-REVOKE ALL ON TABLE request_detail_site FROM srv_dpmc;
-GRANT ALL ON TABLE request_detail_site TO srv_dpmc;
-GRANT SELECT ON TABLE request_detail_site TO srv_s3ome_read;
-
-
---
--- Name: request_details; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_details FROM PUBLIC;
-REVOKE ALL ON TABLE request_details FROM srv_dpmc;
-GRANT ALL ON TABLE request_details TO srv_dpmc;
-GRANT SELECT ON TABLE request_details TO srv_s3ome_read;
-
-
---
--- Name: request_group; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_group FROM PUBLIC;
-REVOKE ALL ON TABLE request_group FROM srv_dpmc;
-GRANT ALL ON TABLE request_group TO srv_dpmc;
-GRANT SELECT ON TABLE request_group TO srv_s3ome_read;
-
-
---
--- Name: request_group_x_request; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_group_x_request FROM PUBLIC;
-REVOKE ALL ON TABLE request_group_x_request FROM srv_dpmc;
-GRANT ALL ON TABLE request_group_x_request TO srv_dpmc;
-GRANT SELECT ON TABLE request_group_x_request TO srv_s3ome_read;
-
-
---
--- Name: request_x_data_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_x_data_type FROM PUBLIC;
-REVOKE ALL ON TABLE request_x_data_type FROM srv_dpmc;
-GRANT ALL ON TABLE request_x_data_type TO srv_dpmc;
-GRANT SELECT ON TABLE request_x_data_type TO srv_s3ome_read;
-
-
---
--- Name: request_x_processing; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_x_processing FROM PUBLIC;
-REVOKE ALL ON TABLE request_x_processing FROM srv_dpmc;
-GRANT ALL ON TABLE request_x_processing TO srv_dpmc;
-GRANT SELECT ON TABLE request_x_processing TO srv_s3ome_read;
-
-
---
--- Name: request_x_product; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE request_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE request_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE request_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE request_x_product TO srv_s3ome_read;
-
-
---
--- Name: requester; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE requester FROM PUBLIC;
-REVOKE ALL ON TABLE requester FROM srv_dpmc;
-GRANT ALL ON TABLE requester TO srv_dpmc;
-GRANT SELECT ON TABLE requester TO srv_s3ome_read;
-
-
---
--- Name: satellite; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE satellite FROM PUBLIC;
-REVOKE ALL ON TABLE satellite FROM srv_dpmc;
-GRANT ALL ON TABLE satellite TO srv_dpmc;
-GRANT SELECT ON TABLE satellite TO srv_s3ome_read;
-
-
---
--- Name: satellite_phase; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE satellite_phase FROM PUBLIC;
-REVOKE ALL ON TABLE satellite_phase FROM srv_dpmc;
-GRANT ALL ON TABLE satellite_phase TO srv_dpmc;
-GRANT SELECT ON TABLE satellite_phase TO srv_s3ome_read;
-
-
---
--- Name: server_account; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE server_account FROM PUBLIC;
-REVOKE ALL ON TABLE server_account FROM srv_dpmc;
-GRANT ALL ON TABLE server_account TO srv_dpmc;
-GRANT SELECT ON TABLE server_account TO srv_s3ome_read;
-
-
---
--- Name: site_coverage; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE site_coverage FROM PUBLIC;
-REVOKE ALL ON TABLE site_coverage FROM srv_dpmc;
-GRANT ALL ON TABLE site_coverage TO srv_dpmc;
-GRANT SELECT ON TABLE site_coverage TO srv_s3ome_read;
-
-
---
--- Name: software_x_binary; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE software_x_binary FROM PUBLIC;
-REVOKE ALL ON TABLE software_x_binary FROM srv_dpmc;
-GRANT ALL ON TABLE software_x_binary TO srv_dpmc;
-GRANT SELECT ON TABLE software_x_binary TO srv_s3ome_read;
-
-
---
--- Name: software_x_product_type; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE software_x_product_type FROM PUBLIC;
-REVOKE ALL ON TABLE software_x_product_type FROM srv_dpmc;
-GRANT ALL ON TABLE software_x_product_type TO srv_dpmc;
-GRANT SELECT ON TABLE software_x_product_type TO srv_s3ome_read;
-
-
---
--- Name: state_vector; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE state_vector FROM PUBLIC;
-REVOKE ALL ON TABLE state_vector FROM srv_dpmc;
-GRANT ALL ON TABLE state_vector TO srv_dpmc;
-GRANT SELECT ON TABLE state_vector TO srv_s3ome_read;
-
-
---
--- Name: state_vector_source; Type: ACL; Schema: internal; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE state_vector_source FROM PUBLIC;
-REVOKE ALL ON TABLE state_vector_source FROM srv_dpmc;
-GRANT ALL ON TABLE state_vector_source TO srv_dpmc;
-GRANT SELECT ON TABLE state_vector_source TO srv_s3ome_read;
-
-
-SET search_path = lta, pg_catalog;
-
---
--- Name: abort; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE abort FROM PUBLIC;
-REVOKE ALL ON TABLE abort FROM srv_dpmc;
-GRANT ALL ON TABLE abort TO srv_dpmc;
-GRANT SELECT ON TABLE abort TO srv_s3ome_read;
-
-
---
--- Name: direct; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE direct FROM PUBLIC;
-REVOKE ALL ON TABLE direct FROM srv_dpmc;
-GRANT ALL ON TABLE direct TO srv_dpmc;
-GRANT SELECT ON TABLE direct TO srv_s3ome_read;
-
-
---
--- Name: transaction; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE transaction FROM PUBLIC;
-REVOKE ALL ON TABLE transaction FROM srv_dpmc;
-GRANT ALL ON TABLE transaction TO srv_dpmc;
-GRANT SELECT ON TABLE transaction TO srv_s3ome_read;
-
-
---
--- Name: active_transactions; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE active_transactions FROM PUBLIC;
-REVOKE ALL ON TABLE active_transactions FROM srv_dpmc;
-GRANT ALL ON TABLE active_transactions TO srv_dpmc;
-GRANT SELECT ON TABLE active_transactions TO srv_s3ome_read;
-
-
---
--- Name: archive; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE archive FROM PUBLIC;
-REVOKE ALL ON TABLE archive FROM srv_dpmc;
-GRANT ALL ON TABLE archive TO srv_dpmc;
-GRANT SELECT ON TABLE archive TO srv_s3ome_read;
-
-
---
--- Name: check; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE "check" FROM PUBLIC;
-REVOKE ALL ON TABLE "check" FROM srv_dpmc;
-GRANT ALL ON TABLE "check" TO srv_dpmc;
-GRANT SELECT ON TABLE "check" TO srv_s3ome_read;
-
-
---
--- Name: delete; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE delete FROM PUBLIC;
-REVOKE ALL ON TABLE delete FROM srv_dpmc;
-GRANT ALL ON TABLE delete TO srv_dpmc;
-GRANT SELECT ON TABLE delete TO srv_s3ome_read;
-
-
---
--- Name: global; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE global FROM PUBLIC;
-REVOKE ALL ON TABLE global FROM srv_dpmc;
-GRANT ALL ON TABLE global TO srv_dpmc;
-GRANT SELECT ON TABLE global TO srv_s3ome_read;
-
-
---
--- Name: ingestion; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE ingestion FROM PUBLIC;
-REVOKE ALL ON TABLE ingestion FROM srv_dpmc;
-GRANT ALL ON TABLE ingestion TO srv_dpmc;
-GRANT SELECT ON TABLE ingestion TO srv_s3ome_read;
-
-
---
--- Name: product_status; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE product_status FROM PUBLIC;
-REVOKE ALL ON TABLE product_status FROM srv_dpmc;
-GRANT ALL ON TABLE product_status TO srv_dpmc;
-GRANT SELECT ON TABLE product_status TO srv_s3ome_read;
-
-
---
--- Name: last_products_status; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE last_products_status FROM PUBLIC;
-REVOKE ALL ON TABLE last_products_status FROM srv_dpmc;
-GRANT ALL ON TABLE last_products_status TO srv_dpmc;
-GRANT SELECT ON TABLE last_products_status TO srv_s3ome_read;
-
-
---
--- Name: monitoring; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE monitoring FROM PUBLIC;
-REVOKE ALL ON TABLE monitoring FROM srv_dpmc;
-GRANT ALL ON TABLE monitoring TO srv_dpmc;
-GRANT SELECT ON TABLE monitoring TO srv_s3ome_read;
-
-
---
--- Name: not_archived_products; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE not_archived_products FROM PUBLIC;
-REVOKE ALL ON TABLE not_archived_products FROM srv_dpmc;
-GRANT ALL ON TABLE not_archived_products TO srv_dpmc;
-GRANT SELECT ON TABLE not_archived_products TO srv_s3ome_read;
-
-
---
--- Name: query; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE query FROM PUBLIC;
-REVOKE ALL ON TABLE query FROM srv_dpmc;
-GRANT ALL ON TABLE query TO srv_dpmc;
-GRANT SELECT ON TABLE query TO srv_s3ome_read;
-
-
---
--- Name: retrieval; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE retrieval FROM PUBLIC;
-REVOKE ALL ON TABLE retrieval FROM srv_dpmc;
-GRANT ALL ON TABLE retrieval TO srv_dpmc;
-GRANT SELECT ON TABLE retrieval TO srv_s3ome_read;
-
-
---
--- Name: transaction_type; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE transaction_type FROM PUBLIC;
-REVOKE ALL ON TABLE transaction_type FROM srv_dpmc;
-GRANT ALL ON TABLE transaction_type TO srv_dpmc;
-GRANT SELECT ON TABLE transaction_type TO srv_s3ome_read;
-
-
---
--- Name: transaction_type_x_request; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE transaction_type_x_request FROM PUBLIC;
-REVOKE ALL ON TABLE transaction_type_x_request FROM srv_dpmc;
-GRANT ALL ON TABLE transaction_type_x_request TO srv_dpmc;
-GRANT SELECT ON TABLE transaction_type_x_request TO srv_s3ome_read;
-
-
---
--- Name: transactions_details; Type: ACL; Schema: lta; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE transactions_details FROM PUBLIC;
-REVOKE ALL ON TABLE transactions_details FROM srv_dpmc;
-GRANT ALL ON TABLE transactions_details TO srv_dpmc;
-GRANT SELECT ON TABLE transactions_details TO srv_s3ome_read;
-
-
-SET search_path = processing, pg_catalog;
-
---
--- Name: hosts; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE hosts FROM PUBLIC;
-REVOKE ALL ON TABLE hosts FROM srv_dpmc;
-GRANT ALL ON TABLE hosts TO srv_dpmc;
-GRANT SELECT ON TABLE hosts TO nagios;
-GRANT SELECT ON TABLE hosts TO srv_s3ome_read;
-
-
---
--- Name: top; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE top FROM PUBLIC;
-REVOKE ALL ON TABLE top FROM srv_dpmc;
-GRANT ALL ON TABLE top TO srv_dpmc;
-GRANT SELECT ON TABLE top TO nagios;
-GRANT SELECT ON TABLE top TO srv_s3ome_read;
-
-
---
--- Name: available_hosts; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE available_hosts FROM PUBLIC;
-REVOKE ALL ON TABLE available_hosts FROM srv_dpmc;
-GRANT ALL ON TABLE available_hosts TO srv_dpmc;
-GRANT SELECT ON TABLE available_hosts TO nagios;
-GRANT SELECT ON TABLE available_hosts TO srv_s3ome_read;
-
-
---
--- Name: batch; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE batch FROM PUBLIC;
-REVOKE ALL ON TABLE batch FROM srv_dpmc;
-GRANT ALL ON TABLE batch TO srv_dpmc;
-GRANT SELECT ON TABLE batch TO nagios;
-GRANT SELECT ON TABLE batch TO srv_s3ome_read;
-
-
---
--- Name: batch_x_product; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE batch_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE batch_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE batch_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE batch_x_product TO nagios;
-GRANT SELECT ON TABLE batch_x_product TO srv_s3ome_read;
-
-
---
--- Name: cache_lock; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE cache_lock FROM PUBLIC;
-REVOKE ALL ON TABLE cache_lock FROM srv_dpmc;
-GRANT ALL ON TABLE cache_lock TO srv_dpmc;
-GRANT SELECT ON TABLE cache_lock TO nagios;
-GRANT SELECT ON TABLE cache_lock TO srv_s3ome_read;
-
-
---
--- Name: history; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE history FROM PUBLIC;
-REVOKE ALL ON TABLE history FROM srv_dpmc;
-GRANT ALL ON TABLE history TO srv_dpmc;
-GRANT SELECT ON TABLE history TO nagios;
-GRANT SELECT ON TABLE history TO srv_s3ome_read;
-
-
---
--- Name: history_x_product; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE history_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE history_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE history_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE history_x_product TO nagios;
-GRANT SELECT ON TABLE history_x_product TO srv_s3ome_read;
-
-
---
--- Name: hosts_comment; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE hosts_comment FROM PUBLIC;
-REVOKE ALL ON TABLE hosts_comment FROM srv_dpmc;
-GRANT ALL ON TABLE hosts_comment TO srv_dpmc;
-GRANT SELECT ON TABLE hosts_comment TO nagios;
-GRANT SELECT ON TABLE hosts_comment TO srv_s3ome_read;
-
-
---
--- Name: mutex; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE mutex FROM PUBLIC;
-REVOKE ALL ON TABLE mutex FROM srv_dpmc;
-GRANT ALL ON TABLE mutex TO srv_dpmc;
-GRANT SELECT ON TABLE mutex TO nagios;
-GRANT SELECT ON TABLE mutex TO srv_s3ome_read;
-
-
---
--- Name: output_file; Type: ACL; Schema: processing; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE output_file FROM PUBLIC;
-REVOKE ALL ON TABLE output_file FROM srv_dpmc;
-GRANT ALL ON TABLE output_file TO srv_dpmc;
-GRANT SELECT ON TABLE output_file TO nagios;
-GRANT SELECT ON TABLE output_file TO srv_s3ome_read;
-
-
 --
--- Name: parameters_comment; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: ipf_processing_baseline_x_sxa fk_ipf_processing_baseline_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE parameters_comment FROM PUBLIC;
-REVOKE ALL ON TABLE parameters_comment FROM srv_dpmc;
-GRANT ALL ON TABLE parameters_comment TO srv_dpmc;
-GRANT SELECT ON TABLE parameters_comment TO nagios;
-GRANT SELECT ON TABLE parameters_comment TO srv_s3ome_read;
+ALTER TABLE ONLY internal.ipf_processing_baseline_x_sxa
+    ADD CONSTRAINT fk_ipf_processing_baseline_id FOREIGN KEY (ipf_processing_baseline_id) REFERENCES internal.ipf_processing_baseline(id);
 
 
 --
--- Name: parameters_set; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: processing_configuration fk_processing_comment_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE parameters_set FROM PUBLIC;
-REVOKE ALL ON TABLE parameters_set FROM srv_dpmc;
-GRANT ALL ON TABLE parameters_set TO srv_dpmc;
-GRANT SELECT ON TABLE parameters_set TO nagios;
-GRANT SELECT ON TABLE parameters_set TO srv_s3ome_read;
+ALTER TABLE ONLY internal.processing_configuration
+    ADD CONSTRAINT fk_processing_comment_id FOREIGN KEY (processing_comment_id) REFERENCES processing.processing_script(id);
 
 
 --
--- Name: pool_x_hosts; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: dataset_x_product fk_product_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE pool_x_hosts FROM PUBLIC;
-REVOKE ALL ON TABLE pool_x_hosts FROM srv_dpmc;
-GRANT ALL ON TABLE pool_x_hosts TO srv_dpmc;
-GRANT SELECT ON TABLE pool_x_hosts TO nagios;
-GRANT SELECT ON TABLE pool_x_hosts TO srv_s3ome_read;
+ALTER TABLE ONLY internal.dataset_x_product
+    ADD CONSTRAINT fk_product_id FOREIGN KEY (product_id) REFERENCES internal.product(id);
 
 
 --
--- Name: processing_comment_x_product_type; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: software_x_binary fk_software_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE processing_comment_x_product_type FROM PUBLIC;
-REVOKE ALL ON TABLE processing_comment_x_product_type FROM srv_dpmc;
-GRANT ALL ON TABLE processing_comment_x_product_type TO srv_dpmc;
-GRANT SELECT ON TABLE processing_comment_x_product_type TO nagios;
-GRANT SELECT ON TABLE processing_comment_x_product_type TO srv_s3ome_read;
+ALTER TABLE ONLY internal.software_x_binary
+    ADD CONSTRAINT fk_software_id FOREIGN KEY (software_id) REFERENCES internal.software(id);
 
 
 --
--- Name: processing_type; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: software_x_auxiliary_configuration fk_software_soft_x_aux; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE processing_type FROM PUBLIC;
-REVOKE ALL ON TABLE processing_type FROM srv_dpmc;
-GRANT ALL ON TABLE processing_type TO srv_dpmc;
-GRANT SELECT ON TABLE processing_type TO nagios;
-GRANT SELECT ON TABLE processing_type TO srv_s3ome_read;
+ALTER TABLE ONLY internal.software_x_auxiliary_configuration
+    ADD CONSTRAINT fk_software_soft_x_aux FOREIGN KEY (software) REFERENCES internal.software(id);
 
 
 --
--- Name: queued_generic_batch; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: processing_configuration fk_sxac_id; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE queued_generic_batch FROM PUBLIC;
-REVOKE ALL ON TABLE queued_generic_batch FROM srv_dpmc;
-GRANT ALL ON TABLE queued_generic_batch TO srv_dpmc;
-GRANT SELECT ON TABLE queued_generic_batch TO nagios;
-GRANT SELECT ON TABLE queued_generic_batch TO srv_s3ome_read;
+ALTER TABLE ONLY internal.processing_configuration
+    ADD CONSTRAINT fk_sxac_id FOREIGN KEY (sxac_id) REFERENCES internal.software_x_auxiliary_configuration(id);
 
 
 --
--- Name: running_generic_batch; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: processing_product_x_tag processing_product_x_tag_product_name_fkey; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE running_generic_batch FROM PUBLIC;
-REVOKE ALL ON TABLE running_generic_batch FROM srv_dpmc;
-GRANT ALL ON TABLE running_generic_batch TO srv_dpmc;
-GRANT SELECT ON TABLE running_generic_batch TO nagios;
-GRANT SELECT ON TABLE running_generic_batch TO srv_s3ome_read;
+ALTER TABLE ONLY internal.processing_product_x_tag
+    ADD CONSTRAINT processing_product_x_tag_product_name_fkey FOREIGN KEY (product_name) REFERENCES internal.product(name);
 
 
 --
--- Name: waiting_batch; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: production_chain_x_product_type production_chain_x_product_type_product_type_fkey; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE waiting_batch FROM PUBLIC;
-REVOKE ALL ON TABLE waiting_batch FROM srv_dpmc;
-GRANT ALL ON TABLE waiting_batch TO srv_dpmc;
-GRANT SELECT ON TABLE waiting_batch TO nagios;
-GRANT SELECT ON TABLE waiting_batch TO srv_s3ome_read;
+ALTER TABLE ONLY internal.production_chain_x_product_type
+    ADD CONSTRAINT production_chain_x_product_type_product_type_fkey FOREIGN KEY (product_type) REFERENCES internal.product_type(id);
 
 
 --
--- Name: waiting_generic_batchs; Type: ACL; Schema: processing; Owner: srv_dpmc
+-- Name: software_x_image_tag software_x_image_tag_software_id_fkey; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE waiting_generic_batchs FROM PUBLIC;
-REVOKE ALL ON TABLE waiting_generic_batchs FROM srv_dpmc;
-GRANT ALL ON TABLE waiting_generic_batchs TO srv_dpmc;
-GRANT SELECT ON TABLE waiting_generic_batchs TO nagios;
-GRANT SELECT ON TABLE waiting_generic_batchs TO srv_s3ome_read;
+ALTER TABLE ONLY internal.software_x_image_tag
+    ADD CONSTRAINT software_x_image_tag_software_id_fkey FOREIGN KEY (software_id) REFERENCES internal.software(id);
 
 
-SET search_path = public, pg_catalog;
-
---
--- Name: active_transactions; Type: ACL; Schema: public; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE active_transactions FROM PUBLIC;
-REVOKE ALL ON TABLE active_transactions FROM srv_dpmc;
-GRANT ALL ON TABLE active_transactions TO srv_dpmc;
-GRANT SELECT ON TABLE active_transactions TO srv_s3ome_read;
-
-
---
--- Name: archived_and_online; Type: ACL; Schema: public; Owner: srv_dpmc
---
-
-REVOKE ALL ON TABLE archived_and_online FROM PUBLIC;
-REVOKE ALL ON TABLE archived_and_online FROM srv_dpmc;
-GRANT ALL ON TABLE archived_and_online TO srv_dpmc;
-GRANT SELECT ON TABLE archived_and_online TO srv_s3ome_read;
-
-
---
--- Name: batch; Type: ACL; Schema: public; Owner: srv_dpmc
 --
-
-REVOKE ALL ON TABLE batch FROM PUBLIC;
-REVOKE ALL ON TABLE batch FROM srv_dpmc;
-GRANT ALL ON TABLE batch TO srv_dpmc;
-GRANT SELECT ON TABLE batch TO srv_s3ome_read;
-
-
+-- Name: task task_baseline_fkey; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
--- Name: detail_top; Type: ACL; Schema: public; Owner: srv_dpmc
---
 
-REVOKE ALL ON TABLE detail_top FROM PUBLIC;
-REVOKE ALL ON TABLE detail_top FROM srv_dpmc;
-GRANT ALL ON TABLE detail_top TO srv_dpmc;
-GRANT SELECT ON TABLE detail_top TO srv_s3ome_read;
+ALTER TABLE ONLY internal.task
+    ADD CONSTRAINT task_baseline_fkey FOREIGN KEY (baseline) REFERENCES processing.processing_baseline(baseline);
 
 
 --
--- Name: detail_top_old; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: task task_fk; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE detail_top_old FROM PUBLIC;
-REVOKE ALL ON TABLE detail_top_old FROM srv_dpmc;
-GRANT ALL ON TABLE detail_top_old TO srv_dpmc;
-GRANT SELECT ON TABLE detail_top_old TO srv_s3ome_read;
+ALTER TABLE ONLY internal.task
+    ADD CONSTRAINT task_fk FOREIGN KEY (pool) REFERENCES processing.pool(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
--- Name: detail_top_s3; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: task task_satellite_orbit_fkey; Type: FK CONSTRAINT; Schema: internal; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE detail_top_s3 FROM PUBLIC;
-REVOKE ALL ON TABLE detail_top_s3 FROM srv_dpmc;
-GRANT ALL ON TABLE detail_top_s3 TO srv_dpmc;
-GRANT SELECT ON TABLE detail_top_s3 TO srv_s3ome_read;
+ALTER TABLE ONLY internal.task
+    ADD CONSTRAINT task_satellite_orbit_fkey FOREIGN KEY (satellite, orbit) REFERENCES internal.orbit(satellite, absolute_number);
 
 
 --
--- Name: detail_top_s3_old; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: pool_x_hosts $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE detail_top_s3_old FROM PUBLIC;
-REVOKE ALL ON TABLE detail_top_s3_old FROM srv_dpmc;
-GRANT ALL ON TABLE detail_top_s3_old TO srv_dpmc;
-GRANT SELECT ON TABLE detail_top_s3_old TO srv_s3ome_read;
+ALTER TABLE ONLY processing.pool_x_hosts
+    ADD CONSTRAINT "$1" FOREIGN KEY (pool) REFERENCES processing.pool(id);
 
 
 --
--- Name: disk_location; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_comment_x_product_type $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE disk_location FROM PUBLIC;
-REVOKE ALL ON TABLE disk_location FROM srv_dpmc;
-GRANT ALL ON TABLE disk_location TO srv_dpmc;
-GRANT SELECT ON TABLE disk_location TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_comment_x_product_type
+    ADD CONSTRAINT "$1" FOREIGN KEY (processing_comment) REFERENCES processing.processing_script(id);
 
 
 --
--- Name: files_location; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_script_detail $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE files_location FROM PUBLIC;
-REVOKE ALL ON TABLE files_location FROM srv_dpmc;
-GRANT ALL ON TABLE files_location TO srv_dpmc;
-GRANT SELECT ON TABLE files_location TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_script_detail
+    ADD CONSTRAINT "$1" FOREIGN KEY (id) REFERENCES processing.processing_script(id);
 
 
 --
--- Name: files_location_in_cmg_project; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: history_x_product $1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE files_location_in_cmg_project FROM PUBLIC;
-REVOKE ALL ON TABLE files_location_in_cmg_project FROM srv_dpmc;
-GRANT ALL ON TABLE files_location_in_cmg_project TO srv_dpmc;
-GRANT SELECT ON TABLE files_location_in_cmg_project TO srv_s3ome_read;
+ALTER TABLE ONLY processing.history_x_product
+    ADD CONSTRAINT "$1" FOREIGN KEY (history) REFERENCES processing.history(history_id);
 
 
 --
--- Name: files_path; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: top $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE files_path FROM PUBLIC;
-REVOKE ALL ON TABLE files_path FROM srv_dpmc;
-GRANT ALL ON TABLE files_path TO srv_dpmc;
-GRANT SELECT ON TABLE files_path TO srv_s3ome_read;
+ALTER TABLE ONLY processing.top
+    ADD CONSTRAINT "$2" FOREIGN KEY (hostname_id) REFERENCES processing.hosts(host_id);
 
 
 --
--- Name: hosts_current_ncpu; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: pool_x_hosts $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE hosts_current_ncpu FROM PUBLIC;
-REVOKE ALL ON TABLE hosts_current_ncpu FROM srv_dpmc;
-GRANT ALL ON TABLE hosts_current_ncpu TO srv_dpmc;
-GRANT SELECT ON TABLE hosts_current_ncpu TO srv_s3ome_read;
+ALTER TABLE ONLY processing.pool_x_hosts
+    ADD CONSTRAINT "$2" FOREIGN KEY (hosts) REFERENCES processing.hosts(host_id);
 
 
 --
--- Name: image_request_x_product; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_comment_x_product_type $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE image_request_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE image_request_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE image_request_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE image_request_x_product TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_comment_x_product_type
+    ADD CONSTRAINT "$2" FOREIGN KEY (product_type) REFERENCES internal.product_type(id);
 
 
 --
--- Name: last_product; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: history_x_product $2; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE last_product FROM PUBLIC;
-REVOKE ALL ON TABLE last_product FROM srv_dpmc;
-GRANT ALL ON TABLE last_product TO srv_dpmc;
-GRANT SELECT ON TABLE last_product TO srv_s3ome_read;
+ALTER TABLE ONLY processing.history_x_product
+    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES internal.product(id);
 
 
 --
--- Name: max_id_baseline; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: batch batch_center_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE max_id_baseline FROM PUBLIC;
-REVOKE ALL ON TABLE max_id_baseline FROM srv_dpmc;
-GRANT ALL ON TABLE max_id_baseline TO srv_dpmc;
-GRANT SELECT ON TABLE max_id_baseline TO srv_s3ome_read;
+ALTER TABLE ONLY processing.batch
+    ADD CONSTRAINT batch_center_fkey FOREIGN KEY (center_id) REFERENCES processing.center(id);
 
 
 --
--- Name: media_current_capacity; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: batch batch_request_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE media_current_capacity FROM PUBLIC;
-REVOKE ALL ON TABLE media_current_capacity FROM srv_dpmc;
-GRANT ALL ON TABLE media_current_capacity TO srv_dpmc;
-GRANT SELECT ON TABLE media_current_capacity TO srv_s3ome_read;
+ALTER TABLE ONLY processing.batch
+    ADD CONSTRAINT batch_request_id_fkey FOREIGN KEY (request_id) REFERENCES processing.request(id);
 
 
 --
--- Name: media_current_physical_capacity; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: batch_x_center batch_x_center_batch_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE media_current_physical_capacity FROM PUBLIC;
-REVOKE ALL ON TABLE media_current_physical_capacity FROM srv_dpmc;
-GRANT ALL ON TABLE media_current_physical_capacity TO srv_dpmc;
-GRANT SELECT ON TABLE media_current_physical_capacity TO srv_s3ome_read;
+ALTER TABLE ONLY processing.batch_x_center
+    ADD CONSTRAINT batch_x_center_batch_id_fkey FOREIGN KEY (batch_id) REFERENCES processing.batch(id);
 
 
 --
--- Name: media_current_physical_capacity_with_count; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: batch_x_center batch_x_center_center_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE media_current_physical_capacity_with_count FROM PUBLIC;
-REVOKE ALL ON TABLE media_current_physical_capacity_with_count FROM srv_dpmc;
-GRANT ALL ON TABLE media_current_physical_capacity_with_count TO srv_dpmc;
-GRANT SELECT ON TABLE media_current_physical_capacity_with_count TO srv_s3ome_read;
+ALTER TABLE ONLY processing.batch_x_center
+    ADD CONSTRAINT batch_x_center_center_id_fkey FOREIGN KEY (center_id) REFERENCES processing.center(id);
 
 
 --
--- Name: media_delivered; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: history fk_history_processing_script; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE media_delivered FROM PUBLIC;
-REVOKE ALL ON TABLE media_delivered FROM srv_dpmc;
-GRANT ALL ON TABLE media_delivered TO srv_dpmc;
-GRANT SELECT ON TABLE media_delivered TO srv_s3ome_read;
+ALTER TABLE ONLY processing.history
+    ADD CONSTRAINT fk_history_processing_script FOREIGN KEY (processing_script) REFERENCES processing.processing_script(id);
 
 
 --
--- Name: media_running_size; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: parameters_set fk_parameters_set_batch; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE media_running_size FROM PUBLIC;
-REVOKE ALL ON TABLE media_running_size FROM srv_dpmc;
-GRANT ALL ON TABLE media_running_size TO srv_dpmc;
-GRANT SELECT ON TABLE media_running_size TO srv_s3ome_read;
+ALTER TABLE ONLY processing.parameters_set
+    ADD CONSTRAINT fk_parameters_set_batch FOREIGN KEY (id) REFERENCES processing.batch(id);
 
 
 --
--- Name: product_archive; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain fk_processing_script_id; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE product_archive FROM PUBLIC;
-REVOKE ALL ON TABLE product_archive FROM srv_dpmc;
-GRANT ALL ON TABLE product_archive TO srv_dpmc;
-GRANT SELECT ON TABLE product_archive TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain
+    ADD CONSTRAINT fk_processing_script_id FOREIGN KEY (processing_script_id) REFERENCES processing.processing_script(id) NOT VALID;
 
 
 --
--- Name: missing_file_for_order; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: top fk_top_batch; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE missing_file_for_order FROM PUBLIC;
-REVOKE ALL ON TABLE missing_file_for_order FROM srv_dpmc;
-GRANT ALL ON TABLE missing_file_for_order TO srv_dpmc;
-GRANT SELECT ON TABLE missing_file_for_order TO srv_s3ome_read;
+ALTER TABLE ONLY processing.top
+    ADD CONSTRAINT fk_top_batch FOREIGN KEY (batch_id) REFERENCES processing.batch(id);
 
 
 --
--- Name: not_archived; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: scheduler_x_pool orchestrator_x_pool_fk; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE not_archived FROM PUBLIC;
-REVOKE ALL ON TABLE not_archived FROM srv_dpmc;
-GRANT ALL ON TABLE not_archived TO srv_dpmc;
-GRANT SELECT ON TABLE not_archived TO srv_s3ome_read;
+ALTER TABLE ONLY processing.scheduler_x_pool
+    ADD CONSTRAINT orchestrator_x_pool_fk FOREIGN KEY (scheduler_id) REFERENCES processing.scheduler(id);
 
 
 --
--- Name: overlap_product; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: scheduler_x_pool orchestrator_x_pool_fk_1; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE overlap_product FROM PUBLIC;
-REVOKE ALL ON TABLE overlap_product FROM srv_dpmc;
-GRANT ALL ON TABLE overlap_product TO srv_dpmc;
-GRANT SELECT ON TABLE overlap_product TO srv_s3ome_read;
+ALTER TABLE ONLY processing.scheduler_x_pool
+    ADD CONSTRAINT orchestrator_x_pool_fk_1 FOREIGN KEY (pool_id) REFERENCES processing.pool(id);
 
 
 --
--- Name: prd_external; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: pdc_x_pcc pdc_x_pcc_parent_pcc_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE prd_external FROM PUBLIC;
-REVOKE ALL ON TABLE prd_external FROM srv_dpmc;
-GRANT ALL ON TABLE prd_external TO srv_dpmc;
-GRANT SELECT ON TABLE prd_external TO srv_s3ome_read;
+ALTER TABLE ONLY processing.pdc_x_pcc
+    ADD CONSTRAINT pdc_x_pcc_parent_pcc_id_fkey FOREIGN KEY (parent_pcc_id) REFERENCES processing.processing_chain(id);
 
 
 --
--- Name: prd_geoloc; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: pdc_x_pcc pdc_x_pcc_pcc_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE prd_geoloc FROM PUBLIC;
-REVOKE ALL ON TABLE prd_geoloc FROM srv_dpmc;
-GRANT ALL ON TABLE prd_geoloc TO srv_dpmc;
-GRANT SELECT ON TABLE prd_geoloc TO srv_s3ome_read;
+ALTER TABLE ONLY processing.pdc_x_pcc
+    ADD CONSTRAINT pdc_x_pcc_pcc_id_fkey FOREIGN KEY (pcc_id) REFERENCES processing.processing_chain(id);
 
 
 --
--- Name: prd_md5; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: pdc_x_pcc pdc_x_pcc_pdc_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE prd_md5 FROM PUBLIC;
-REVOKE ALL ON TABLE prd_md5 FROM srv_dpmc;
-GRANT ALL ON TABLE prd_md5 TO srv_dpmc;
-GRANT SELECT ON TABLE prd_md5 TO srv_s3ome_read;
+ALTER TABLE ONLY processing.pdc_x_pcc
+    ADD CONSTRAINT pdc_x_pcc_pdc_id_fkey FOREIGN KEY (pdc_id) REFERENCES processing.production_chain(id);
 
 
 --
--- Name: prd_path; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_baseline processing_chain_baseline_baseline_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE prd_path FROM PUBLIC;
-REVOKE ALL ON TABLE prd_path FROM srv_dpmc;
-GRANT ALL ON TABLE prd_path TO srv_dpmc;
-GRANT SELECT ON TABLE prd_path TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_baseline
+    ADD CONSTRAINT processing_chain_baseline_baseline_fkey FOREIGN KEY (baseline) REFERENCES processing.processing_baseline(baseline);
 
 
 --
--- Name: prd_period; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_baseline processing_chain_baseline_pool_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE prd_period FROM PUBLIC;
-REVOKE ALL ON TABLE prd_period FROM srv_dpmc;
-GRANT ALL ON TABLE prd_period TO srv_dpmc;
-GRANT SELECT ON TABLE prd_period TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_baseline
+    ADD CONSTRAINT processing_chain_baseline_pool_fkey FOREIGN KEY (pool) REFERENCES processing.pool(id);
 
 
 --
--- Name: products_delivered; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_baseline processing_chain_baseline_processing_configuration_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE products_delivered FROM PUBLIC;
-REVOKE ALL ON TABLE products_delivered FROM srv_dpmc;
-GRANT ALL ON TABLE products_delivered TO srv_dpmc;
-GRANT SELECT ON TABLE products_delivered TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_baseline
+    ADD CONSTRAINT processing_chain_baseline_processing_configuration_fkey FOREIGN KEY (processing_configuration) REFERENCES internal.processing_configuration(id);
 
 
 --
--- Name: products_info; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_baseline processing_chain_baseline_sxac_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE products_info FROM PUBLIC;
-REVOKE ALL ON TABLE products_info FROM srv_dpmc;
-GRANT ALL ON TABLE products_info TO srv_dpmc;
-GRANT SELECT ON TABLE products_info TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_baseline
+    ADD CONSTRAINT processing_chain_baseline_sxac_fkey FOREIGN KEY (sxac) REFERENCES internal.software_x_auxiliary_configuration(id);
 
 
 --
--- Name: rectangular_site; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_input_selection processing_chain_input_select_processing_chain_baseline_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE rectangular_site FROM PUBLIC;
-REVOKE ALL ON TABLE rectangular_site FROM srv_dpmc;
-GRANT ALL ON TABLE rectangular_site TO srv_dpmc;
-GRANT SELECT ON TABLE rectangular_site TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_input_selection
+    ADD CONSTRAINT processing_chain_input_select_processing_chain_baseline_id_fkey FOREIGN KEY (processing_chain_baseline_id) REFERENCES processing.processing_chain_baseline(id);
 
 
 --
--- Name: request; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_run processing_chain_run_pcc_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE request FROM PUBLIC;
-REVOKE ALL ON TABLE request FROM srv_dpmc;
-GRANT ALL ON TABLE request TO srv_dpmc;
-GRANT SELECT ON TABLE request TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_run
+    ADD CONSTRAINT processing_chain_run_pcc_id_fkey FOREIGN KEY (pcc_id) REFERENCES processing.processing_chain(id);
 
 
 --
--- Name: request_x_product; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_run processing_chain_run_pdc_run_tag_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE request_x_product FROM PUBLIC;
-REVOKE ALL ON TABLE request_x_product FROM srv_dpmc;
-GRANT ALL ON TABLE request_x_product TO srv_dpmc;
-GRANT SELECT ON TABLE request_x_product TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_run
+    ADD CONSTRAINT processing_chain_run_pdc_run_tag_fkey FOREIGN KEY (pdc_run_tag) REFERENCES processing.production_chain_run(tag);
 
 
 --
--- Name: runnable_batch; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: processing_chain_run processing_chain_run_sxac_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE runnable_batch FROM PUBLIC;
-REVOKE ALL ON TABLE runnable_batch FROM srv_dpmc;
-GRANT ALL ON TABLE runnable_batch TO srv_dpmc;
-GRANT SELECT ON TABLE runnable_batch TO srv_s3ome_read;
+ALTER TABLE ONLY processing.processing_chain_run
+    ADD CONSTRAINT processing_chain_run_sxac_id_fkey FOREIGN KEY (sxac_id) REFERENCES internal.software_x_auxiliary_configuration(id);
 
 
 --
--- Name: running_job; Type: ACL; Schema: public; Owner: srv_dpmc
+-- Name: production_chain_run production_chain_run_pdc_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE running_job FROM PUBLIC;
-REVOKE ALL ON TABLE running_job FROM srv_dpmc;
-GRANT ALL ON TABLE running_job TO srv_dpmc;
-GRANT SELECT ON TABLE running_job TO srv_s3ome_read;
+ALTER TABLE ONLY processing.production_chain_run
+    ADD CONSTRAINT production_chain_run_pdc_id_fkey FOREIGN KEY (pdc_id) REFERENCES processing.production_chain(id);
 
 
 --
--- Name: test; Type: ACL; Schema: public; Owner: postgres
+-- Name: block_parameters production_chain_run_tag_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
-
-REVOKE ALL ON TABLE test FROM PUBLIC;
-REVOKE ALL ON TABLE test FROM postgres;
-GRANT ALL ON TABLE test TO postgres;
-GRANT SELECT ON TABLE test TO srv_s3ome_read;
 
+ALTER TABLE ONLY processing.block_parameters
+    ADD CONSTRAINT production_chain_run_tag_fkey FOREIGN KEY (pdc_run_tag) REFERENCES processing.production_chain_run(tag);
 
-SET search_path = s3ome, pg_catalog;
 
 --
--- Name: ext_product; Type: ACL; Schema: s3ome; Owner: srv_dpmc
+-- Name: production_chain_run production_chain_run_task_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE ext_product FROM PUBLIC;
-REVOKE ALL ON TABLE ext_product FROM srv_dpmc;
-GRANT ALL ON TABLE ext_product TO srv_dpmc;
-GRANT SELECT ON TABLE ext_product TO srv_s3ome_read;
+ALTER TABLE ONLY processing.production_chain_run
+    ADD CONSTRAINT production_chain_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES processing.task(id);
 
 
 --
--- Name: hsm_copy; Type: ACL; Schema: s3ome; Owner: srv_dpmc
+-- Name: request request_pool_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE hsm_copy FROM PUBLIC;
-REVOKE ALL ON TABLE hsm_copy FROM srv_dpmc;
-GRANT ALL ON TABLE hsm_copy TO srv_dpmc;
-GRANT SELECT ON TABLE hsm_copy TO srv_s3ome_read;
+ALTER TABLE ONLY processing.request
+    ADD CONSTRAINT request_pool_fkey FOREIGN KEY (pool) REFERENCES processing.pool(id) NOT VALID;
 
 
 --
--- Name: media; Type: ACL; Schema: s3ome; Owner: srv_dpmc
+-- Name: request request_processing_script_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE media FROM PUBLIC;
-REVOKE ALL ON TABLE media FROM srv_dpmc;
-GRANT ALL ON TABLE media TO srv_dpmc;
-GRANT SELECT ON TABLE media TO srv_s3ome_read;
+ALTER TABLE ONLY processing.request
+    ADD CONSTRAINT request_processing_script_id_fkey FOREIGN KEY (processing_script_id) REFERENCES processing.processing_script(id);
 
 
 --
--- Name: product_x_media; Type: ACL; Schema: s3ome; Owner: srv_dpmc
+-- Name: request request_product_type_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE product_x_media FROM PUBLIC;
-REVOKE ALL ON TABLE product_x_media FROM srv_dpmc;
-GRANT ALL ON TABLE product_x_media TO srv_dpmc;
-GRANT SELECT ON TABLE product_x_media TO srv_s3ome_read;
+ALTER TABLE ONLY processing.request
+    ADD CONSTRAINT request_product_type_id_fkey FOREIGN KEY (product_type_id) REFERENCES internal.product_type(id);
 
 
 --
--- Name: viscal_info; Type: ACL; Schema: s3ome; Owner: srv_dpmc
+-- Name: request request_sxac_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-REVOKE ALL ON TABLE viscal_info FROM PUBLIC;
-REVOKE ALL ON TABLE viscal_info FROM srv_dpmc;
-GRANT ALL ON TABLE viscal_info TO srv_dpmc;
-GRANT SELECT ON TABLE viscal_info TO srv_s3ome_read;
+ALTER TABLE ONLY processing.request
+    ADD CONSTRAINT request_sxac_id_fkey FOREIGN KEY (sxac_id) REFERENCES internal.software_x_auxiliary_configuration(id);
 
 
 --
--- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: -; Owner: postgres
+-- Name: task_record task_record_production_chain_orbit_satellite_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON SEQUENCES  FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON SEQUENCES  FROM postgres;
+ALTER TABLE ONLY processing.task_record
+    ADD CONSTRAINT task_record_production_chain_orbit_satellite_fkey FOREIGN KEY (production_chain, orbit, satellite) REFERENCES internal.task(production_chain, orbit, satellite);
 
 
 --
--- Name: DEFAULT PRIVILEGES FOR TYPES; Type: DEFAULT ACL; Schema: -; Owner: postgres
+-- Name: task_record_x_batch task_record_x_batch_history_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON TYPES  FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON TYPES  FROM postgres;
+ALTER TABLE ONLY processing.task_record_x_batch
+    ADD CONSTRAINT task_record_x_batch_history_id_fkey FOREIGN KEY (history_id) REFERENCES processing.history(history_id);
 
 
 --
--- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: -; Owner: postgres
+-- Name: task_record_x_batch task_record_x_batch_task_record_id_fkey; Type: FK CONSTRAINT; Schema: processing; Owner: srv_dpmc
 --
 
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON TABLES  FROM PUBLIC;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON TABLES  FROM postgres;
+ALTER TABLE ONLY processing.task_record_x_batch
+    ADD CONSTRAINT task_record_x_batch_task_record_id_fkey FOREIGN KEY (task_record_id) REFERENCES processing.task_record(id);
 
 
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict nbE3Eq8veifhtK9dk2BmnUJhph2goqqlcaOtwSWfbT0F8sSbH7cpfyvjQo2LSZv
 
