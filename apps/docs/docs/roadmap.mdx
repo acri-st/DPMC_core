@@ -1,0 +1,50 @@
+---
+sidebar_position: 5
+title: Roadmap
+description: What's shipped, what's in progress, and the design decisions.
+---
+
+# Roadmap
+
+DPMC has moved from **design** to a largely implemented system. This page reports the actual state and replaces the old list of "open questions", most of which are now settled.
+
+## State by area
+
+| Area                            | State         | Detail                                                                            |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------- |
+| Data model                      | Shipped       | ~30 entities, Prisma migrations, energy views, ingestion trigger.                 |
+| API (REST + OData + WebSocket)  | Shipped       | NestJS, the sole gateway to the database, real-time monitoring.                   |
+| Auth & RBAC                     | Shipped       | Keycloak, sessions, 4 roles, worker token.                                        |
+| Dispatcher                      | Shipped       | task/dependency/dispatch/monitor/aging/watcher/finalizer loops, BFD, aging.       |
+| Worker                          | Shipped       | Registration, heartbeat, Docker/Apptainer execution, metrics, log shipping.       |
+| Web console                     | Shipped       | Vite/React SPA, execution / config / infra / data / admin screens.                |
+| CLI                             | Partial       | `login`/`whoami`/`product`; other command groups to come.                         |
+| Triggering                      | Shipped       | Manual, API, data (PG trigger). Cron-scheduled: in integration.                   |
+| Carbon footprint                | Partial       | Energy per job/task/project via SQL views; storage/network and UI still to do.    |
+| Multi-site / federation         | Design        | Foundations in place (decoupled catalog, API-first); coordination to be designed. |
+| Retry policy                    | Partial       | `attempt` + lost-Host detection; backoff/limits still to formalize.               |
+
+## Decisions settled since the initial design
+
+| Topic                       | Decision                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| DAG representation          | `ProcessingChain` nodes + `ProductionChainEdge` edges (one reusable script).          |
+| Execution levels            | **Task → Batch → Job** (no longer "Batch / Task").                                    |
+| Execution model             | **Pull**: the worker pulls its Jobs through the API; the dispatcher decides allocation. |
+| Multi-tenant                | **Shipped now** (`Project`), not deferred to a v2.                                    |
+| Triggers                    | **Four modes** coexist (manual, API, scheduled, data).                                |
+| Processing versioning       | **SXAC** (`ProcessorVersion` = software version × auxiliary configuration).           |
+| Container runtimes          | **Docker** (cloud/on-prem) **and Apptainer** (HPC), chosen per project.               |
+| Product storage             | **Decoupled media catalog** (`Media`/`MediaCatalog`/entries), S3/HTTP/NFS backends.   |
+| Identity                    | **Keycloak** (OAuth2/OIDC) + RBAC with 4 roles.                                       |
+
+## Design topics still open
+
+- **Multi-site** coordination (topology, distributed catalog consistency, carbon placement).
+- Fine-grained placement **affinities** beyond pool and runtime.
+- Fine-grained **user ↔ project** mapping, secret rotation, full audit.
+- Refinement of the **footprint** (storage, transfers, cloud-bursting).
+
+## See also
+
+- [Architecture — overview](/docs/architecture/overview)

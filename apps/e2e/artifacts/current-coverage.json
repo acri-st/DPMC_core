@@ -1,0 +1,1360 @@
+[
+  {
+    "id": "EOCP-E1-01",
+    "label": "Architecture modularity and decoupling",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t01-1",
+        "status": "missing"
+      },
+      {
+        "id": "t01-2",
+        "status": "missing"
+      },
+      {
+        "id": "t01-3",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E1-02",
+    "label": "Standardized REST interfaces",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-1",
+        "status": "missing"
+      },
+      {
+        "id": "t11-8",
+        "status": "missing"
+      },
+      {
+        "id": "t11-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E1-03",
+    "label": "Portability, observability, resilience",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-1",
+        "status": "missing"
+      },
+      {
+        "id": "t06-14",
+        "status": "missing"
+      },
+      {
+        "id": "t06-15",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E1-04",
+    "label": "Security by design",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t12-1",
+        "status": "missing"
+      },
+      {
+        "id": "t12-7",
+        "status": "missing"
+      },
+      {
+        "id": "t12-8",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E1-05",
+    "label": "DB rules, logging, naming conventions",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t01-4",
+        "status": "missing"
+      },
+      {
+        "id": "t01-5",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E2-01",
+    "label": "Multiple production modes",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t02-1",
+        "status": "missing"
+      },
+      {
+        "id": "t02-3",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E2-02",
+    "label": "Mode-specific rules",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t02-2",
+        "status": "missing"
+      },
+      {
+        "id": "t02-4",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-01",
+    "label": "Static resource evaluation",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-1",
+        "status": "missing"
+      },
+      {
+        "id": "t03-8",
+        "status": "missing"
+      },
+      {
+        "id": "t03-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-02",
+    "label": "Dynamic resource-based dispatch",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-2",
+        "status": "missing"
+      },
+      {
+        "id": "t03-10",
+        "status": "missing"
+      },
+      {
+        "id": "t03-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-03",
+    "label": "Static and runtime requirements declaration",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-3",
+        "status": "missing"
+      },
+      {
+        "id": "t03-12",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-04",
+    "label": "GPU resource management",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-4",
+        "status": "missing"
+      },
+      {
+        "id": "t03-13",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-05",
+    "label": "Node self-registration",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-5",
+        "status": "missing"
+      },
+      {
+        "id": "t03-14",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-06",
+    "label": "Node states management",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-6",
+        "status": "missing"
+      },
+      {
+        "id": "t03-15",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E3-07",
+    "label": "Real-time node updates",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t03-7",
+        "status": "missing"
+      },
+      {
+        "id": "t03-16",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-01",
+    "label": "Linear processing chains",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t04-1",
+        "status": "missing"
+      },
+      {
+        "id": "t04-8",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-02",
+    "label": "Simple job execution without chains",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t04-2",
+        "status": "missing"
+      },
+      {
+        "id": "t04-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-03",
+    "label": "Nested chains",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t04-3",
+        "status": "missing"
+      },
+      {
+        "id": "t04-6",
+        "status": "missing"
+      },
+      {
+        "id": "t04-7",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-04",
+    "label": "Reusable chains",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t04-4",
+        "status": "missing"
+      },
+      {
+        "id": "t04-10",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-05",
+    "label": "Conditional execution",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t04-5",
+        "status": "missing"
+      },
+      {
+        "id": "t04-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-06",
+    "label": "Execution conditions",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-1",
+        "status": "missing"
+      },
+      {
+        "id": "t05-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E4-07",
+    "label": "Parallel execution detection",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-2",
+        "status": "missing"
+      },
+      {
+        "id": "t05-10",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E5-01",
+    "label": "Explicit dependencies",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-3",
+        "status": "missing"
+      },
+      {
+        "id": "t05-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E5-02",
+    "label": "DAG dependency model",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-4",
+        "status": "missing"
+      },
+      {
+        "id": "t05-7",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E5-03",
+    "label": "Declarative dependencies",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-12",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E5-04",
+    "label": "Dependency types",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-5",
+        "status": "missing"
+      },
+      {
+        "id": "t05-13",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E5-05",
+    "label": "Runtime dependency handling",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t05-6",
+        "status": "missing"
+      },
+      {
+        "id": "t05-14",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-01",
+    "label": "Scheduling engine",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-2",
+        "status": "missing"
+      },
+      {
+        "id": "t06-16",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-02",
+    "label": "Multi-site support",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-3",
+        "status": "missing"
+      },
+      {
+        "id": "t06-17",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-03",
+    "label": "Dispatcher",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-4",
+        "status": "missing"
+      },
+      {
+        "id": "t06-18",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-04",
+    "label": "Queue manager",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-5",
+        "status": "missing"
+      },
+      {
+        "id": "t06-19",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-05",
+    "label": "Node registry and health",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-6",
+        "status": "missing"
+      },
+      {
+        "id": "t06-12",
+        "status": "missing"
+      },
+      {
+        "id": "t06-13",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-06",
+    "label": "Execution engine",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-7",
+        "status": "missing"
+      },
+      {
+        "id": "t06-20",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-07",
+    "label": "Persistence layer",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-8",
+        "status": "missing"
+      },
+      {
+        "id": "t06-21",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-08",
+    "label": "Federated scheduling",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-9",
+        "status": "missing"
+      },
+      {
+        "id": "t06-22",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-09",
+    "label": "Priority engine",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t10-1",
+        "status": "missing"
+      },
+      {
+        "id": "t10-6",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-10",
+    "label": "Elastic compute pools",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-10",
+        "status": "missing"
+      },
+      {
+        "id": "t06-23",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E6-11",
+    "label": "Fault tolerance",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t06-11",
+        "status": "missing"
+      },
+      {
+        "id": "t06-24",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E7-01",
+    "label": "Multiple triggers",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t07-1",
+        "status": "missing"
+      },
+      {
+        "id": "t07-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E7-02",
+    "label": "Manual trigger",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t07-2",
+        "status": "missing"
+      },
+      {
+        "id": "t07-10",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E7-03",
+    "label": "API trigger",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t07-3",
+        "status": "missing"
+      },
+      {
+        "id": "t07-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E7-04",
+    "label": "Data-driven trigger",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t07-4",
+        "status": "missing"
+      },
+      {
+        "id": "t07-7",
+        "status": "missing"
+      },
+      {
+        "id": "t07-8",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E7-05",
+    "label": "Event-based trigger",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t07-5",
+        "status": "missing"
+      },
+      {
+        "id": "t07-12",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E7-06",
+    "label": "Scheduled trigger",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t07-6",
+        "status": "missing"
+      },
+      {
+        "id": "t07-13",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E8-01",
+    "label": "Processor version coexistence",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t08-1",
+        "status": "missing"
+      },
+      {
+        "id": "t08-4",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E8-02",
+    "label": "Version traceability",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t08-2",
+        "status": "missing"
+      },
+      {
+        "id": "t08-5",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E8-03",
+    "label": "Version consistency",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t08-3",
+        "status": "missing"
+      },
+      {
+        "id": "t08-6",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E9-01",
+    "label": "Task table conversion",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t09-1",
+        "status": "missing"
+      },
+      {
+        "id": "t09-4",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E9-02",
+    "label": "Automated ingestion",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t09-2",
+        "status": "missing"
+      },
+      {
+        "id": "t09-5",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E9-03",
+    "label": "Traceability of ingestion",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t09-3",
+        "status": "missing"
+      },
+      {
+        "id": "t09-6",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E10-01",
+    "label": "Priority definition",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t10-2",
+        "status": "missing"
+      },
+      {
+        "id": "t10-10",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E10-02",
+    "label": "Priority weights",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t10-3",
+        "status": "missing"
+      },
+      {
+        "id": "t10-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E10-03",
+    "label": "Dynamic prioritization",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t10-4",
+        "status": "missing"
+      },
+      {
+        "id": "t10-8",
+        "status": "missing"
+      },
+      {
+        "id": "t10-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E10-04",
+    "label": "Preemption",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t10-5",
+        "status": "missing"
+      },
+      {
+        "id": "t10-12",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E11-02",
+    "label": "Job lifecycle APIs",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-2",
+        "status": "missing"
+      },
+      {
+        "id": "t11-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E11-03",
+    "label": "Status APIs",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-3",
+        "status": "missing"
+      },
+      {
+        "id": "t11-12",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E11-04",
+    "label": "Resource APIs",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-4",
+        "status": "missing"
+      },
+      {
+        "id": "t11-13",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E11-05",
+    "label": "Catalog APIs",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-5",
+        "status": "missing"
+      },
+      {
+        "id": "t11-14",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E11-06",
+    "label": "Configuration APIs",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-6",
+        "status": "missing"
+      },
+      {
+        "id": "t11-15",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E11-07",
+    "label": "API standards and security",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t11-7",
+        "status": "missing"
+      },
+      {
+        "id": "t11-16",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E12-01",
+    "label": "Authentication",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t12-2",
+        "status": "missing"
+      },
+      {
+        "id": "t12-9",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E12-02",
+    "label": "RBAC",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t12-3",
+        "status": "missing"
+      },
+      {
+        "id": "t12-10",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E12-03",
+    "label": "Secure protocols",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t12-4",
+        "status": "missing"
+      },
+      {
+        "id": "t12-11",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E12-04",
+    "label": "Security logging",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t12-5",
+        "status": "missing"
+      },
+      {
+        "id": "t12-12",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E12-05",
+    "label": "IAM integration",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t12-6",
+        "status": "missing"
+      },
+      {
+        "id": "t12-13",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E13-01",
+    "label": "Container support",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t13-1",
+        "status": "missing"
+      },
+      {
+        "id": "t13-4",
+        "status": "missing"
+      },
+      {
+        "id": "t13-5",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E13-02",
+    "label": "Container interface",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t13-2",
+        "status": "missing"
+      },
+      {
+        "id": "t13-6",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E13-03",
+    "label": "Container isolation",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t13-3",
+        "status": "missing"
+      },
+      {
+        "id": "t13-7",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E14-01",
+    "label": "Product versioning",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t14-1",
+        "status": "missing"
+      },
+      {
+        "id": "t14-4",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E14-02",
+    "label": "Version traceability",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t14-2",
+        "status": "missing"
+      },
+      {
+        "id": "t14-5",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E14-03",
+    "label": "Version selection",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t14-3",
+        "status": "missing"
+      },
+      {
+        "id": "t14-6",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E15-01",
+    "label": "Metrics collection",
+    "passed": 0,
+    "failed": 33,
+    "skipped": 0,
+    "missing": 67,
+    "tests": [
+      {
+        "id": "t15-1",
+        "status": "failed"
+      },
+      {
+        "id": "t15-4",
+        "status": "missing"
+      },
+      {
+        "id": "t15-5",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E15-02",
+    "label": "Metrics analysis",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t15-2",
+        "status": "missing"
+      },
+      {
+        "id": "t15-6",
+        "status": "missing"
+      }
+    ]
+  },
+  {
+    "id": "EOCP-E15-03",
+    "label": "Metrics export",
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "missing": 100,
+    "tests": [
+      {
+        "id": "t15-3",
+        "status": "missing"
+      },
+      {
+        "id": "t15-7",
+        "status": "missing"
+      }
+    ]
+  }
+]

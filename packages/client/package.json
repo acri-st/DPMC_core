@@ -1,0 +1,49 @@
+{
+  "name": "@dpmc/client",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "rolldown -c --watch",
+    "build": "rolldown -c",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@ts-rest/core": "^3.52.1",
+    "class-validator": "^0.14.2",
+    "date-fns": "^4.1.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@dpmc/eslint": "workspace:*",
+    "@dpmc/prettier": "workspace:*",
+    "@dpmc/typescript": "workspace:*",
+    "eslint": "^9.39.1",
+    "prettier": "^3.8.3",
+    "rolldown": "^1.0.0-rc.17",
+    "rolldown-plugin-dts": "^0.23.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

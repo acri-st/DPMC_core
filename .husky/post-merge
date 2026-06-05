@@ -1,0 +1,6 @@
+changed_files=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)
+
+if echo "$changed_files" | grep -q "^packages/prisma/prisma/migrations/"; then
+  echo "→ Prisma migrations changed, running migrate:deploy"
+  pnpm --filter @dpmc/prisma migrate:deploy
+fi

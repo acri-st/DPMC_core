@@ -1,0 +1,284 @@
+---
+sidebar_position: 2
+title: Data model (ERD)
+description: The DPMC relational model, presented by functional blocks.
+---
+
+# Data model
+
+This page reflects the actual Prisma schema (`packages/prisma/prisma/schema.prisma`). The model has roughly thirty entities; to stay readable, it is presented in **functional blocks**.
+
+## Block map
+
+```mermaid
+flowchart LR
+    subgraph def[Definition]
+        Project --> ProductionChain
+        ProductionChain --> ProcessingChain
+        ProcessingChain --> ProcessingScript
+        ProcessingScript --> ProcessorVersion
+    end
+    subgraph exec[Execution]
+        Task --> Batch --> Job --> JobAllocation
+    end
+    subgraph data[Data]
+        ProductType --> Product
+        Product --> MediaCatalogEntry
+    end
+    subgraph infra[Infrastructure]
+        DataCenter --> Host
+        Pool --> Host
+    end
+    Project -.-> Task
+    ProductionChain -.-> Task
+    ProcessorVersion -.-> Job
+    Host -.-> Job
+    Product -.-> Task
+```
+
+## Definition block
+
+```mermaid
+erDiagram
+    Project ||--o{ ProductionChain : "owns"
+    ProductionChain ||--o{ ProcessingChain : "nodes"
+    ProductionChain ||--o{ ProductionChainEdge : "edges"
+    ProductionChain ||--o{ ProductionChainParameter : "parameters"
+    ProcessingChain ||--o{ ProductionChainEdge : "parent/child"
+    ProcessingScript ||--o{ ProcessingChain : "used by"
+    ProcessingScript ||--o{ ProcessingScriptVersion : "versions"
+    ProcessingScriptVersion ||--o{ ProcessingScriptExecutable : "executables"
+    ProcessingScriptVersion ||--o{ ProcessorVersion : "SXAC"
+    AuxiliaryConfiguration ||--o{ ProcessorVersion : "SXAC"
+
+    Project {
+        uuid id PK
+        string identifier UK
+        float priorityWeight
+        ProductionMode[] allowedProductionModes
+        bool isDefault
+    }
+    ProductionChain {
+        uuid id PK
+        uuid projectId FK
+        string name
+        enum kind "standard|watcher"
+        json watcherConfig
+        ProductionMode[] supportedModes
+    }
+    ProcessingChain {
+        uuid id PK
+        uuid productionChainId FK
+        uuid processingScriptId FK
+        string name
+        json configuration
+    }
+    ProductionChainEdge {
+        uuid id PK
+        uuid parentChainId FK
+        uuid childChainId FK
+        enum dependencyMode
+        json condition
+        bool isFanOut
+    }
+    ProcessingScript {
+        uuid id PK
+        string acronym UK
+        uuid defaultVersionId FK
+    }
+    ProcessingScriptVersion {
+        uuid id PK
+        string version
+        enum runtime "docker|apptainer|none"
+        string imageUrl
+        int requiredCpu
+        bigint requiredRam
+        bool requiresGpu
+    }
+    ProcessingScriptExecutable {
+        uuid id PK
+        enum scriptType
+        enum stage "pre|exe|post"
+        int sequence
+        string path
+    }
+    AuxiliaryConfiguration {
+        uuid id PK
+        string name UK
+        string baseline
+    }
+    ProcessorVersion {
+        uuid id PK
+        uuid processingScriptVersionId FK
+        uuid auxiliaryConfigurationId FK
+        string baseline
+    }
+```
+
+## Execution block
+
+```mermaid
+erDiagram
+    Project ||--o{ Task : "requests"
+    ProductionChain ||--o{ Task : "executed by"
+    Task ||--o{ Batch : "expanded into"
+    ProcessingChain ||--o{ Batch : "executed node"
+    Batch ||--o{ Job : "attempts"
+    Batch ||--o{ Batch : "replay (parentBatchId)"
+    ProcessorVersion ||--o{ Batch : "resolved SXAC"
+    Host ||--o{ Job : "runs"
+    Job ||--o| JobAllocation : "reserves"
+    Pool ||--o{ Batch : "target"
+
+    Task {
+        uuid id PK
+        uuid projectId FK
+        enum kind "chain|standalone"
+        string executionTag UK
+        enum status "edited|queued|running|done|error|suspended"
+        enum productionMode
+        enum priorityClass
+        timestamp scheduledStartTime
+    }
+    Batch {
+        uuid id PK
+        uuid taskId FK
+        uuid processingChainId FK
+        uuid fanOutGroupId
+        uuid parentBatchId FK
+        uuid poolId FK
+        enum status "pending|running|success|failed|cancelled"
+    }
+    Job {
+        uuid id PK
+        uuid batchId FK
+        uuid hostId FK
+        enum status "waiting|ready|running|success|failed|skipped|cancelled"
+        int attempt
+        int pid
+        float avgPower
+        bigint dataVolume
+        float effectivePriority
+        json metrics
+    }
+    JobAllocation {
+        uuid id PK
+        uuid jobId FK,UK
+        uuid hostId FK
+        int reservedCpu
+        bigint reservedRam
+        int[] gpuIndices
+        timestamp releasedAt
+    }
+```
+
+## Data block
+
+```mermaid
+erDiagram
+    ProductType ||--o{ Product : "instances"
+    ProductType ||--o{ ProductIngestionHook : "triggers"
+    ProductionChain ||--o{ ProductIngestionHook : "launched by"
+    Batch ||--o{ Product : "produces"
+    Product ||--o{ ProductMediaCatalogEntry : "files"
+    MediaCatalogEntry ||--o{ ProductMediaCatalogEntry : "referenced by"
+    MediaCatalog ||--o{ MediaCatalogEntry : "entries"
+    Media ||--o{ MediaCatalog : "catalogs"
+
+    ProductType {
+        uuid id PK
+        string acronym UK
+        string processingLevel
+        enum category "static_aux|dynamic_aux|measurement"
+    }
+    Product {
+        uuid id PK
+        uuid productTypeId FK
+        uuid parentBatchId FK
+        string name
+        string version
+    }
+    ProductIngestionHook {
+        uuid id PK
+        uuid productTypeId FK
+        uuid productionChainId FK
+        enum productionMode
+        bool enabled
+    }
+    Media {
+        uuid id PK
+        string name UK
+        enum type "s3|http|https|nfs"
+    }
+    MediaCatalogEntry {
+        uuid id PK
+        uuid mediaCatalogId FK
+        string path
+        bigint size
+    }
+```
+
+## Infrastructure & Identity block
+
+```mermaid
+erDiagram
+    DataCenter ||--o{ Host : "hosts"
+    Pool ||--o{ PoolHost : ""
+    Host ||--o{ PoolHost : ""
+    Host ||--o{ HostLog : "logs"
+    Host ||--o{ HostMetrics : "samples"
+    User ||--o| UserSettings : "preferences"
+    User ||--o{ Session : "sessions"
+
+    Host {
+        uuid id PK
+        uuid dataCenterId FK
+        string hostname UK
+        enum status "up|busy|off|maintenance"
+        enum containerRuntime
+        bool hasGpu
+        int tdpW
+        timestamp lastHeartbeatAt
+    }
+    DataCenter {
+        uuid id PK
+        string code UK
+        float emissionFactor
+        float pue
+    }
+    Pool {
+        uuid id PK
+        string name UK
+    }
+    User {
+        uuid id PK
+        string keycloakSub UK
+        string email
+    }
+    Session {
+        uuid id PK
+        uuid userId FK
+        bytes accessToken
+        bytes refreshToken
+    }
+```
+
+## Cross-cutting conventions
+
+- **Primary keys** — `uuid` everywhere.
+- **Timestamps** — `createdAt` / `updatedAt` as `timestamptz`. Lightweight audit via `createdBy` / `updatedBy`.
+- **Soft delete** — `deletedAt` on definition entities (`Project`, `ProductionChain`, `ProcessingScript`, `Task`, `Batch`, `AuxiliaryConfiguration`).
+- **Energy views** — `batch_energy`, `task_energy`, `project_energy` (migration `1_energy_views`); see [Carbon footprint](/docs/architecture/carbon-footprint).
+- **Ingestion trigger** — `fn_product_ingestion_hook` on `INSERT product`; see [Triggering](/docs/architecture/triggering).
+
+## Why this model?
+
+- **Task → Batch → Job hierarchy** — separates the *request*, the *step*, and the *process*, and enables replay, fan-out, and retries without losing traceability.
+- **Nodes + edges** (`ProcessingChain` / `ProductionChainEdge`) — a script reusable several times within a chain, with properties carried by the edge.
+- **SXAC** (`ProcessorVersion`) — the software × ADF coexistence, essential for operational reprocessing.
+- **Decoupled catalog** — a product independent from its storage location(s).
+
+## See also
+
+- [Detailed concepts](/docs/concepts/overview)
+- [Roadmap](/docs/roadmap)

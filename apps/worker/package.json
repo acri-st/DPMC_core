@@ -1,0 +1,10 @@
+{
+  "name": "@dpmc/worker",
+  "private": true,
+  "scripts": {
+    "dev": "uv run --group dev python -m worker",
+    "lint": "uv run --group dev ruff check .",
+    "test": "uv run --group dev pytest",
+    "build": "echo 'no build'"
+  }
+}

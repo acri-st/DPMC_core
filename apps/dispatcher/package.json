@@ -1,0 +1,11 @@
+{
+  "name": "@dpmc/dispatcher",
+  "private": true,
+  "scripts": {
+    "dev": "uv run watchfiles --filter python 'python src/main.py' src",
+    "start": "uv run python src/main.py",
+    "lint": "uv run ruff check .",
+    "test": "uv run pytest",
+    "build": "echo 'no build'"
+  }
+}

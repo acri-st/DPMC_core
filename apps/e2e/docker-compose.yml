@@ -1,0 +1,32 @@
+services:
+  database:
+    container_name: dpmc-database-test
+    image: postgres:18-alpine
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: dpmc
+      POSTGRES_PASSWORD: dpmc
+      POSTGRES_DB: dpmc_test
+    volumes:
+      - database_test_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dpmc -d dpmc_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  keycloak:
+    container_name: dpmc-keycloak-test
+    image: quay.io/keycloak/keycloak:24.0
+    ports:
+      - "8081:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ../../keycloak.json:/opt/keycloak/data/import/realm-config.json:ro
+    command: ["start-dev", "--import-realm"]
+
+volumes:
+  database_test_data:

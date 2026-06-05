@@ -1,0 +1,34 @@
+{
+  "name": "@dpmc",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "dpmc-dev": "./bin/dpmc-dev"
+  },
+  "packageManager": "pnpm@11.1.3+sha512.c85357fe17ca12dd23dd7071822666dfd7e3cb76fe214e3370b5ea2fb34f2a231185509b63e717f3cd0acb38dd3f8d82bcd5e8172400ae678b70ea4fbed0896d",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "./bin/dpmc-dev",
+    "dev:warhol:build": "docker build -f data/warhol/Dockerfile -t dpmc-warhol:dev data/warhol",
+    "dev:hosts:build": "pnpm dev:warhol:build && docker compose -f docker-compose.host.yml build",
+    "dev:hosts:up": "pnpm dev:warhol:build && docker compose -f docker-compose.host.yml up -d --build",
+    "dev:hosts:logs": "docker compose -f docker-compose.host.yml logs -f",
+    "dev:hosts:down": "docker compose -f docker-compose.host.yml down",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "check-types": "turbo run check-types",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md}\" --ignore-path .gitignore",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@dpmc/prettier": "workspace:*",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.6",
+    "typescript": "5.9.2"
+  }
+}

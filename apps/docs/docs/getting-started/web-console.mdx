@@ -1,0 +1,38 @@
+---
+sidebar_position: 3
+title: Web console
+description: The operator console — dashboards, real-time monitoring, configuration.
+---
+
+# Web console
+
+The console (`apps/web`) is a Vite + React 19 **SPA**. It uses **TanStack Router** (routing), **TanStack Query** (data), **Tailwind** + **shadcn/ui** (UI), **Socket.io** (real time), **Leaflet** (maps), and **xyflow** (chain graphs).
+
+## Log in
+
+The console redirects to **Keycloak** (OAuth2 *Authorization Code*) through the API's `/auth/login` endpoint. An `AuthGate` guard protects routes and verifies the session via `/auth/me`. The session is carried by an **HTTP-only cookie**; API calls are made with `credentials: include`.
+
+## Main screens
+
+| Area              | Screens                                                                |
+| ----------------- | ---------------------------------------------------------------------- |
+| **Dashboard**     | `/overview` — activity overview.                                       |
+| **Execution**     | `/tasks`, `/tasks/new`, `/batches/:id`, `/jobs/:id` — production monitoring. |
+| **Configuration** | `/production-chain/:id`, `/processor-versions/new` — chains and SXAC.  |
+| **Infrastructure**| `/hosts/:id`, `/data-center/:id`, `/pools/:id` — machines and groupings. |
+| **Data**          | `/products`, `/product-types` — catalog.                               |
+| **Administration**| `/admin/projects/...`, `/users`, `/settings` — projects, users, preferences. |
+
+## Real time
+
+The console subscribes to the API's **`/monitoring`** WebSocket namespace to reflect Job, Batch, and Host state changes live — without reloading.
+
+## Data access
+
+Calls go through a `fetch` wrapper (`apiFetchWithMeta`) to `VITE_API_URL` (default `http://localhost:3000/api`). The shared typed client **`@dpmc/client`** (ts-rest contracts + zod schemas) is available for the flows that benefit from it.
+
+## See also
+
+- [Security](/docs/architecture/security)
+- [Architecture — components](/docs/architecture/overview)
+- [Local installation](/docs/getting-started/install)

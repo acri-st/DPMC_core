@@ -1,0 +1,1446 @@
+{
+  "tests": [
+    {
+      "id": "t01-1",
+      "name": "Independent deployment and restart",
+      "file": "src/tests/t01/t01.1.e2e-spec.ts",
+      "selector": "t01.1",
+      "requirements": [
+        "EOCP-E1-01"
+      ]
+    },
+    {
+      "id": "t01-2",
+      "name": "Mock replacement continuity",
+      "file": "src/tests/t01/t01.2.e2e-spec.ts",
+      "selector": "t01.2",
+      "requirements": [
+        "EOCP-E1-01"
+      ]
+    },
+    {
+      "id": "t01-3",
+      "name": "Static dependency analysis",
+      "file": "src/tests/t01/t01.3.e2e-spec.ts",
+      "selector": "t01.3",
+      "requirements": [
+        "EOCP-E1-01"
+      ]
+    },
+    {
+      "id": "t01-4",
+      "name": "Schema validation",
+      "file": "src/tests/t01/t01.4.e2e-spec.ts",
+      "selector": "t01.4",
+      "requirements": [
+        "EOCP-E1-05"
+      ]
+    },
+    {
+      "id": "t01-5",
+      "name": "Log structure validation",
+      "file": "src/tests/t01/t01.5.e2e-spec.ts",
+      "selector": "t01.5",
+      "requirements": [
+        "EOCP-E1-05"
+      ]
+    },
+    {
+      "id": "t02-1",
+      "name": "Modes activation",
+      "file": "src/tests/t02/t02.1.e2e-spec.ts",
+      "selector": "t02.1",
+      "requirements": [
+        "EOCP-E2-01"
+      ]
+    },
+    {
+      "id": "t02-2",
+      "name": "Mode rules validation",
+      "file": "src/tests/t02/t02.2.e2e-spec.ts",
+      "selector": "t02.2",
+      "requirements": [
+        "EOCP-E2-02"
+      ]
+    },
+    {
+      "id": "t02-3",
+      "name": "Modes isolation",
+      "file": "src/tests/t02/t02.3.e2e-spec.ts",
+      "selector": "t02.3",
+      "requirements": [
+        "EOCP-E2-01"
+      ]
+    },
+    {
+      "id": "t02-4",
+      "name": "Mode leak prevention",
+      "file": "src/tests/t02/t02.4.e2e-spec.ts",
+      "selector": "t02.4",
+      "requirements": [
+        "EOCP-E2-02"
+      ]
+    },
+    {
+      "id": "t03-1",
+      "name": "Static resource evaluation",
+      "file": "src/tests/t03/t03.1.e2e-spec.ts",
+      "selector": "t03.1",
+      "requirements": [
+        "EOCP-E3-01"
+      ]
+    },
+    {
+      "id": "t03-2",
+      "name": "Dynamic dispatch",
+      "file": "src/tests/t03/t03.2.e2e-spec.ts",
+      "selector": "t03.2",
+      "requirements": [
+        "EOCP-E3-02"
+      ]
+    },
+    {
+      "id": "t03-3",
+      "name": "Static and dynamic task requirements",
+      "file": "src/tests/t03/t03.3.e2e-spec.ts",
+      "selector": "t03.3",
+      "requirements": [
+        "EOCP-E3-03"
+      ]
+    },
+    {
+      "id": "t03-4",
+      "name": "GPU dispatch",
+      "file": "src/tests/t03/t03.4.e2e-spec.ts",
+      "selector": "t03.4",
+      "requirements": [
+        "EOCP-E3-04"
+      ]
+    },
+    {
+      "id": "t03-5",
+      "name": "Node onboarding",
+      "file": "src/tests/t03/t03.5.e2e-spec.ts",
+      "selector": "t03.5",
+      "requirements": [
+        "EOCP-E3-05"
+      ]
+    },
+    {
+      "id": "t03-6",
+      "name": "Node states",
+      "file": "src/tests/t03/t03.6.e2e-spec.ts",
+      "selector": "t03.6",
+      "requirements": [
+        "EOCP-E3-06"
+      ]
+    },
+    {
+      "id": "t03-7",
+      "name": "Dynamic node update",
+      "file": "src/tests/t03/t03.7.e2e-spec.ts",
+      "selector": "t03.7",
+      "requirements": [
+        "EOCP-E3-07"
+      ]
+    },
+    {
+      "id": "t03-8",
+      "name": "Invalid resource rejection",
+      "file": "src/tests/t03/t03.8.e2e-spec.ts",
+      "selector": "t03.8",
+      "requirements": [
+        "EOCP-E3-01"
+      ]
+    },
+    {
+      "id": "t03-9",
+      "name": "Scheduler stress",
+      "file": "src/tests/t03/t03.9.e2e-spec.ts",
+      "selector": "t03.9",
+      "requirements": [
+        "EOCP-E3-01"
+      ]
+    },
+    {
+      "id": "t03-10",
+      "name": "Node compatibility",
+      "file": "src/tests/t03/t03.10.e2e-spec.ts",
+      "selector": "t03.10",
+      "requirements": [
+        "EOCP-E3-02"
+      ]
+    },
+    {
+      "id": "t03-11",
+      "name": "Rescheduling logic",
+      "file": "src/tests/t03/t03.11.e2e-spec.ts",
+      "selector": "t03.11",
+      "requirements": [
+        "EOCP-E3-02"
+      ]
+    },
+    {
+      "id": "t03-12",
+      "name": "Runtime override",
+      "file": "src/tests/t03/t03.12.e2e-spec.ts",
+      "selector": "t03.12",
+      "requirements": [
+        "EOCP-E3-03"
+      ]
+    },
+    {
+      "id": "t03-13",
+      "name": "GPU failure if unavailable",
+      "file": "src/tests/t03/t03.13.e2e-spec.ts",
+      "selector": "t03.13",
+      "requirements": [
+        "EOCP-E3-04"
+      ]
+    },
+    {
+      "id": "t03-14",
+      "name": "Duplicate node rejection",
+      "file": "src/tests/t03/t03.14.e2e-spec.ts",
+      "selector": "t03.14",
+      "requirements": [
+        "EOCP-E3-05"
+      ]
+    },
+    {
+      "id": "t03-15",
+      "name": "State transitions integrity",
+      "file": "src/tests/t03/t03.15.e2e-spec.ts",
+      "selector": "t03.15",
+      "requirements": [
+        "EOCP-E3-06"
+      ]
+    },
+    {
+      "id": "t03-16",
+      "name": "Telemetry stress",
+      "file": "src/tests/t03/t03.16.e2e-spec.ts",
+      "selector": "t03.16",
+      "requirements": [
+        "EOCP-E3-07"
+      ]
+    },
+    {
+      "id": "t04-1",
+      "name": "Sequential chains",
+      "file": "src/tests/t04/t04.1.e2e-spec.ts",
+      "selector": "t04.1",
+      "requirements": [
+        "EOCP-E4-01"
+      ]
+    },
+    {
+      "id": "t04-2",
+      "name": "Single job execution",
+      "file": "src/tests/t04/t04.2.e2e-spec.ts",
+      "selector": "t04.2",
+      "requirements": [
+        "EOCP-E4-02"
+      ]
+    },
+    {
+      "id": "t04-3",
+      "name": "Nested chains",
+      "file": "src/tests/t04/t04.3.e2e-spec.ts",
+      "selector": "t04.3",
+      "requirements": [
+        "EOCP-E4-03"
+      ]
+    },
+    {
+      "id": "t04-4",
+      "name": "Chain reuse",
+      "file": "src/tests/t04/t04.4.e2e-spec.ts",
+      "selector": "t04.4",
+      "requirements": [
+        "EOCP-E4-04"
+      ]
+    },
+    {
+      "id": "t04-5",
+      "name": "Conditional execution",
+      "file": "src/tests/t04/t04.5.e2e-spec.ts",
+      "selector": "t04.5",
+      "requirements": [
+        "EOCP-E4-05"
+      ]
+    },
+    {
+      "id": "t04-6",
+      "name": "Failure propagation",
+      "file": "src/tests/t04/t04.6.e2e-spec.ts",
+      "selector": "t04.6",
+      "requirements": [
+        "EOCP-E4-03"
+      ]
+    },
+    {
+      "id": "t04-7",
+      "name": "Nested performance",
+      "file": "src/tests/t04/t04.7.e2e-spec.ts",
+      "selector": "t04.7",
+      "requirements": [
+        "EOCP-E4-03"
+      ]
+    },
+    {
+      "id": "t04-8",
+      "name": "Chain failure stop",
+      "file": "src/tests/t04/t04.8.e2e-spec.ts",
+      "selector": "t04.8",
+      "requirements": [
+        "EOCP-E4-01"
+      ]
+    },
+    {
+      "id": "t04-9",
+      "name": "No implicit chain requirement",
+      "file": "src/tests/t04/t04.9.e2e-spec.ts",
+      "selector": "t04.9",
+      "requirements": [
+        "EOCP-E4-02"
+      ]
+    },
+    {
+      "id": "t04-10",
+      "name": "Reuse isolation",
+      "file": "src/tests/t04/t04.10.e2e-spec.ts",
+      "selector": "t04.10",
+      "requirements": [
+        "EOCP-E4-04"
+      ]
+    },
+    {
+      "id": "t04-11",
+      "name": "Condition blocking",
+      "file": "src/tests/t04/t04.11.e2e-spec.ts",
+      "selector": "t04.11",
+      "requirements": [
+        "EOCP-E4-05"
+      ]
+    },
+    {
+      "id": "t05-1",
+      "name": "Wait for conditions",
+      "file": "src/tests/t05/t05.1.e2e-spec.ts",
+      "selector": "t05.1",
+      "requirements": [
+        "EOCP-E4-06"
+      ]
+    },
+    {
+      "id": "t05-2",
+      "name": "Parallel DAG",
+      "file": "src/tests/t05/t05.2.e2e-spec.ts",
+      "selector": "t05.2",
+      "requirements": [
+        "EOCP-E4-07"
+      ]
+    },
+    {
+      "id": "t05-3",
+      "name": "Dependency declaration",
+      "file": "src/tests/t05/t05.3.e2e-spec.ts",
+      "selector": "t05.3",
+      "requirements": [
+        "EOCP-E5-01"
+      ]
+    },
+    {
+      "id": "t05-4",
+      "name": "Cycle rejection",
+      "file": "src/tests/t05/t05.4.e2e-spec.ts",
+      "selector": "t05.4",
+      "requirements": [
+        "EOCP-E5-02"
+      ]
+    },
+    {
+      "id": "t05-5",
+      "name": "Dependency types",
+      "file": "src/tests/t05/t05.5.e2e-spec.ts",
+      "selector": "t05.5",
+      "requirements": [
+        "EOCP-E5-04"
+      ]
+    },
+    {
+      "id": "t05-6",
+      "name": "Runtime dependency handling",
+      "file": "src/tests/t05/t05.6.e2e-spec.ts",
+      "selector": "t05.6",
+      "requirements": [
+        "EOCP-E5-05"
+      ]
+    },
+    {
+      "id": "t05-7",
+      "name": "Cycle detection pre-deploy",
+      "file": "src/tests/t05/t05.7.e2e-spec.ts",
+      "selector": "t05.7",
+      "requirements": [
+        "EOCP-E5-02"
+      ]
+    },
+    {
+      "id": "t05-8",
+      "name": "Conflicting nodes identification",
+      "file": "src/tests/t05/t05.8.e2e-spec.ts",
+      "selector": "t05.8",
+      "requirements": [
+        "EOCP-E5-02"
+      ]
+    },
+    {
+      "id": "t05-9",
+      "name": "Condition logic",
+      "file": "src/tests/t05/t05.9.e2e-spec.ts",
+      "selector": "t05.9",
+      "requirements": [
+        "EOCP-E4-06"
+      ]
+    },
+    {
+      "id": "t05-10",
+      "name": "No hidden serialization",
+      "file": "src/tests/t05/t05.10.e2e-spec.ts",
+      "selector": "t05.10",
+      "requirements": [
+        "EOCP-E4-07"
+      ]
+    },
+    {
+      "id": "t05-11",
+      "name": "Missing dependency",
+      "file": "src/tests/t05/t05.11.e2e-spec.ts",
+      "selector": "t05.11",
+      "requirements": [
+        "EOCP-E5-01"
+      ]
+    },
+    {
+      "id": "t05-12",
+      "name": "No hardcoded dependencies",
+      "file": "src/tests/t05/t05.12.e2e-spec.ts",
+      "selector": "t05.12",
+      "requirements": [
+        "EOCP-E5-03"
+      ]
+    },
+    {
+      "id": "t05-13",
+      "name": "Mixed dependencies",
+      "file": "src/tests/t05/t05.13.e2e-spec.ts",
+      "selector": "t05.13",
+      "requirements": [
+        "EOCP-E5-04"
+      ]
+    },
+    {
+      "id": "t05-14",
+      "name": "Delayed execution resume",
+      "file": "src/tests/t05/t05.14.e2e-spec.ts",
+      "selector": "t05.14",
+      "requirements": [
+        "EOCP-E5-05"
+      ]
+    },
+    {
+      "id": "t06-1",
+      "name": "Portability execution",
+      "file": "src/tests/t06/t06.1.e2e-spec.ts",
+      "selector": "t06.1",
+      "requirements": [
+        "EOCP-E1-03"
+      ]
+    },
+    {
+      "id": "t06-2",
+      "name": "E2E scheduling",
+      "file": "src/tests/t06/t06.2.e2e-spec.ts",
+      "selector": "t06.2",
+      "requirements": [
+        "EOCP-E6-01"
+      ]
+    },
+    {
+      "id": "t06-3",
+      "name": "Multi-site delegation",
+      "file": "src/tests/t06/t06.3.e2e-spec.ts",
+      "selector": "t06.3",
+      "requirements": [
+        "EOCP-E6-02"
+      ]
+    },
+    {
+      "id": "t06-4",
+      "name": "Dispatcher decision logic",
+      "file": "src/tests/t06/t06.4.e2e-spec.ts",
+      "selector": "t06.4",
+      "requirements": [
+        "EOCP-E6-05"
+      ]
+    },
+    {
+      "id": "t06-5",
+      "name": "Queue separation by project and priority",
+      "file": "src/tests/t06/t06.5.e2e-spec.ts",
+      "selector": "t06.5",
+      "requirements": [
+        "EOCP-E6-06"
+      ]
+    },
+    {
+      "id": "t06-6",
+      "name": "Zombie node eviction",
+      "file": "src/tests/t06/t06.6.e2e-spec.ts",
+      "selector": "t06.6",
+      "requirements": [
+        "EOCP-E6-07"
+      ]
+    },
+    {
+      "id": "t06-7",
+      "name": "Execution engine interface",
+      "file": "src/tests/t06/t06.7.e2e-spec.ts",
+      "selector": "t06.7",
+      "requirements": [
+        "EOCP-E6-08"
+      ]
+    },
+    {
+      "id": "t06-8",
+      "name": "Persistence after scheduler restart",
+      "file": "src/tests/t06/t06.8.e2e-spec.ts",
+      "selector": "t06.8",
+      "requirements": [
+        "EOCP-E6-02"
+      ]
+    },
+    {
+      "id": "t06-9",
+      "name": "Federated scheduling",
+      "file": "src/tests/t06/t06.9.e2e-spec.ts",
+      "selector": "t06.9",
+      "requirements": [
+        "EOCP-E6-09"
+      ]
+    },
+    {
+      "id": "t06-10",
+      "name": "Elastic node addition and removal",
+      "file": "src/tests/t06/t06.10.e2e-spec.ts",
+      "selector": "t06.10",
+      "requirements": [
+        "EOCP-E6-09"
+      ]
+    },
+    {
+      "id": "t06-11",
+      "name": "Automatic rescheduling after failure",
+      "file": "src/tests/t06/t06.11.e2e-spec.ts",
+      "selector": "t06.11",
+      "requirements": [
+        "EOCP-E6-10"
+      ]
+    },
+    {
+      "id": "t06-12",
+      "name": "Orphan job recovery",
+      "file": "src/tests/t06/t06.12.e2e-spec.ts",
+      "selector": "t06.12",
+      "requirements": [
+        "EOCP-E6-11"
+      ]
+    },
+    {
+      "id": "t06-13",
+      "name": "Heartbeat scalability",
+      "file": "src/tests/t06/t06.13.e2e-spec.ts",
+      "selector": "t06.13",
+      "requirements": [
+        "EOCP-E6-11"
+      ]
+    },
+    {
+      "id": "t06-14",
+      "name": "Failure injection recovery",
+      "file": "src/tests/t06/t06.14.e2e-spec.ts",
+      "selector": "t06.14",
+      "requirements": [
+        "EOCP-E1-03"
+      ]
+    },
+    {
+      "id": "t06-15",
+      "name": "Observability validation",
+      "file": "src/tests/t06/t06.15.e2e-spec.ts",
+      "selector": "t06.15",
+      "requirements": [
+        "EOCP-E1-03"
+      ]
+    },
+    {
+      "id": "t06-16",
+      "name": "Scheduler performance",
+      "file": "src/tests/t06/t06.16.e2e-spec.ts",
+      "selector": "t06.16",
+      "requirements": [
+        "EOCP-E6-01"
+      ]
+    },
+    {
+      "id": "t06-17",
+      "name": "Site isolation",
+      "file": "src/tests/t06/t06.17.e2e-spec.ts",
+      "selector": "t06.17",
+      "requirements": [
+        "EOCP-E6-02"
+      ]
+    },
+    {
+      "id": "t06-18",
+      "name": "Dispatcher starvation prevention",
+      "file": "src/tests/t06/t06.18.e2e-spec.ts",
+      "selector": "t06.18",
+      "requirements": [
+        "EOCP-E6-09"
+      ]
+    },
+    {
+      "id": "t06-19",
+      "name": "Queue overflow and stress",
+      "file": "src/tests/t06/t06.19.e2e-spec.ts",
+      "selector": "t06.19",
+      "requirements": [
+        "EOCP-E6-04"
+      ]
+    },
+    {
+      "id": "t06-20",
+      "name": "Abnormal container termination",
+      "file": "src/tests/t06/t06.20.e2e-spec.ts",
+      "selector": "t06.20",
+      "requirements": [
+        "EOCP-E6-09"
+      ]
+    },
+    {
+      "id": "t06-21",
+      "name": "Scheduler during DB unavailability",
+      "file": "src/tests/t06/t06.21.e2e-spec.ts",
+      "selector": "t06.21",
+      "requirements": [
+        "EOCP-E6-11"
+      ]
+    },
+    {
+      "id": "t06-22",
+      "name": "Master-slave orchestrator failover",
+      "file": "src/tests/t06/t06.22.e2e-spec.ts",
+      "selector": "t06.22",
+      "requirements": [
+        "EOCP-E6-07"
+      ]
+    },
+    {
+      "id": "t06-23",
+      "name": "Stability under rapid elasticity",
+      "file": "src/tests/t06/t06.23.e2e-spec.ts",
+      "selector": "t06.23",
+      "requirements": [
+        "EOCP-E6-10"
+      ]
+    },
+    {
+      "id": "t06-24",
+      "name": "Long-duration fault-tolerance chaos",
+      "file": "src/tests/t06/t06.24.e2e-spec.ts",
+      "selector": "t06.24",
+      "requirements": [
+        "EOCP-E6-01"
+      ]
+    },
+    {
+      "id": "t07-1",
+      "name": "Trigger coexistence",
+      "file": "src/tests/t07/t07.1.e2e-spec.ts",
+      "selector": "t07.1",
+      "requirements": [
+        "EOCP-E7-01"
+      ]
+    },
+    {
+      "id": "t07-2",
+      "name": "Manual trigger",
+      "file": "src/tests/t07/t07.2.e2e-spec.ts",
+      "selector": "t07.2",
+      "requirements": [
+        "EOCP-E7-02"
+      ]
+    },
+    {
+      "id": "t07-3",
+      "name": "API trigger",
+      "file": "src/tests/t07/t07.3.e2e-spec.ts",
+      "selector": "t07.3",
+      "requirements": [
+        "EOCP-E7-03"
+      ]
+    },
+    {
+      "id": "t07-4",
+      "name": "Data trigger",
+      "file": "src/tests/t07/t07.4.e2e-spec.ts",
+      "selector": "t07.4",
+      "requirements": [
+        "EOCP-E7-04"
+      ]
+    },
+    {
+      "id": "t07-5",
+      "name": "Event trigger",
+      "file": "src/tests/t07/t07.5.e2e-spec.ts",
+      "selector": "t07.5",
+      "requirements": [
+        "EOCP-E7-05"
+      ]
+    },
+    {
+      "id": "t07-6",
+      "name": "Scheduled trigger",
+      "file": "src/tests/t07/t07.6.e2e-spec.ts",
+      "selector": "t07.6",
+      "requirements": [
+        "EOCP-E7-06"
+      ]
+    },
+    {
+      "id": "t07-7",
+      "name": "Deduplication",
+      "file": "src/tests/t07/t07.7.e2e-spec.ts",
+      "selector": "t07.7",
+      "requirements": [
+        "EOCP-E7-04"
+      ]
+    },
+    {
+      "id": "t07-8",
+      "name": "Invalid metadata suppression",
+      "file": "src/tests/t07/t07.8.e2e-spec.ts",
+      "selector": "t07.8",
+      "requirements": [
+        "EOCP-E7-04"
+      ]
+    },
+    {
+      "id": "t07-9",
+      "name": "Trigger conflict",
+      "file": "src/tests/t07/t07.9.e2e-spec.ts",
+      "selector": "t07.9",
+      "requirements": [
+        "EOCP-E7-01"
+      ]
+    },
+    {
+      "id": "t07-10",
+      "name": "Manual permissions",
+      "file": "src/tests/t07/t07.10.e2e-spec.ts",
+      "selector": "t07.10",
+      "requirements": [
+        "EOCP-E7-02"
+      ]
+    },
+    {
+      "id": "t07-11",
+      "name": "Rate limiting",
+      "file": "src/tests/t07/t07.11.e2e-spec.ts",
+      "selector": "t07.11",
+      "requirements": [
+        "EOCP-E7-03"
+      ]
+    },
+    {
+      "id": "t07-12",
+      "name": "Event resilience",
+      "file": "src/tests/t07/t07.12.e2e-spec.ts",
+      "selector": "t07.12",
+      "requirements": [
+        "EOCP-E7-05"
+      ]
+    },
+    {
+      "id": "t07-13",
+      "name": "Clock drift",
+      "file": "src/tests/t07/t07.13.e2e-spec.ts",
+      "selector": "t07.13",
+      "requirements": [
+        "EOCP-E7-06"
+      ]
+    },
+    {
+      "id": "t08-1",
+      "name": "Version coexistence",
+      "file": "src/tests/t08/t08.1.e2e-spec.ts",
+      "selector": "t08.1",
+      "requirements": [
+        "EOCP-E8-01"
+      ]
+    },
+    {
+      "id": "t08-2",
+      "name": "Version traceability",
+      "file": "src/tests/t08/t08.2.e2e-spec.ts",
+      "selector": "t08.2",
+      "requirements": [
+        "EOCP-E8-02"
+      ]
+    },
+    {
+      "id": "t08-3",
+      "name": "Version alignment",
+      "file": "src/tests/t08/t08.3.e2e-spec.ts",
+      "selector": "t08.3",
+      "requirements": [
+        "EOCP-E8-03"
+      ]
+    },
+    {
+      "id": "t08-4",
+      "name": "Rollback",
+      "file": "src/tests/t08/t08.4.e2e-spec.ts",
+      "selector": "t08.4",
+      "requirements": [
+        "EOCP-E8-01"
+      ]
+    },
+    {
+      "id": "t08-5",
+      "name": "Audit trail",
+      "file": "src/tests/t08/t08.5.e2e-spec.ts",
+      "selector": "t08.5",
+      "requirements": [
+        "EOCP-E8-02"
+      ]
+    },
+    {
+      "id": "t08-6",
+      "name": "Mismatch detection",
+      "file": "src/tests/t08/t08.6.e2e-spec.ts",
+      "selector": "t08.6",
+      "requirements": [
+        "EOCP-E8-03"
+      ]
+    },
+    {
+      "id": "t09-1",
+      "name": "TT conversion",
+      "file": "src/tests/t09/t09.1.e2e-spec.ts",
+      "selector": "t09.1",
+      "requirements": [
+        "EOCP-E9-01"
+      ]
+    },
+    {
+      "id": "t09-2",
+      "name": "Template ingestion",
+      "file": "src/tests/t09/t09.2.e2e-spec.ts",
+      "selector": "t09.2",
+      "requirements": [
+        "EOCP-E9-02"
+      ]
+    },
+    {
+      "id": "t09-3",
+      "name": "Audit logs ingestion",
+      "file": "src/tests/t09/t09.3.e2e-spec.ts",
+      "selector": "t09.3",
+      "requirements": [
+        "EOCP-E9-03"
+      ]
+    },
+    {
+      "id": "t09-4",
+      "name": "Invalid TT",
+      "file": "src/tests/t09/t09.4.e2e-spec.ts",
+      "selector": "t09.4",
+      "requirements": [
+        "EOCP-E9-01"
+      ]
+    },
+    {
+      "id": "t09-5",
+      "name": "Bulk ingestion",
+      "file": "src/tests/t09/t09.5.e2e-spec.ts",
+      "selector": "t09.5",
+      "requirements": [
+        "EOCP-E9-02"
+      ]
+    },
+    {
+      "id": "t09-6",
+      "name": "Replay ingestion",
+      "file": "src/tests/t09/t09.6.e2e-spec.ts",
+      "selector": "t09.6",
+      "requirements": [
+        "EOCP-E9-03"
+      ]
+    },
+    {
+      "id": "t10-1",
+      "name": "Priority aging starvation prevention",
+      "file": "src/tests/t10/t10.1.e2e-spec.ts",
+      "selector": "t10.1",
+      "requirements": [
+        "EOCP-E10-01"
+      ]
+    },
+    {
+      "id": "t10-2",
+      "name": "Priority config",
+      "file": "src/tests/t10/t10.2.e2e-spec.ts",
+      "selector": "t10.2",
+      "requirements": [
+        "EOCP-E10-01"
+      ]
+    },
+    {
+      "id": "t10-3",
+      "name": "Fairness",
+      "file": "src/tests/t10/t10.3.e2e-spec.ts",
+      "selector": "t10.3",
+      "requirements": [
+        "EOCP-E10-02"
+      ]
+    },
+    {
+      "id": "t10-4",
+      "name": "Reprioritization",
+      "file": "src/tests/t10/t10.4.e2e-spec.ts",
+      "selector": "t10.4",
+      "requirements": [
+        "EOCP-E10-03"
+      ]
+    },
+    {
+      "id": "t10-5",
+      "name": "Preemption",
+      "file": "src/tests/t10/t10.5.e2e-spec.ts",
+      "selector": "t10.5",
+      "requirements": [
+        "EOCP-E10-04"
+      ]
+    },
+    {
+      "id": "t10-6",
+      "name": "Maximum priority cap enforcement",
+      "file": "src/tests/t10/t10.6.e2e-spec.ts",
+      "selector": "t10.6",
+      "requirements": [
+        "EOCP-E10-02"
+      ]
+    },
+    {
+      "id": "t10-7",
+      "name": "Fairness under high-priority workload",
+      "file": "src/tests/t10/t10.7.e2e-spec.ts",
+      "selector": "t10.7",
+      "requirements": [
+        "EOCP-E10-03"
+      ]
+    },
+    {
+      "id": "t10-8",
+      "name": "Load stability",
+      "file": "src/tests/t10/t10.8.e2e-spec.ts",
+      "selector": "t10.8",
+      "requirements": [
+        "EOCP-E10-03"
+      ]
+    },
+    {
+      "id": "t10-10",
+      "name": "Invalid priority",
+      "file": "src/tests/t10/t10.10.e2e-spec.ts",
+      "selector": "t10.10",
+      "requirements": [
+        "EOCP-E10-01"
+      ]
+    },
+    {
+      "id": "t10-11",
+      "name": "Dynamic weight",
+      "file": "src/tests/t10/t10.11.e2e-spec.ts",
+      "selector": "t10.11",
+      "requirements": [
+        "EOCP-E10-02"
+      ]
+    },
+    {
+      "id": "t10-11b",
+      "name": "Dynamic project priority weight update",
+      "file": "src/tests/t10/t10.11b.e2e-spec.ts",
+      "selector": "t10.11b",
+      "requirements": [
+        "EOCP-E10-02",
+        "EOCP-E10-03"
+      ]
+    },
+    {
+      "id": "t10-12",
+      "name": "Data integrity after kill",
+      "file": "src/tests/t10/t10.12.e2e-spec.ts",
+      "selector": "t10.12",
+      "requirements": [
+        "EOCP-E10-04"
+      ]
+    },
+    {
+      "id": "t11-1",
+      "name": "REST API coverage",
+      "file": "src/tests/t11/t11.1.e2e-spec.ts",
+      "selector": "t11.1",
+      "requirements": [
+        "EOCP-E1-02",
+        "EOCP-E11-01"
+      ]
+    },
+    {
+      "id": "t11-2",
+      "name": "Job lifecycle",
+      "file": "src/tests/t11/t11.2.e2e-spec.ts",
+      "selector": "t11.2",
+      "requirements": [
+        "EOCP-E11-02"
+      ]
+    },
+    {
+      "id": "t11-3",
+      "name": "Status API",
+      "file": "src/tests/t11/t11.3.e2e-spec.ts",
+      "selector": "t11.3",
+      "requirements": [
+        "EOCP-E11-03"
+      ]
+    },
+    {
+      "id": "t11-4",
+      "name": "Resource API",
+      "file": "src/tests/t11/t11.4.e2e-spec.ts",
+      "selector": "t11.4",
+      "requirements": [
+        "EOCP-E11-04"
+      ]
+    },
+    {
+      "id": "t11-5",
+      "name": "Metadata and catalogue API",
+      "file": "src/tests/t11/t11.5.e2e-spec.ts",
+      "selector": "t11.5",
+      "requirements": [
+        "EOCP-E11-05"
+      ]
+    },
+    {
+      "id": "t11-6",
+      "name": "Production configuration API",
+      "file": "src/tests/t11/t11.6.e2e-spec.ts",
+      "selector": "t11.6",
+      "requirements": [
+        "EOCP-E11-06"
+      ]
+    },
+    {
+      "id": "t11-7",
+      "name": "API authentication and authorization",
+      "file": "src/tests/t11/t11.7.e2e-spec.ts",
+      "selector": "t11.7",
+      "requirements": [
+        "EOCP-E11-07"
+      ]
+    },
+    {
+      "id": "t11-8",
+      "name": "Pagination support",
+      "file": "src/tests/t11/t11.8.e2e-spec.ts",
+      "selector": "t11.8",
+      "requirements": [
+        "EOCP-E1-02"
+      ]
+    },
+    {
+      "id": "t11-9",
+      "name": "Filtering capabilities",
+      "file": "src/tests/t11/t11.9.e2e-spec.ts",
+      "selector": "t11.9",
+      "requirements": [
+        "EOCP-E1-02"
+      ]
+    },
+    {
+      "id": "t11-10",
+      "name": "API backward compatibility",
+      "file": "src/tests/t11/t11.10.e2e-spec.ts",
+      "selector": "t11.10",
+      "requirements": [
+        "EOCP-E11-01"
+      ]
+    },
+    {
+      "id": "t11-11",
+      "name": "Invalid state transitions",
+      "file": "src/tests/t11/t11.11.e2e-spec.ts",
+      "selector": "t11.11",
+      "requirements": [
+        "EOCP-E11-02"
+      ]
+    },
+    {
+      "id": "t11-12",
+      "name": "Response consistency under failure",
+      "file": "src/tests/t11/t11.12.e2e-spec.ts",
+      "selector": "t11.12",
+      "requirements": [
+        "EOCP-E11-03"
+      ]
+    },
+    {
+      "id": "t11-13",
+      "name": "Rate limiting and abuse prevention",
+      "file": "src/tests/t11/t11.13.e2e-spec.ts",
+      "selector": "t11.13",
+      "requirements": [
+        "EOCP-E11-04"
+      ]
+    },
+    {
+      "id": "t11-14",
+      "name": "Audit logging",
+      "file": "src/tests/t11/t11.14.e2e-spec.ts",
+      "selector": "t11.14",
+      "requirements": [
+        "EOCP-E11-05"
+      ]
+    },
+    {
+      "id": "t11-15",
+      "name": "Malformed request robustness",
+      "file": "src/tests/t11/t11.15.e2e-spec.ts",
+      "selector": "t11.15",
+      "requirements": [
+        "EOCP-E11-06"
+      ]
+    },
+    {
+      "id": "t11-16",
+      "name": "Performance and stability under load",
+      "file": "src/tests/t11/t11.16.e2e-spec.ts",
+      "selector": "t11.16",
+      "requirements": [
+        "EOCP-E11-07"
+      ]
+    },
+    {
+      "id": "t12-1",
+      "name": "Threat modeling",
+      "file": "src/tests/t12/t12.1.e2e-spec.ts",
+      "selector": "t12.1",
+      "requirements": [
+        "EOCP-E1-04"
+      ]
+    },
+    {
+      "id": "t12-2",
+      "name": "Authentication",
+      "file": "src/tests/t12/t12.2.e2e-spec.ts",
+      "selector": "t12.2",
+      "requirements": [
+        "EOCP-E12-01"
+      ]
+    },
+    {
+      "id": "t12-3",
+      "name": "RBAC",
+      "file": "src/tests/t12/t12.3.e2e-spec.ts",
+      "selector": "t12.3",
+      "requirements": [
+        "EOCP-E12-02"
+      ]
+    },
+    {
+      "id": "t12-4",
+      "name": "Secure protocols",
+      "file": "src/tests/t12/t12.4.e2e-spec.ts",
+      "selector": "t12.4",
+      "requirements": [
+        "EOCP-E12-03"
+      ]
+    },
+    {
+      "id": "t12-5",
+      "name": "Security logs",
+      "file": "src/tests/t12/t12.5.e2e-spec.ts",
+      "selector": "t12.5",
+      "requirements": [
+        "EOCP-E12-04"
+      ]
+    },
+    {
+      "id": "t12-6",
+      "name": "IAM federation",
+      "file": "src/tests/t12/t12.6.e2e-spec.ts",
+      "selector": "t12.6",
+      "requirements": [
+        "EOCP-E12-05"
+      ]
+    },
+    {
+      "id": "t12-7",
+      "name": "Security regression",
+      "file": "src/tests/t12/t12.7.e2e-spec.ts",
+      "selector": "t12.7",
+      "requirements": [
+        "EOCP-E1-04"
+      ]
+    },
+    {
+      "id": "t12-8",
+      "name": "Secure defaults",
+      "file": "src/tests/t12/t12.8.e2e-spec.ts",
+      "selector": "t12.8",
+      "requirements": [
+        "EOCP-E1-04"
+      ]
+    },
+    {
+      "id": "t12-9",
+      "name": "Expired credentials",
+      "file": "src/tests/t12/t12.9.e2e-spec.ts",
+      "selector": "t12.9",
+      "requirements": [
+        "EOCP-E12-01"
+      ]
+    },
+    {
+      "id": "t12-10",
+      "name": "Least privilege",
+      "file": "src/tests/t12/t12.10.e2e-spec.ts",
+      "selector": "t12.10",
+      "requirements": [
+        "EOCP-E12-02"
+      ]
+    },
+    {
+      "id": "t12-11",
+      "name": "Downgrade prevention",
+      "file": "src/tests/t12/t12.11.e2e-spec.ts",
+      "selector": "t12.11",
+      "requirements": [
+        "EOCP-E12-03"
+      ]
+    },
+    {
+      "id": "t12-12",
+      "name": "Tamper resistance",
+      "file": "src/tests/t12/t12.12.e2e-spec.ts",
+      "selector": "t12.12",
+      "requirements": [
+        "EOCP-E12-04"
+      ]
+    },
+    {
+      "id": "t12-13",
+      "name": "Fallback auth",
+      "file": "src/tests/t12/t12.13.e2e-spec.ts",
+      "selector": "t12.13",
+      "requirements": [
+        "EOCP-E12-05"
+      ]
+    },
+    {
+      "id": "t13-1",
+      "name": "Container runtime",
+      "file": "src/tests/t13/t13.1.e2e-spec.ts",
+      "selector": "t13.1",
+      "requirements": [
+        "EOCP-E13-01"
+      ]
+    },
+    {
+      "id": "t13-2",
+      "name": "Image definition",
+      "file": "src/tests/t13/t13.2.e2e-spec.ts",
+      "selector": "t13.2",
+      "requirements": [
+        "EOCP-E13-02"
+      ]
+    },
+    {
+      "id": "t13-3",
+      "name": "Resource isolation",
+      "file": "src/tests/t13/t13.3.e2e-spec.ts",
+      "selector": "t13.3",
+      "requirements": [
+        "EOCP-E13-03"
+      ]
+    },
+    {
+      "id": "t13-4",
+      "name": "Runtime constraints",
+      "file": "src/tests/t13/t13.4.e2e-spec.ts",
+      "selector": "t13.4",
+      "requirements": [
+        "EOCP-E13-01"
+      ]
+    },
+    {
+      "id": "t13-5",
+      "name": "SIF conversion",
+      "file": "src/tests/t13/t13.5.e2e-spec.ts",
+      "selector": "t13.5",
+      "requirements": [
+        "EOCP-E13-01"
+      ]
+    },
+    {
+      "id": "t13-6",
+      "name": "Invalid image",
+      "file": "src/tests/t13/t13.6.e2e-spec.ts",
+      "selector": "t13.6",
+      "requirements": [
+        "EOCP-E13-02"
+      ]
+    },
+    {
+      "id": "t13-7",
+      "name": "Privilege escalation",
+      "file": "src/tests/t13/t13.7.e2e-spec.ts",
+      "selector": "t13.7",
+      "requirements": [
+        "EOCP-E13-03"
+      ]
+    },
+    {
+      "id": "t14-1",
+      "name": "Product versions coexistence",
+      "file": "src/tests/t14/t14.1.e2e-spec.ts",
+      "selector": "t14.1",
+      "requirements": [
+        "EOCP-E14-01"
+      ]
+    },
+    {
+      "id": "t14-2",
+      "name": "Version metadata",
+      "file": "src/tests/t14/t14.2.e2e-spec.ts",
+      "selector": "t14.2",
+      "requirements": [
+        "EOCP-E14-02"
+      ]
+    },
+    {
+      "id": "t14-3",
+      "name": "Version selection",
+      "file": "src/tests/t14/t14.3.e2e-spec.ts",
+      "selector": "t14.3",
+      "requirements": [
+        "EOCP-E14-03"
+      ]
+    },
+    {
+      "id": "t14-4",
+      "name": "Overwrite prevention",
+      "file": "src/tests/t14/t14.4.e2e-spec.ts",
+      "selector": "t14.4",
+      "requirements": [
+        "EOCP-E14-01"
+      ]
+    },
+    {
+      "id": "t14-5",
+      "name": "Lineage",
+      "file": "src/tests/t14/t14.5.e2e-spec.ts",
+      "selector": "t14.5",
+      "requirements": [
+        "EOCP-E14-02"
+      ]
+    },
+    {
+      "id": "t14-6",
+      "name": "Invalid version",
+      "file": "src/tests/t14/t14.6.e2e-spec.ts",
+      "selector": "t14.6",
+      "requirements": [
+        "EOCP-E14-03"
+      ]
+    },
+    {
+      "id": "t15-1",
+      "name": "Metrics collection",
+      "file": "src/tests/t15/t15.1.e2e-spec.ts",
+      "selector": "t15.1",
+      "requirements": [
+        "EOCP-E15-01"
+      ]
+    },
+    {
+      "id": "t15-2",
+      "name": "Metrics linking",
+      "file": "src/tests/t15/t15.2.e2e-spec.ts",
+      "selector": "t15.2",
+      "requirements": [
+        "EOCP-E15-02"
+      ]
+    },
+    {
+      "id": "t15-3",
+      "name": "Export reports",
+      "file": "src/tests/t15/t15.3.e2e-spec.ts",
+      "selector": "t15.3",
+      "requirements": [
+        "EOCP-E15-03"
+      ]
+    },
+    {
+      "id": "t15-4",
+      "name": "Calibration",
+      "file": "src/tests/t15/t15.4.e2e-spec.ts",
+      "selector": "t15.4",
+      "requirements": [
+        "EOCP-E15-01"
+      ]
+    },
+    {
+      "id": "t15-5",
+      "name": "Cross-check OS",
+      "file": "src/tests/t15/t15.5.e2e-spec.ts",
+      "selector": "t15.5",
+      "requirements": [
+        "EOCP-E15-01"
+      ]
+    },
+    {
+      "id": "t15-6",
+      "name": "Concurrency metrics",
+      "file": "src/tests/t15/t15.6.e2e-spec.ts",
+      "selector": "t15.6",
+      "requirements": [
+        "EOCP-E15-02"
+      ]
+    },
+    {
+      "id": "t15-7",
+      "name": "Export performance",
+      "file": "src/tests/t15/t15.7.e2e-spec.ts",
+      "selector": "t15.7",
+      "requirements": [
+        "EOCP-E15-03"
+      ]
+    }
+  ]
+}

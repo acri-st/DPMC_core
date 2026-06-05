@@ -1,0 +1,90 @@
+---
+sidebar_position: 1
+title: Local installation
+description: Run the DPMC stack locally with Docker Compose, pnpm, and the seed.
+---
+
+# Local installation
+
+This page describes how to set up a local **development** environment. The stack combines Docker services (Postgres, Keycloak, MinIO) and monorepo applications (API, web, dispatcher, workers).
+
+:::note Prerequisites
+- **Node ≥ 24** and **pnpm 11** (the repository pins the exact version via `packageManager`).
+- **Docker** + Docker Compose.
+- **uv** (for the Python apps: worker, dispatcher, CLI).
+- Access to Git **submodules** (`apps/worker`, `apps/dispatcher`).
+:::
+
+## 1. Clone with submodules
+
+```bash
+git clone --recurse-submodules <url> dpmc
+cd dpmc
+pnpm install
+```
+
+Already cloned without submodules?
+
+```bash
+git submodule update --init --recursive
+```
+
+## 2. Start the infrastructure services
+
+```bash
+pnpm dev:hosts:up      # build + start Postgres, Keycloak, MinIO
+pnpm dev:hosts:logs    # follow the logs
+pnpm dev:hosts:down    # stop
+```
+
+| Service        | Port(s)        | Default credentials             |
+| -------------- | -------------- | ------------------------------- |
+| PostgreSQL 18  | `5432`         | `postgres` / `postgres`         |
+| Keycloak 26    | `8080`         | `admin` / `admin` (realm `dpmc` imported from `keycloak.json`) |
+| MinIO (S3)     | `9000` / `9001`| `admin` / `adminadmin`          |
+
+## 3. Prepare and seed the database
+
+The schema lives in `packages/prisma`. Apply the migrations, then run the **seed**:
+
+```bash
+pnpm --filter @dpmc/prisma migrate:dev   # migrations
+pnpm --filter @dpmc/prisma seed          # demo data
+```
+
+The seed creates:
+
+- the default project **`dpmc-default`**;
+- the Hosts/Pools (`general`, `compute`) and the DataCenter **`ACR`**;
+- the `ProcessingScript`s (RESIZE, CALC, TINT, COMBINE, PUBLISH, CLEANUP, etc.) and the **Warhol** and **DPMC_TST** chains;
+- the demo products pushed to MinIO and the corresponding `ProductIngestionHook`s.
+
+## 4. Start the application stack
+
+```bash
+pnpm dev      # ./bin/dpmc-dev: API + web + dispatcher
+```
+
+To simulate a **fleet of Hosts**, the `docker-compose.host.yml` compose file launches several containerized workers (`dev-host-1` … `dev-host-10`) that register with the API and execute Warhol Jobs:
+
+```bash
+docker compose -f docker-compose.host.yml up -d --build
+```
+
+## 5. Verify
+
+- **API** — `http://localhost:3000/api` (Swagger in dev: `/api/docs`).
+- **Web console** — see [Web console](/docs/getting-started/web-console).
+- **CLI** — see [CLI](/docs/getting-started/cli).
+
+Once the stack is up, trigger Warhol (manually from the console, or by inserting a `WARHOL_SAT` product to activate the ingestion hook) and observe the Task fan out into Batches and then Jobs across the Hosts.
+
+## Agents: worker
+
+The **worker** agent is configured through environment variables prefixed with `DPMC_` (API URL, `DPMC_WORKER_TOKEN`, `DPMC_DATA_CENTER_CODE`, directories, heartbeat interval, etc.). The full list is in `apps/worker/README.md`. In dev, these variables are already wired up in `docker-compose.host.yml`.
+
+## See also
+
+- [dpmc CLI](/docs/getting-started/cli)
+- [Web console](/docs/getting-started/web-console)
+- [Architecture — components](/docs/architecture/overview)

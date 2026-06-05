@@ -1,0 +1,134 @@
+{
+  "realm": "dpmc",
+  "displayName": "DPMC",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "internal-viewer",
+        "description": "Read-only access for internal users.",
+        "composite": false
+      },
+      {
+        "name": "external-viewer",
+        "description": "Read-only access for external users (limited surface).",
+        "composite": false
+      },
+      {
+        "name": "operator",
+        "description": "Triggers batches and manages production chains. Implies internal-viewer.",
+        "composite": true,
+        "composites": {
+          "realm": ["internal-viewer"]
+        }
+      },
+      {
+        "name": "admin",
+        "description": "Full administration. Implies operator (and transitively internal-viewer).",
+        "composite": true,
+        "composites": {
+          "realm": ["operator"]
+        }
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "dpmc-api",
+      "name": "DPMC API and Dashboard",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://dpmc-web.operation.acrist-services.com/*",
+        "https://dpmc-api.operation.acrist-services.com/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://dpmc-web.operation.acrist-services.com/*##https://dpmc-api.operation.acrist-services.com/*",
+        "oauth2.device.authorization.grant.enabled": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "internal-viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Internal",
+      "lastName": "Viewer",
+      "email": "internal-viewer@dpmc.local",
+      "credentials": [
+        { "type": "password", "value": "internal-viewer", "temporary": false }
+      ],
+      "realmRoles": ["internal-viewer"]
+    },
+    {
+      "username": "external-viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "External",
+      "lastName": "Viewer",
+      "email": "external-viewer@dpmc.local",
+      "credentials": [
+        { "type": "password", "value": "external-viewer", "temporary": false }
+      ],
+      "realmRoles": ["external-viewer"]
+    },
+    {
+      "username": "operator",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Operator",
+      "lastName": "User",
+      "email": "operator@dpmc.local",
+      "credentials": [
+        { "type": "password", "value": "operator", "temporary": false }
+      ],
+      "realmRoles": ["operator"]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@dpmc.local",
+      "credentials": [
+        { "type": "password", "value": "admin", "temporary": false }
+      ],
+      "realmRoles": ["admin"]
+    }
+  ]
+}

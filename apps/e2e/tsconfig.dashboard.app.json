@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.dashboard.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.dashboard.app.tsbuildinfo",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client"]
+  },
+  "include": [
+    "src/dashboard/**/*.ts",
+    "src/dashboard/**/*.tsx",
+    "src/setup/**/*.ts",
+    "src/constants/**/*.ts"
+  ]
+}

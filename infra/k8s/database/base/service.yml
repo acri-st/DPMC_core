@@ -1,0 +1,14 @@
+# Headless service: gives the StatefulSet pod a stable in-cluster DNS name
+# (`database.eocp.svc.cluster.local`) that the API targets via DATABASE_URL.
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  clusterIP: None
+  selector:
+    app: database
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

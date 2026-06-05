@@ -1,0 +1,119 @@
+---
+sidebar_position: 1
+title: Overview
+description: DPMC components, the flow of a production, and technical choices.
+---
+
+# Architecture overview
+
+DPMC is an **API-first** and **container-native** system: every database access goes through the API, and execution runs in containers. The components are split between a **control plane** (API, database, dispatcher) and an **execution plane** (workers on Hosts).
+
+## Components
+
+```mermaid
+flowchart TB
+    subgraph clients[Clients]
+        Web[Web console<br/>Vite + React]
+        CLI[dpmc CLI<br/>Python]
+        Ext[Upstream systems<br/>API / OData]
+    end
+    subgraph control[Control plane]
+        API[NestJS API<br/>REST · OData · WebSocket]
+        DB[(PostgreSQL 18)]
+        Disp[Dispatcher<br/>Python · loops]
+        KC[Keycloak<br/>OAuth2 / OIDC]
+    end
+    subgraph exec[Execution plane]
+        W1[Worker + Host 1]
+        W2[Worker + Host 2]
+        Wn[Worker + Host n]
+    end
+    S3[(MinIO / S3<br/>products)]
+
+    Web --> API
+    CLI --> API
+    Ext --> API
+    Web -. login .-> KC
+    CLI -. device grant .-> KC
+    API --> DB
+    API -. validates JWT .-> KC
+    Disp --> DB
+    Disp -. expand/fan-out .-> API
+    W1 & W2 & Wn -. register · heartbeat · next-job · result .-> API
+    W1 & W2 & Wn --> S3
+```
+
+| Component      | Stack                         | Role                                                                            |
+| -------------- | ----------------------------- | ------------------------------------------------------------------------------- |
+| **API**        | NestJS (Node 24)              | The sole gateway to the database. REST + OData v4, WebSocket `/monitoring`, auth. |
+| **Web**        | Vite + React 19, TanStack     | Operator console: dashboards, monitoring, configuration. Map (Leaflet), graphs (xyflow). |
+| **CLI**        | Python (Typer)                | `dpmc` — Keycloak login (device grant), OData queries.                          |
+| **Dispatcher** | Python (psycopg async)        | The orchestration engine: task/dependency/dispatch/monitor/aging/watcher/finalizer loops. *(submodule `dpmc-dispatcher`)* |
+| **Worker**     | Python (httpx)                | Agent on every Host: registers, *heartbeats*, runs Jobs (Docker/Apptainer), reports logs and metrics. *(submodule `dpmc-worker`)* |
+| **PostgreSQL** | Postgres 18                   | Source of truth (Prisma schema), triggers, energy views.                        |
+| **Keycloak**   | Keycloak 26                   | Identity, OAuth2/OIDC, RBAC roles.                                              |
+| **MinIO**      | S3-compatible                 | Product storage (`s3` media).                                                   |
+
+:::note Submodules
+`apps/worker` and `apps/dispatcher` live in separate repositories, integrated as **git submodules**. The API and the TypeScript client (`packages/client`) live in this monorepo.
+:::
+
+## The flow of a production
+
+```mermaid
+sequenceDiagram
+    participant U as User / Hook
+    participant API as API
+    participant DB as Postgres
+    participant D as Dispatcher
+    participant W as Worker (Host)
+
+    U->>API: creates a Task (chain + parameters)
+    API->>DB: Task (queued)
+    D->>DB: Task due? → running
+    D->>API: POST /scheduler/task/:id/expand
+    API->>DB: creates Batches (pending) + Jobs (waiting)
+    loop dependency loop
+        D->>DB: dependencies OK? Job waiting → ready
+    end
+    loop dispatch loop
+        D->>DB: bin-packing → JobAllocation, Host chosen
+    end
+    W->>API: GET /worker/:id/next-job
+    API-->>W: Job assigned
+    W->>W: runs (Docker/Apptainer), stage-in/out
+    W->>API: POST /worker/:id/jobs/:jid/result (+ metrics)
+    API->>DB: Job success/failed
+    D->>DB: finalizer → Batch/Task sealed
+```
+
+## Pull model for execution
+
+The "pull or push" question (open in the initial design) is settled: it is a **pull** model. The worker **polls** the API (`GET /worker/:id/next-job`) rather than receiving an order. The dispatcher only **decides** (allocation); the worker **pulls** the work assigned to it. This is robust against restrictive networks and NAT (the worker only needs outbound HTTP access to the API).
+
+## API: REST, OData and real-time
+
+- **REST** — resources `products`, `tasks`, `batches`, `jobs`, `hosts`, `production-chains`, `processing-scripts`, `projects`, `pools`, `processors`, and so on.
+- **OData v4** — `/odata/:resource` for rich queries (`$filter`, `$select`, `$expand`, `$orderby`, pagination). Public reads, writes restricted to `operator`+ roles. This is what the CLI consumes.
+- **WebSocket** — `/monitoring` namespace (Socket.io) for real-time tracking of Jobs/Batches/Hosts in the console.
+- **Typed client** — `packages/client` (`@dpmc/client`) exposes **ts-rest** contracts + **zod** schemas shared between the web console and TypeScript integrations.
+
+## Technical choices
+
+| Item                 | Choice                        | Why                                                                       |
+| -------------------- | ----------------------------- | ------------------------------------------------------------------------- |
+| Database             | PostgreSQL 18                 | Relational, fits the DAG, JSONB, triggers, materializable views.          |
+| ORM / migrations     | Prisma                        | Typed client, versioned migrations.                                       |
+| API                  | NestJS                        | Modularity, DI, mature ecosystem, OpenAPI.                                |
+| Frontend             | Vite + React 19 + TanStack    | Reactive SPA, file-based routing, React Query, real-time.                 |
+| Dispatcher / Worker  | Python                        | Closeness to the scientific processing ecosystem.                         |
+| Monorepo             | pnpm + Turborepo              | Build cache, shared tasks.                                                |
+| Identity             | Keycloak (OAuth2/OIDC)        | RBAC, device grant for the CLI, ecosystem standard.                       |
+| Containers           | Docker (cloud/on-prem), Apptainer (HPC) | No Kubernetes required; HPC without root privileges.           |
+
+## See also
+
+- [Data model (ERD)](/docs/architecture/data-model)
+- [Scheduler](/docs/architecture/scheduler)
+- [Security](/docs/architecture/security)
+- [Multi-site](/docs/architecture/multi-site)

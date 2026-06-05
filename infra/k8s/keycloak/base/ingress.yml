@@ -1,0 +1,29 @@
+# Public HTTPS entrypoint for Keycloak. The ingress terminates TLS and forwards
+# X-Forwarded-* headers, which Keycloak trusts via KC_PROXY_HEADERS=xforwarded.
+#
+# NOTE: confirm the host below matches your DNS. The realm's client redirect
+# URIs (keycloak.json) currently only list localhost — add this origin there
+# (or via the admin console) before logins from the real web console will work.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  annotations:
+    field.cattle.io/description: DPMC Keycloak (identity provider)
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - dpmc-keycloak.operation.acrist-services.com
+      secretName: star.acrist-services.com
+  rules:
+    - host: dpmc-keycloak.operation.acrist-services.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 80

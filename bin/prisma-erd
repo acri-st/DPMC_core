@@ -1,0 +1,261 @@
+#!/usr/bin/env node
+// prisma-erd — generate a Mermaid ER diagram from a Prisma schema.
+//
+// Usage:
+//   bin/prisma-erd [schema-path] [-o output-path] [--no-fence]
+//
+// Defaults:
+//   schema-path  packages/prisma/prisma/schema.prisma (relative to repo root)
+//   output       stdout
+//
+// Flags:
+//   -o, --output  write to file instead of stdout
+//   --no-fence    omit the ```mermaid code fence (raw erDiagram only)
+//   -h, --help    show this help
+
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const SCALAR_MERMAID = {
+  String: 'string',
+  Boolean: 'boolean',
+  Int: 'int',
+  BigInt: 'bigint',
+  Float: 'float',
+  Decimal: 'decimal',
+  DateTime: 'datetime',
+  Json: 'json',
+  Bytes: 'bytes',
+};
+
+function parseArgs(argv) {
+  const opts = { schema: null, output: null, fence: true };
+  const positional = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '-h' || a === '--help') opts.help = true;
+    else if (a === '--no-fence') opts.fence = false;
+    else if (a === '-o' || a === '--output') opts.output = argv[++i];
+    else positional.push(a);
+  }
+  if (positional[0]) opts.schema = positional[0];
+  return opts;
+}
+
+function printUsage() {
+  process.stdout.write(
+    'Usage: prisma-erd [schema-path] [-o output-path] [--no-fence]\n',
+  );
+}
+
+function repoRoot() {
+  return path.resolve(__dirname, '..');
+}
+
+function parseSchema(src) {
+  const models = {};
+  const enums = new Set();
+  let cur = null;
+  let depth = 0;
+
+  for (const raw of src.split('\n')) {
+    const line = raw.replace(/\/\/.*$/, '');
+    if (!cur) {
+      const m = line.match(/^\s*(model|enum)\s+(\w+)\s*\{/);
+      if (m) {
+        cur = { kind: m[1], name: m[2], lines: [] };
+        depth = 1;
+      }
+      continue;
+    }
+    for (const ch of line) {
+      if (ch === '{') depth++;
+      else if (ch === '}') depth--;
+    }
+    if (depth === 0) {
+      if (cur.kind === 'model') models[cur.name] = parseModelBody(cur.lines);
+      else enums.add(cur.name);
+      cur = null;
+    } else {
+      cur.lines.push(line);
+    }
+  }
+
+  return { models, enums };
+}
+
+function parseModelBody(lines) {
+  const fields = [];
+  const blockAttrs = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('@@')) {
+      blockAttrs.push(line);
+      continue;
+    }
+    const m = line.match(/^(\w+)\s+(\w+)(\?|\[\])?\s*(.*)$/);
+    if (!m) continue;
+    const [, name, type, mod, attrs] = m;
+    const modifier = mod === '?' ? 'optional' : mod === '[]' ? 'list' : 'required';
+    fields.push({ name, type, modifier, attrs: attrs || '' });
+  }
+  return { fields, blockAttrs };
+}
+
+function classify(models, enums) {
+  for (const [modelName, m] of Object.entries(models)) {
+    m.name = modelName;
+    m.pk = new Set();
+    m.unique = new Set();
+    m.fkFields = new Set();
+    m.scalarFields = [];
+    m.relationFields = [];
+
+    for (const ba of m.blockAttrs) {
+      const id = ba.match(/^@@id\(\s*\[([^\]]*)\]/);
+      if (id) for (const f of splitList(id[1])) m.pk.add(f);
+      const uq = ba.match(/^@@unique\(\s*\[([^\]]*)\]/);
+      if (uq) for (const f of splitList(uq[1])) m.unique.add(f);
+    }
+
+    for (const f of m.fields) {
+      const isRelation = Object.prototype.hasOwnProperty.call(models, f.type);
+      if (isRelation) {
+        const rel = parseRelationAttr(f.attrs);
+        for (const fk of rel.fields) m.fkFields.add(fk);
+        m.relationFields.push({
+          name: f.name,
+          target: f.type,
+          modifier: f.modifier,
+          relationName: rel.name,
+          fkFields: rel.fields,
+        });
+      } else {
+        if (/@id\b/.test(f.attrs)) m.pk.add(f.name);
+        if (/@unique\b/.test(f.attrs)) m.unique.add(f.name);
+        m.scalarFields.push(f);
+      }
+    }
+  }
+}
+
+function splitList(s) {
+  return s.split(',').map((x) => x.trim()).filter(Boolean);
+}
+
+function parseRelationAttr(attrs) {
+  const out = { name: null, fields: [] };
+  const rel = attrs.match(/@relation\(([^)]*)\)/);
+  if (!rel) return out;
+  const inside = rel[1];
+  const nameMatch = inside.match(/^\s*"([^"]+)"/);
+  if (nameMatch) out.name = nameMatch[1];
+  const fieldsMatch = inside.match(/fields:\s*\[([^\]]*)\]/);
+  if (fieldsMatch) out.fields = splitList(fieldsMatch[1]);
+  return out;
+}
+
+function mermaidType(field, enums) {
+  if (enums.has(field.type)) return field.type;
+  return SCALAR_MERMAID[field.type] || field.type;
+}
+
+function renderEntity(model, enums) {
+  const out = [`  ${model.name} {`];
+  for (const f of model.scalarFields) {
+    const tags = [];
+    if (model.pk.has(f.name)) tags.push('PK');
+    if (model.fkFields.has(f.name)) tags.push('FK');
+    if (model.unique.has(f.name) && !model.pk.has(f.name)) tags.push('UK');
+    let type = mermaidType(f, enums);
+    if (f.modifier === 'list') type = `${type}_list`;
+    const tagStr = tags.length ? ` ${tags.join(',')}` : '';
+    const note = f.modifier === 'optional' ? ' "nullable"' : '';
+    out.push(`    ${type} ${f.name}${tagStr}${note}`);
+  }
+  out.push('  }');
+  return out.join('\n');
+}
+
+const LEFT_CARD = { required: '||', optional: 'o|', list: '}o' };
+const RIGHT_CARD = { required: '||', optional: '|o', list: 'o{' };
+
+function renderRelations(models) {
+  const seen = new Set();
+  const edges = [];
+  const modelNames = Object.keys(models);
+
+  for (const name of modelNames) {
+    const m = models[name];
+    for (const rel of m.relationFields) {
+      const other = models[rel.target];
+      if (!other) continue;
+      const inverse = other.relationFields.find(
+        (r) =>
+          r.target === m.name &&
+          r.relationName === rel.relationName &&
+          (m.name !== other.name || r.name !== rel.name),
+      );
+
+      const a = m.name;
+      const b = other.name;
+      const key = `${a}#${rel.name}#${b}#${inverse ? inverse.name : ''}`;
+      const reverseKey = `${b}#${inverse ? inverse.name : ''}#${a}#${rel.name}`;
+      if (seen.has(reverseKey)) continue;
+      seen.add(key);
+
+      const cardLeft = LEFT_CARD[inverse ? inverse.modifier : 'required'];
+      const cardRight = RIGHT_CARD[rel.modifier];
+      const label = rel.relationName || rel.name;
+      edges.push(`  ${a} ${cardLeft}--${cardRight} ${b} : "${label}"`);
+    }
+  }
+  return edges.join('\n');
+}
+
+function render(models, enums) {
+  const lines = ['erDiagram'];
+  const names = Object.keys(models).sort();
+  for (const name of names) lines.push(renderEntity(models[name], enums));
+  const edges = renderRelations(models);
+  if (edges) lines.push(edges);
+  return lines.join('\n');
+}
+
+function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  if (opts.help) {
+    printUsage();
+    return;
+  }
+
+  const schemaPath = opts.schema
+    ? path.resolve(opts.schema)
+    : path.join(repoRoot(), 'packages/prisma/prisma/schema.prisma');
+
+  if (!fs.existsSync(schemaPath)) {
+    process.stderr.write(`prisma-erd: schema not found: ${schemaPath}\n`);
+    process.exit(1);
+  }
+
+  const src = fs.readFileSync(schemaPath, 'utf8');
+  const { models, enums } = parseSchema(src);
+  classify(models, enums);
+
+  const body = render(models, enums);
+  const out = opts.fence ? `\`\`\`mermaid\n${body}\n\`\`\`\n` : `${body}\n`;
+
+  if (opts.output) {
+    fs.writeFileSync(path.resolve(opts.output), out);
+    process.stderr.write(
+      `prisma-erd: wrote ${Object.keys(models).length} models to ${opts.output}\n`,
+    );
+  } else {
+    process.stdout.write(out);
+  }
+}
+
+main();

@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DRY_RUN="${DPMC_DEV_DRY_RUN:-0}"
+
+PRESETS=("dpmc" "api" "web" "docs" "custom")
+
+LOCAL_APPS=("api" "web" "dispatcher" "docs")
+
+PRESET_CHOICES=(
+    "🛰️ dpmc  docker + api + web + dispatcher"
+    "🔌 api   docker + api"
+    "🌐 web   docker + api + web"
+    "📚 docs  documentation only"
+    "🎛️ custom"
+)
+
+APP_CHOICES=(
+    "🔌 api"
+    "🌐 web"
+    "🧠 dispatcher"
+    "📚 docs"
+)
+
+usage() {
+    cat <<EOF
+DPMC Development CLI
+
+Usage:
+  dpmc-dev [preset]
+  dpmc-dev custom [app...]
+
+Presets:
+  dpmc    docker + api + web + dispatcher + linked libs
+  api     docker + api + linked libs
+  web     docker + api + web + linked libs
+  docs    docs + linked libs
+  custom  choose local apps with gum
+
+Examples:
+  dpmc-dev
+  dpmc-dev api
+  dpmc-dev custom api docs
+EOF
+}
+
+command_icon() {
+    case "$1" in
+        docker)
+            echo "🐳"
+            ;;
+        pnpm)
+            echo "⚡"
+            ;;
+        *)
+            echo "▶️"
+            ;;
+    esac
+}
+
+print_command() {
+    printf '%s' "$(command_icon "$1")"
+    printf ' %s' "$@"
+    printf '\n'
+}
+
+run_command() {
+    print_command "$@"
+
+    if [[ "$DRY_RUN" == "1" ]]; then
+        return
+    fi
+
+    "$@"
+}
+
+install_gum() {
+    echo "📦 Installing gum..." >&2
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+    sudo apt update && sudo apt install -y gum
+}
+
+require_gum() {
+    if ! command -v gum >/dev/null 2>&1; then
+        if ! command -v apt >/dev/null 2>&1 || ! command -v sudo >/dev/null 2>&1; then
+            echo "gum is required for interactive selection." >&2
+            echo "Install it or pass a preset directly, for example: pnpm dev api" >&2
+            exit 1
+        fi
+
+        install_gum
+
+        if ! command -v gum >/dev/null 2>&1; then
+            echo "gum installation failed." >&2
+            exit 1
+        fi
+    fi
+}
+
+version() {
+    node -p "require('$ROOT_DIR/package.json').version"
+}
+
+choose_preset() {
+    require_gum
+    gum choose --header "✨ Choose a development preset" "${PRESET_CHOICES[@]}" | awk '{ print $2 }'
+}
+
+choose_custom_apps() {
+    require_gum
+    gum choose --no-limit --header "🎛️ Choose apps to start" "${APP_CHOICES[@]}" | awk '{ print $2 }'
+}
+
+filters_for_app() {
+    case "$1" in
+        api)
+            echo "@dpmc/api..."
+            ;;
+        web)
+            echo "@dpmc/web..."
+            ;;
+        dispatcher)
+            echo "@dpmc/dispatcher..."
+            ;;
+        docs)
+            echo "@dpmc/docs..."
+            ;;
+        *)
+            echo "Unknown app: $1" >&2
+            exit 1
+            ;;
+    esac
+}
+
+configure_preset() {
+    local preset="$1"
+
+    NEEDS_DOCKER=0
+    FILTERS=()
+
+    case "$preset" in
+        dpmc)
+            NEEDS_DOCKER=1
+            FILTERS=("@dpmc/api..." "@dpmc/web..." "@dpmc/dispatcher...")
+            ;;
+        api)
+            NEEDS_DOCKER=1
+            FILTERS=("@dpmc/api...")
+            ;;
+        web)
+            NEEDS_DOCKER=1
+            FILTERS=("@dpmc/api..." "@dpmc/web...")
+            ;;
+        docs)
+            FILTERS=("@dpmc/docs...")
+            ;;
+        *)
+            echo "Unknown preset: $preset" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+}
+
+configure_custom() {
+    local apps=("$@")
+
+    if [[ "${#apps[@]}" -eq 0 ]]; then
+        mapfile -t apps < <(choose_custom_apps)
+    fi
+
+    if [[ "${#apps[@]}" -eq 0 ]]; then
+        echo "No app selected." >&2
+        exit 1
+    fi
+
+    NEEDS_DOCKER=0
+    FILTERS=()
+
+    local app
+    for app in "${apps[@]}"; do
+        FILTERS+=("$(filters_for_app "$app")")
+
+        case "$app" in
+            api | web | dispatcher)
+                NEEDS_DOCKER=1
+                ;;
+        esac
+    done
+}
+
+main() {
+    cd "$ROOT_DIR"
+
+    local preset="${1:-}"
+    if [[ "$preset" == "-h" || "$preset" == "--help" ]]; then
+        usage
+        exit 0
+    fi
+
+    echo "🛰️ DPMC Development CLI ($(version))"
+    echo
+
+    if [[ -z "$preset" ]]; then
+        preset="$(choose_preset)"
+    fi
+
+    if [[ "$preset" == "custom" ]]; then
+        shift || true
+        configure_custom "$@"
+    else
+        configure_preset "$preset"
+    fi
+
+    echo "✨ Starting $preset preset"
+
+    if [[ "$NEEDS_DOCKER" == "1" ]]; then
+        run_command docker compose up -d
+    fi
+
+    local turbo_command=(pnpm turbo run dev)
+    local filter
+    for filter in "${FILTERS[@]}"; do
+        turbo_command+=("--filter=$filter")
+    done
+
+    run_command "${turbo_command[@]}"
+}
+
+main "$@"

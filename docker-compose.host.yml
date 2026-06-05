@@ -1,0 +1,64 @@
+x-worker-base: &worker-base
+  build:
+    context: .
+    dockerfile: apps/worker/Dockerfile
+  image: dpmc-worker:dev
+  restart: unless-stopped
+  env_file:
+    - apps/api/.env
+  environment: &worker-env
+    DPMC_API_URL: http://host.docker.internal:3000/api
+    DPMC_DATA_CENTER_CODE: ACR
+    DPMC_PROCESSING_DIR: /var/lib/dpmc/processing
+    DPMC_CACHE_DIR: /var/cache/dpmc
+    DPMC_HEARTBEAT_INTERVAL_S: 30
+    DPMC_LOG_LEVEL: INFO
+    S3_ENDPOINT: http://host.docker.internal:9000
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./data/warhol:/repo/data/warhol:ro
+    - ./data/warhol/runs:/repo/data/warhol/runs
+
+services:
+  dev-host-1:
+    <<: *worker-base
+    container_name: dpmc-dev-host-1
+    hostname: dev-host-1
+  dev-host-2:
+    <<: *worker-base
+    container_name: dpmc-dev-host-2
+    hostname: dev-host-2
+  dev-host-3:
+    <<: *worker-base
+    container_name: dpmc-dev-host-3
+    hostname: dev-host-3
+  dev-host-4:
+    <<: *worker-base
+    container_name: dpmc-dev-host-4
+    hostname: dev-host-4
+  dev-host-5:
+    <<: *worker-base
+    container_name: dpmc-dev-host-5
+    hostname: dev-host-5
+  dev-host-6:
+    <<: *worker-base
+    container_name: dpmc-dev-host-6
+    hostname: dev-host-6
+  dev-host-7:
+    <<: *worker-base
+    container_name: dpmc-dev-host-7
+    hostname: dev-host-7
+  dev-host-8:
+    <<: *worker-base
+    container_name: dpmc-dev-host-8
+    hostname: dev-host-8
+  dev-host-9:
+    <<: *worker-base
+    container_name: dpmc-dev-host-9
+    hostname: dev-host-9
+  dev-host-10:
+    <<: *worker-base
+    container_name: dpmc-dev-host-10
+    hostname: dev-host-10

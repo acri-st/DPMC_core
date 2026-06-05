@@ -1,0 +1,6 @@
+{
+  "extends": "@dpmc/typescript/node.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": false
+  }
+}
