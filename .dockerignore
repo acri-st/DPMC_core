@@ -1,0 +1,22 @@
+# Keep the build context source-only and reproducible: dependencies and build
+# outputs are (re)generated inside the image, never copied from the host. Not
+# excluding these lets stale local dist/ mask missing build steps (the API/web
+# images compiled locally but failed in CI for exactly this reason).
+**/node_modules
+**/dist
+**/build
+**/.next
+**/.turbo
+**/.docusaurus
+**/coverage
+
+# Python worker virtualenv + caches (irrelevant to the JS images, very large).
+**/.venv
+**/__pycache__
+**/.pytest_cache
+
+# VCS / local noise
+.git
+.gitlab-ci.yml
+**/*.log
+data

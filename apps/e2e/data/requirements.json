@@ -1,0 +1,383 @@
+{
+  "requirements": [
+    {
+      "id": "EOCP-E1-01",
+      "label": "Architecture modularity and decoupling",
+      "tests": ["t01-1", "t01-2", "t01-3"]
+    },
+    {
+      "id": "EOCP-E1-02",
+      "label": "Standardized REST interfaces",
+      "tests": ["t11-1", "t11-8", "t11-9"]
+    },
+    {
+      "id": "EOCP-E1-03",
+      "label": "Portability, observability, resilience",
+      "tests": ["t06-1", "t06-14", "t06-15"]
+    },
+    {
+      "id": "EOCP-E1-04",
+      "label": "Security by design",
+      "tests": ["t12-1", "t12-7", "t12-8"]
+    },
+    {
+      "id": "EOCP-E1-05",
+      "label": "DB rules, logging, naming conventions",
+      "tests": ["t01-4", "t01-5"]
+    },
+
+    {
+      "id": "EOCP-E2-01",
+      "label": "Multiple production modes",
+      "tests": ["t02-1", "t02-3"]
+    },
+    {
+      "id": "EOCP-E2-02",
+      "label": "Mode-specific rules",
+      "tests": ["t02-2", "t02-4"]
+    },
+
+    {
+      "id": "EOCP-E3-01",
+      "label": "Static resource evaluation",
+      "tests": ["t03-1", "t03-8", "t03-9"]
+    },
+    {
+      "id": "EOCP-E3-02",
+      "label": "Dynamic resource-based dispatch",
+      "tests": ["t03-2", "t03-10", "t03-11"]
+    },
+    {
+      "id": "EOCP-E3-03",
+      "label": "Static and runtime requirements declaration",
+      "tests": ["t03-3", "t03-12"]
+    },
+    {
+      "id": "EOCP-E3-04",
+      "label": "GPU resource management",
+      "tests": ["t03-4", "t03-13"]
+    },
+    {
+      "id": "EOCP-E3-05",
+      "label": "Node self-registration",
+      "tests": ["t03-5", "t03-14"]
+    },
+    {
+      "id": "EOCP-E3-06",
+      "label": "Node states management",
+      "tests": ["t03-6", "t03-15"]
+    },
+    {
+      "id": "EOCP-E3-07",
+      "label": "Real-time node updates",
+      "tests": ["t03-7", "t03-16"]
+    },
+
+    {
+      "id": "EOCP-E4-01",
+      "label": "Linear processing chains",
+      "tests": ["t04-1", "t04-8"]
+    },
+    {
+      "id": "EOCP-E4-02",
+      "label": "Simple job execution without chains",
+      "tests": ["t04-2", "t04-9"]
+    },
+    {
+      "id": "EOCP-E4-03",
+      "label": "Nested chains",
+      "tests": ["t04-3", "t04-6", "t04-7"]
+    },
+    {
+      "id": "EOCP-E4-04",
+      "label": "Reusable chains",
+      "tests": ["t04-4", "t04-10"]
+    },
+    {
+      "id": "EOCP-E4-05",
+      "label": "Conditional execution",
+      "tests": ["t04-5", "t04-11"]
+    },
+    {
+      "id": "EOCP-E4-06",
+      "label": "Execution conditions",
+      "tests": ["t05-1", "t05-9"]
+    },
+    {
+      "id": "EOCP-E4-07",
+      "label": "Parallel execution detection",
+      "tests": ["t05-2", "t05-10"]
+    },
+
+    {
+      "id": "EOCP-E5-01",
+      "label": "Explicit dependencies",
+      "tests": ["t05-3", "t05-11"]
+    },
+    {
+      "id": "EOCP-E5-02",
+      "label": "DAG dependency model",
+      "tests": ["t05-4", "t05-7"]
+    },
+    {
+      "id": "EOCP-E5-03",
+      "label": "Declarative dependencies",
+      "tests": ["t05-12"]
+    },
+    {
+      "id": "EOCP-E5-04",
+      "label": "Dependency types",
+      "tests": ["t05-5", "t05-13"]
+    },
+    {
+      "id": "EOCP-E5-05",
+      "label": "Runtime dependency handling",
+      "tests": ["t05-6", "t05-14"]
+    },
+
+    {
+      "id": "EOCP-E6-01",
+      "label": "Scheduling engine",
+      "tests": ["t06-2", "t06-16"]
+    },
+    {
+      "id": "EOCP-E6-02",
+      "label": "Multi-site support",
+      "tests": ["t06-3", "t06-17"]
+    },
+    {
+      "id": "EOCP-E6-03",
+      "label": "Dispatcher",
+      "tests": ["t06-4", "t06-18"]
+    },
+    {
+      "id": "EOCP-E6-04",
+      "label": "Queue manager",
+      "tests": ["t06-5", "t06-19"]
+    },
+    {
+      "id": "EOCP-E6-05",
+      "label": "Node registry and health",
+      "tests": ["t06-6", "t06-12", "t06-13"]
+    },
+    {
+      "id": "EOCP-E6-06",
+      "label": "Execution engine",
+      "tests": ["t06-7", "t06-20"]
+    },
+    {
+      "id": "EOCP-E6-07",
+      "label": "Persistence layer",
+      "tests": ["t06-8", "t06-21"]
+    },
+    {
+      "id": "EOCP-E6-08",
+      "label": "Federated scheduling",
+      "tests": ["t06-9", "t06-22"]
+    },
+    {
+      "id": "EOCP-E6-09",
+      "label": "Priority engine",
+      "tests": ["t10-1", "t10-6"]
+    },
+    {
+      "id": "EOCP-E6-10",
+      "label": "Elastic compute pools",
+      "tests": ["t06-10", "t06-23"]
+    },
+    {
+      "id": "EOCP-E6-11",
+      "label": "Fault tolerance",
+      "tests": ["t06-11", "t06-24"]
+    },
+
+    {
+      "id": "EOCP-E7-01",
+      "label": "Multiple triggers",
+      "tests": ["t07-1", "t07-9"]
+    },
+    {
+      "id": "EOCP-E7-02",
+      "label": "Manual trigger",
+      "tests": ["t07-2", "t07-10"]
+    },
+    {
+      "id": "EOCP-E7-03",
+      "label": "API trigger",
+      "tests": ["t07-3", "t07-11"]
+    },
+    {
+      "id": "EOCP-E7-04",
+      "label": "Data-driven trigger",
+      "tests": ["t07-4", "t07-7", "t07-8"]
+    },
+    {
+      "id": "EOCP-E7-05",
+      "label": "Event-based trigger",
+      "tests": ["t07-5", "t07-12"]
+    },
+    {
+      "id": "EOCP-E7-06",
+      "label": "Scheduled trigger",
+      "tests": ["t07-6", "t07-13"]
+    },
+
+    {
+      "id": "EOCP-E8-01",
+      "label": "Processor version coexistence",
+      "tests": ["t08-1", "t08-4"]
+    },
+    {
+      "id": "EOCP-E8-02",
+      "label": "Version traceability",
+      "tests": ["t08-2", "t08-5"]
+    },
+    {
+      "id": "EOCP-E8-03",
+      "label": "Version consistency",
+      "tests": ["t08-3", "t08-6"]
+    },
+
+    {
+      "id": "EOCP-E9-01",
+      "label": "Task table conversion",
+      "tests": ["t09-1", "t09-4"]
+    },
+    {
+      "id": "EOCP-E9-02",
+      "label": "Automated ingestion",
+      "tests": ["t09-2", "t09-5"]
+    },
+    {
+      "id": "EOCP-E9-03",
+      "label": "Traceability of ingestion",
+      "tests": ["t09-3", "t09-6"]
+    },
+
+    {
+      "id": "EOCP-E10-01",
+      "label": "Priority definition",
+      "tests": ["t10-2", "t10-10"]
+    },
+    {
+      "id": "EOCP-E10-02",
+      "label": "Priority weights",
+      "tests": ["t10-3", "t10-11"]
+    },
+    {
+      "id": "EOCP-E10-03",
+      "label": "Dynamic prioritization",
+      "tests": ["t10-4", "t10-8", "t10-9"]
+    },
+    {
+      "id": "EOCP-E10-04",
+      "label": "Preemption",
+      "tests": ["t10-5", "t10-12"]
+    },
+
+    {
+      "id": "EOCP-E11-02",
+      "label": "Job lifecycle APIs",
+      "tests": ["t11-2", "t11-11"]
+    },
+    {
+      "id": "EOCP-E11-03",
+      "label": "Status APIs",
+      "tests": ["t11-3", "t11-12"]
+    },
+    {
+      "id": "EOCP-E11-04",
+      "label": "Resource APIs",
+      "tests": ["t11-4", "t11-13"]
+    },
+    {
+      "id": "EOCP-E11-05",
+      "label": "Catalog APIs",
+      "tests": ["t11-5", "t11-14"]
+    },
+    {
+      "id": "EOCP-E11-06",
+      "label": "Configuration APIs",
+      "tests": ["t11-6", "t11-15"]
+    },
+    {
+      "id": "EOCP-E11-07",
+      "label": "API standards and security",
+      "tests": ["t11-7", "t11-16"]
+    },
+
+    {
+      "id": "EOCP-E12-01",
+      "label": "Authentication",
+      "tests": ["t12-2", "t12-9"]
+    },
+    {
+      "id": "EOCP-E12-02",
+      "label": "RBAC",
+      "tests": ["t12-3", "t12-10"]
+    },
+    {
+      "id": "EOCP-E12-03",
+      "label": "Secure protocols",
+      "tests": ["t12-4", "t12-11"]
+    },
+    {
+      "id": "EOCP-E12-04",
+      "label": "Security logging",
+      "tests": ["t12-5", "t12-12"]
+    },
+    {
+      "id": "EOCP-E12-05",
+      "label": "IAM integration",
+      "tests": ["t12-6", "t12-13"]
+    },
+
+    {
+      "id": "EOCP-E13-01",
+      "label": "Container support",
+      "tests": ["t13-1", "t13-4", "t13-5"]
+    },
+    {
+      "id": "EOCP-E13-02",
+      "label": "Container interface",
+      "tests": ["t13-2", "t13-6"]
+    },
+    {
+      "id": "EOCP-E13-03",
+      "label": "Container isolation",
+      "tests": ["t13-3", "t13-7"]
+    },
+
+    {
+      "id": "EOCP-E14-01",
+      "label": "Product versioning",
+      "tests": ["t14-1", "t14-4"]
+    },
+    {
+      "id": "EOCP-E14-02",
+      "label": "Version traceability",
+      "tests": ["t14-2", "t14-5"]
+    },
+    {
+      "id": "EOCP-E14-03",
+      "label": "Version selection",
+      "tests": ["t14-3", "t14-6"]
+    },
+
+    {
+      "id": "EOCP-E15-01",
+      "label": "Metrics collection",
+      "tests": ["t15-1", "t15-4", "t15-5"]
+    },
+    {
+      "id": "EOCP-E15-02",
+      "label": "Metrics analysis",
+      "tests": ["t15-2", "t15-6"]
+    },
+    {
+      "id": "EOCP-E15-03",
+      "label": "Metrics export",
+      "tests": ["t15-3", "t15-7"]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+overrides:
+  '@types/react': '19.2.14'
+  '@types/react-dom': '19.2.3'
+  csstype: '3.2.3'
+
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  '@swc/core': true
+  core-js: true
+  esbuild: true
+  msw: true
+  prisma: true
+  unrs-resolver: true

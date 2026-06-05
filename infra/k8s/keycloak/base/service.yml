@@ -1,0 +1,15 @@
+# Exposes Keycloak's HTTP port in-cluster (DNS `keycloak.eocp.svc.cluster.local`)
+# for the ingress and the API. The management port (9000, health) is not
+# published — it is only used by the kubelet probes via the pod IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: keycloak
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

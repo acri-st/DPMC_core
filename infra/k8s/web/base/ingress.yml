@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+  annotations:
+    field.cattle.io/description: DPMC web console (Vite SPA)
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - dpmc-web.operation.acrist-services.com
+      secretName: star.acrist-services.com
+  rules:
+    - host: dpmc-web.operation.acrist-services.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

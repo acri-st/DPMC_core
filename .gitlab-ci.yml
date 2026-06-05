@@ -1,0 +1,115 @@
+include:
+  - remote: https://gitlab.acri-cwa.fr/devops/ci-templates/-/raw/main/workflow_template.yaml
+
+image: node:24-slim
+
+before_script:
+  - corepack enable
+  - corepack prepare pnpm@10.33.0 --activate
+  - pnpm install --frozen-lockfile
+
+cache:
+  - key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store/
+    policy: pull-push
+  - key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .turbo/
+    policy: pull-push
+
+variables:
+  PNPM_STORE_DIR: .pnpm-store
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+stages:
+  - test
+  - build
+  - docker
+  - deploy
+
+lint:
+  stage: test
+  script:
+    - pnpm lint --filter='!@dpmc/cli'
+
+check-types:
+  stage: test
+  script:
+    - pnpm check-types --filter='!@dpmc/cli'
+
+build:
+  stage: build
+  variables:
+    # Cap each build's V8 heap so concurrent Node/Rspack/Vite workers don't
+    # over-commit the runner's RAM.
+    NODE_OPTIONS: --max-old-space-size=2048
+  script:
+    # --concurrency=1 builds packages serially. Building docs (Rspack), web
+    # (Vite) and the API in parallel saturates the runner's memory and the job
+    # freezes mid-compile (each tool also spawns its own worker threads). Serial
+    # is reliable; raise the value once the runner's memory headroom is known.
+    - pnpm build --filter='!@dpmc/cli' --concurrency=1
+
+.dpmc-build:
+  extends: .build
+  stage: docker
+  cache: []
+  variables:
+    SOURCEPATH: ${CI_PROJECT_DIR}
+    HARBOR_IMAGE_PROJECT: 'damps/dpmc'
+
+build-docs:
+  extends: .dpmc-build
+  variables:
+    DOCKERFILE: "infra/docker/docs/Dockerfile"
+    SERVICE_NAME: docs
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - infra/docker/docs/Dockerfile
+        - apps/docs/**/*
+        - packages/**/*
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+    - when: manual
+      allow_failure: true
+
+build-api:
+  extends: .dpmc-build
+  variables:
+    DOCKERFILE: "infra/docker/api/Dockerfile"
+    SERVICE_NAME: api
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - infra/docker/api/Dockerfile
+        - apps/api/**/*
+        - packages/**/*
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+    - when: manual
+      allow_failure: true
+
+build-web:
+  extends: .dpmc-build
+  variables:
+    DOCKERFILE: "infra/docker/web/Dockerfile"
+    SERVICE_NAME: web
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - infra/docker/web/Dockerfile
+        - apps/web/**/*
+        - packages/**/*
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+    - when: manual
+      allow_failure: true

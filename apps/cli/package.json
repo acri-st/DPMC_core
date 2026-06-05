@@ -1,0 +1,10 @@
+{
+  "name": "@dpmc/cli",
+  "private": true,
+  "scripts": {
+    "lint": "uv run ruff check .",
+    "test": "uv run pytest",
+    "check-types": "uv run mypy src",
+    "build": "echo 'no build'"
+  }
+}

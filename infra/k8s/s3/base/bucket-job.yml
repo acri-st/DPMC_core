@@ -1,0 +1,55 @@
+# One-shot Job that creates the `dpmc` bucket MinIO needs (MinIO does not
+# auto-create buckets). Idempotent (`mb --ignore-existing`); ttl cleans it up
+# so a later `kubectl apply` re-runs it. Waits for MinIO to accept the alias.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: s3-create-bucket
+spec:
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        app: s3
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      tolerations:
+        - key: project
+          operator: Equal
+          value: shared
+          effect: NoSchedule
+      containers:
+        - name: mc
+          image: minio/mc:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: s3
+          env:
+            # mc writes its config here; HOME isn't writable as non-root.
+            - name: MC_CONFIG_DIR
+              value: /tmp/mc
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              until mc alias set local http://s3:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do
+                echo "waiting for minio..."; sleep 2
+              done
+              mc mb --ignore-existing local/dpmc
+              mc ls local
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault

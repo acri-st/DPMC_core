@@ -1,0 +1,23 @@
+{
+  "files": [],
+  "compilerOptions": {
+    "composite": true,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/dashboard/*"]
+    },
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "references": [
+    { "path": "./tsconfig.dashboard.app.json" },
+    { "path": "./tsconfig.dashboard.node.json" }
+  ]
+}

@@ -1,0 +1,889 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../dist"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DependencyMode {
+  OnSuccess       @map("on_success")
+  OnFailure       @map("on_failure")
+  OnCompletion    @map("on_completion")
+  OnDataAvailable @map("on_data_available")
+  Optional        @map("optional")
+
+  @@map("dependency_mode")
+}
+
+enum ContainerRuntime {
+  Docker    @map("docker")
+  Apptainer @map("apptainer")
+  None      @map("none")
+
+  @@map("container_runtime")
+}
+
+enum ScriptStage {
+  Pre  @map("pre")
+  Exe  @map("exe")
+  Post @map("post")
+
+  @@map("script_stage")
+}
+
+enum HostStatus {
+  Up          @map("up")
+  Busy        @map("busy")
+  Off         @map("off")
+  Maintenance @map("maintenance")
+
+  @@map("host_status")
+}
+
+enum TaskKind {
+  Chain      @map("chain")
+  Standalone @map("standalone")
+
+  @@map("task_kind")
+}
+
+enum TaskStatus {
+  Edited    @map("edited")
+  Queued    @map("queued")
+  Running   @map("running")
+  Done      @map("done")
+  Error     @map("error")
+  Suspended @map("suspended")
+
+  @@map("task_status")
+}
+
+enum JobStatus {
+  Waiting   @map("waiting")
+  Ready     @map("ready")
+  Running   @map("running")
+  Success   @map("success")
+  Failed    @map("failed")
+  Skipped   @map("skipped")
+  Cancelled @map("cancelled")
+
+  @@map("job_status")
+}
+
+enum BatchStatus {
+  Pending   @map("pending")
+  Running   @map("running")
+  Success   @map("success")
+  Failed    @map("failed")
+  Cancelled @map("cancelled")
+
+  @@map("batch_status")
+}
+
+enum BatchKind {
+  Chain      @map("chain")
+  Standalone @map("standalone")
+
+  @@map("batch_kind")
+}
+
+enum ScriptType {
+  Bash   @map("bash")
+  Pgbash @map("pgbash")
+  Plsql  @map("plsql")
+  Sql    @map("sql")
+  Python @map("python")
+  Binary @map("binary")
+
+  @@map("script_type")
+}
+
+enum OsType {
+  Linux   @map("linux")
+  Darwin  @map("darwin")
+  Windows @map("windows")
+
+  @@map("os_type")
+}
+
+enum SchedulingPriority {
+  Low    @map("low")
+  Medium @map("medium")
+  High   @map("high")
+
+  @@map("scheduling_priority")
+}
+
+enum HostLogLevel {
+  Debug    @map("debug")
+  Info     @map("info")
+  Warning  @map("warning")
+  Error    @map("error")
+  Critical @map("critical")
+
+  @@map("host_log_level")
+}
+
+enum ProductionMode {
+  Nominal      @map("nominal")
+  Test         @map("test")
+  Reprocessing @map("reprocessing")
+  OnDemand     @map("on_demand")
+  OnTheFly     @map("on_the_fly")
+  HPC          @map("hpc")
+  Generic      @map("generic")
+
+  @@map("production_mode")
+}
+
+enum PriorityClass {
+  Test         @map("test")
+  OnDemand     @map("on_demand")
+  Reprocessing @map("reprocessing")
+  NRT          @map("nrt")
+  Super        @map("super")
+  Ultra        @map("ultra")
+
+  @@map("priority_class")
+}
+
+enum ProductionChainKind {
+  Standard @map("standard")
+  Watcher  @map("watcher")
+
+  @@map("production_chain_kind")
+}
+
+enum ParameterKind {
+  Text   @map("string")
+  Number @map("number")
+  Select @map("select")
+
+  @@map("parameter_kind")
+}
+
+enum ProductTypeCategory {
+  StaticAux   @map("static_aux")
+  DynamicAux  @map("dynamic_aux")
+  Measurement @map("measurement")
+
+  @@map("product_type_category")
+}
+
+enum MediaType {
+  S3    @map("s3")
+  HTTP  @map("http")
+  HTTPS @map("https")
+  NFS   @map("nfs")
+
+  @@map("media_type")
+}
+
+model Project {
+  id                     Int              @id @default(autoincrement())
+  identifier             String           @unique
+  name                   String
+  comment                String?
+  isActive               Boolean          @default(true)
+  priorityWeight         Float            @default(1.0)
+  allowedProductionModes ProductionMode[] @default([Generic])
+  isDefault              Boolean          @default(false)
+  createdAt              DateTime         @default(now()) @db.Timestamptz
+  updatedAt              DateTime         @updatedAt @db.Timestamptz
+  createdBy              String?
+  updatedBy              String?
+  deletedAt              DateTime?        @db.Timestamptz
+
+  tasks            Task[]
+  batches          Batch[]
+  jobs             Job[]
+  ingestionHooks   ProductIngestionHook[]
+  productionChains ProductionChain[]
+  userSettings     UserSettings[]
+
+  @@map("project")
+}
+
+model ProductType {
+  id              Int                  @id @default(autoincrement())
+  acronym         String               @unique
+  name            String
+  processingLevel String               @default("0")
+  category        ProductTypeCategory?
+  createdAt       DateTime             @default(now()) @db.Timestamptz
+  updatedAt       DateTime             @updatedAt @db.Timestamptz
+
+  products                Product[]
+  productionChainTriggers ProductionChainProductType[]
+  ingestionHooks          ProductIngestionHook[]
+
+  @@map("product_type")
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  productTypeId Int
+  parentBatchId Int?
+  name          String
+  version       String?
+  isDefault     Boolean   @default(false)
+  generatedAt   DateTime? @db.Timestamptz
+  parameters    Json?
+  comment       String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  productType         ProductType                @relation(fields: [productTypeId], references: [id], onDelete: Restrict)
+  parentBatch         Batch?                     @relation("ProductsOfBatch", fields: [parentBatchId], references: [id], onDelete: SetNull)
+  tasks               Task[]
+  mediaCatalogEntries ProductMediaCatalogEntry[]
+  datasetMemberships  DatasetProduct[]
+
+  @@unique([name, version])
+  @@map("product")
+}
+
+model ProductionChainProductType {
+  productionChainId Int
+  productTypeId     Int
+
+  productionChain ProductionChain @relation(fields: [productionChainId], references: [id], onDelete: Cascade)
+  productType     ProductType     @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+
+  @@id([productionChainId, productTypeId])
+  @@map("production_chain_x_product_type")
+}
+
+model ProductionChain {
+  id             Int                 @id @default(autoincrement())
+  projectId      Int
+  name           String
+  comment        String?
+  isActive       Boolean             @default(true)
+  kind           ProductionChainKind @default(Standard)
+  watcherConfig  Json?
+  configuration  Json?
+  supportedModes ProductionMode[]    @default([Generic])
+  createdAt      DateTime            @default(now()) @db.Timestamptz
+  updatedAt      DateTime            @updatedAt @db.Timestamptz
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?           @db.Timestamptz
+
+  productTypes     ProductionChainProductType[]
+  tasks            Task[]
+  ingestionHooks   ProductIngestionHook[]
+  project          Project                      @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  processingChains ProcessingChain[]
+  edges            ProductionChainEdge[]
+  batches          Batch[]
+  parameters       ProductionChainParameter[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("production_chain")
+}
+
+model ProcessingChain {
+  id                 Int     @id @default(autoincrement())
+  productionChainId  Int
+  processingScriptId Int
+  name               String
+  comment            String?
+  configuration      Json?
+  outputs            Json?
+
+  productionChain  ProductionChain       @relation(fields: [productionChainId], references: [id], onDelete: Cascade)
+  processingScript ProcessingScript      @relation(fields: [processingScriptId], references: [id], onDelete: Restrict)
+  parentEdges      ProductionChainEdge[] @relation("ParentChain")
+  childEdges       ProductionChainEdge[] @relation("ChildChain")
+  batches          Batch[]
+
+  @@unique([productionChainId, name])
+  @@index([processingScriptId])
+  @@map("processing_chain")
+}
+
+model ProductionChainEdge {
+  id                Int            @id @default(autoincrement())
+  productionChainId Int
+  parentChainId     Int
+  childChainId      Int
+  dependencyMode    DependencyMode @default(OnSuccess)
+  condition         Json?
+  isFanOut          Boolean        @default(false)
+
+  productionChain ProductionChain @relation(fields: [productionChainId], references: [id], onDelete: Cascade)
+  parentChain     ProcessingChain @relation("ParentChain", fields: [parentChainId], references: [id], onDelete: Cascade)
+  childChain      ProcessingChain @relation("ChildChain", fields: [childChainId], references: [id], onDelete: Cascade)
+
+  @@unique([productionChainId, parentChainId, childChainId])
+  @@index([parentChainId])
+  @@index([childChainId])
+  @@map("production_chain_x_edge")
+}
+
+model ProcessingScript {
+  id               Int       @id @default(autoincrement())
+  name             String
+  acronym          String    @unique
+  defaultVersionId Int?      @unique
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @db.Timestamptz
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime? @db.Timestamptz
+
+  defaultVersion   ProcessingScriptVersion?  @relation("DefaultVersion", fields: [defaultVersionId], references: [id])
+  versions         ProcessingScriptVersion[] @relation("AllVersions")
+  processingChains ProcessingChain[]
+
+  @@map("processing_script")
+}
+
+model ProcessingScriptVersion {
+  id                 Int              @id @default(autoincrement())
+  processingScriptId Int
+  version            String
+  isLatest           Boolean          @default(false)
+  runtime            ContainerRuntime @default(None)
+  imageUrl           String?
+  imageTag           String?
+  imageChecksum      String?
+  requiredCpu        Int              @default(1)
+  requiredRam        BigInt           @default(0)
+  requiredDisk       BigInt           @default(0)
+  requiresGpu        Boolean          @default(false)
+  gpuCount           Int              @default(0)
+  createdAt          DateTime         @default(now()) @db.Timestamptz
+  updatedAt          DateTime         @updatedAt @db.Timestamptz
+  createdBy          String?
+
+  processingScript  ProcessingScript             @relation("AllVersions", fields: [processingScriptId], references: [id], onDelete: Cascade)
+  defaultForScript  ProcessingScript?            @relation("DefaultVersion")
+  executables       ProcessingScriptExecutable[]
+  processorVersions ProcessorVersion[]
+  jobs              Job[]
+
+  @@unique([processingScriptId, version])
+  @@map("processing_script_version")
+}
+
+model ProcessingScriptExecutable {
+  id                        Int         @id @default(autoincrement())
+  processingScriptVersionId Int
+  scriptType                ScriptType
+  stage                     ScriptStage @default(Exe)
+  path                      String
+  name                      String
+  version                   String?
+  sequence                  Int         @default(0)
+  args                      String?
+
+  processingScriptVersion ProcessingScriptVersion @relation(fields: [processingScriptVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([processingScriptVersionId, stage, sequence])
+  @@map("processing_script_executable")
+}
+
+model AuxiliaryConfiguration {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  baseline   String?
+  comment    String?
+  parameters Json?
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime? @db.Timestamptz
+
+  processorVersions ProcessorVersion[]
+
+  @@map("auxiliary_configuration")
+}
+
+model ProcessorVersion {
+  id                        Int      @id @default(autoincrement())
+  processingScriptVersionId Int
+  auxiliaryConfigurationId  Int
+  baseline                  String
+  comment                   String?
+  parameters                Json?
+  createdAt                 DateTime @default(now()) @db.Timestamptz
+  createdBy                 String?
+
+  processingScriptVersion ProcessingScriptVersion @relation(fields: [processingScriptVersionId], references: [id], onDelete: Restrict)
+  auxiliaryConfiguration  AuxiliaryConfiguration  @relation(fields: [auxiliaryConfigurationId], references: [id], onDelete: Restrict)
+  tasks                   Task[]
+  batches                 Batch[]
+  jobs                    Job[]
+
+  @@unique([processingScriptVersionId, auxiliaryConfigurationId])
+  @@map("processor_x_version")
+}
+
+model Task {
+  id                 Int            @id @default(autoincrement())
+  projectId          Int
+  kind               TaskKind       @default(Chain)
+  productionChainId  Int?
+  processorVersionId Int?
+  productId          Int?
+  inputDatasetId     Int?
+  executionTag       String         @unique
+  status             TaskStatus     @default(Edited)
+  priority           Int            @default(0)
+  productionMode     ProductionMode @default(Generic)
+  priorityClass      PriorityClass  @default(OnDemand)
+  scheduledStartTime DateTime       @db.Timestamptz
+  expectedStartTime  DateTime?      @db.Timestamptz
+  startedAt          DateTime?      @db.Timestamptz
+  completedAt        DateTime?      @db.Timestamptz
+  temporalContext    Json?
+  parameters         Json?
+  comment            String?
+  createdAt          DateTime       @default(now()) @db.Timestamptz
+  updatedAt          DateTime       @updatedAt @db.Timestamptz
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?      @db.Timestamptz
+
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  productionChain  ProductionChain?  @relation(fields: [productionChainId], references: [id], onDelete: Restrict)
+  processorVersion ProcessorVersion? @relation(fields: [processorVersionId], references: [id], onDelete: SetNull)
+  product          Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  inputDataset     Dataset?          @relation("TaskInputDataset", fields: [inputDatasetId], references: [id], onDelete: SetNull)
+  batches          Batch[]
+
+  @@index([status, scheduledStartTime])
+  @@index([projectId, status])
+  @@map("task")
+}
+
+model TaskSchedule {
+  id             Int     @id @default(autoincrement())
+  projectId      Int
+  name           String
+  enabled        Boolean @default(true)
+  cronExpression String
+  timezone       String  @default("UTC")
+
+  kind               TaskKind       @default(Chain)
+  productionChainId  Int?
+  processorVersionId Int?
+  productId          Int?
+  productionMode     ProductionMode @default(Generic)
+  priority           Int            @default(0)
+  priorityClass      PriorityClass  @default(OnDemand)
+  parameters         Json?
+  comment            String?
+
+  lastRunAt  DateTime? @db.Timestamptz
+  nextRunAt  DateTime? @db.Timestamptz
+  lastTaskId Int?
+  lastError  String?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime? @db.Timestamptz
+
+  @@index([enabled, nextRunAt])
+  @@index([projectId])
+  @@map("task_schedule")
+}
+
+model Batch {
+  id                 Int            @id @default(autoincrement())
+  projectId          Int
+  taskId             Int
+  productionChainId  Int?
+  processingChainId  Int?
+  fanOutGroupId      String?
+  processorVersionId Int?
+  parentBatchId      Int?
+  poolId             Int?
+  executionTag       String
+  kind               BatchKind      @default(Chain)
+  status             BatchStatus    @default(Pending)
+  priority           Int            @default(0)
+  productionMode     ProductionMode @default(Generic)
+  priorityClass      PriorityClass  @default(OnDemand)
+  constraints        Json?
+  configuration      Json?
+  parameters         Json?
+  parametersIn       Json?
+  parametersOut      Json?
+  scheduledAt        DateTime?      @db.Timestamptz
+  startedAt          DateTime?      @db.Timestamptz
+  endedAt            DateTime?      @db.Timestamptz
+  createdAt          DateTime       @default(now()) @db.Timestamptz
+  updatedAt          DateTime       @updatedAt @db.Timestamptz
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?      @db.Timestamptz
+
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  task             Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  productionChain  ProductionChain?  @relation(fields: [productionChainId], references: [id], onDelete: Restrict)
+  processingChain  ProcessingChain?  @relation(fields: [processingChainId], references: [id], onDelete: SetNull)
+  processorVersion ProcessorVersion? @relation(fields: [processorVersionId], references: [id], onDelete: Restrict)
+  parent           Batch?            @relation("BatchReplay", fields: [parentBatchId], references: [id], onDelete: SetNull)
+  replays          Batch[]           @relation("BatchReplay")
+  pool             Pool?             @relation(fields: [poolId], references: [id], onDelete: SetNull)
+  jobs             Job[]
+  producedProducts Product[]         @relation("ProductsOfBatch")
+  datasetOut       Dataset?          @relation("DatasetOut")
+  datasetIns       BatchDatasetIn[]
+
+  @@index([status, priority])
+  @@index([executionTag])
+  @@index([projectId, status])
+  @@map("batch")
+}
+
+model Job {
+  id                        Int       @id @default(autoincrement())
+  projectId                 Int
+  batchId                   Int
+  processingScriptVersionId Int
+  processorVersionId        Int?
+  hostId                    Int?
+  executionTag              String
+  status                    JobStatus @default(Waiting)
+  pid                       Int?
+  parameters                Json?
+  outputDir                 String?
+  avgPower                  Float?
+  dataVolume                BigInt?
+  resolvedImage             String?
+  attempt                   Int       @default(0)
+  paused                    Boolean   @default(false)
+  lastError                 String?
+  metrics                   Json?
+  effectivePriority         Float?
+  expectedStartTime         DateTime? @db.Timestamptz
+  startedAt                 DateTime? @db.Timestamptz
+  endedAt                   DateTime? @db.Timestamptz
+  createdAt                 DateTime  @default(now()) @db.Timestamptz
+  updatedAt                 DateTime  @updatedAt @db.Timestamptz
+
+  project                 Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  batch                   Batch                   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  processingScriptVersion ProcessingScriptVersion @relation(fields: [processingScriptVersionId], references: [id], onDelete: Restrict)
+  processorVersion        ProcessorVersion?       @relation(fields: [processorVersionId], references: [id], onDelete: SetNull)
+  host                    Host?                   @relation(fields: [hostId], references: [id], onDelete: SetNull)
+  allocation              JobAllocation?
+  logs                    HostLog[]
+
+  @@index([status, hostId])
+  @@index([executionTag])
+  @@index([projectId, status])
+  @@map("job")
+}
+
+model Pool {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  comment   String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  hosts   PoolHost[]
+  batches Batch[]
+
+  @@map("pool")
+}
+
+model PoolHost {
+  poolId Int
+  hostId Int
+
+  pool Pool @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  host Host @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@id([poolId, hostId])
+  @@map("pool_x_host")
+}
+
+model Host {
+  id                 Int                @id @default(autoincrement())
+  dataCenterId       Int
+  hostname           String             @unique
+  ipAddress          String
+  osType             OsType
+  osVersion          String
+  schedulingPriority SchedulingPriority @default(Medium)
+  status             HostStatus         @default(Off)
+  processingDir      String
+  cacheDir           String
+  nbCores            Int
+  ram                BigInt
+  disk               BigInt
+  hasGpu             Boolean            @default(false)
+  gpuCount           Int                @default(0)
+  gpuModel           String?
+  containerRuntime   ContainerRuntime   @default(None)
+  tdpW               Int?
+  lastHeartbeatAt    DateTime?          @db.Timestamptz
+  createdAt          DateTime           @default(now()) @db.Timestamptz
+  updatedAt          DateTime           @updatedAt @db.Timestamptz
+
+  dataCenter  DataCenter      @relation(fields: [dataCenterId], references: [id], onDelete: Restrict)
+  pools       PoolHost[]
+  jobs        Job[]
+  logs        HostLog[]
+  metrics     HostMetrics[]
+  allocations JobAllocation[]
+
+  @@map("host")
+}
+
+model HostLog {
+  id        Int          @id @default(autoincrement())
+  hostId    Int
+  jobId     Int?
+  level     HostLogLevel
+  message   String
+  loggedAt  DateTime     @db.Timestamptz
+  createdAt DateTime     @default(now()) @db.Timestamptz
+
+  host Host @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  job  Job? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([hostId, loggedAt(sort: Desc)])
+  @@index([jobId, loggedAt(sort: Desc)])
+  @@map("host_log")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  keycloakSub String   @unique
+  email       String
+  displayName String
+  avatarUrl   String?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  settings UserSettings?
+  sessions Session[]
+
+  @@map("user")
+}
+
+model UserSettings {
+  userId        Int      @id
+  theme         String   @default("system")
+  containerSize String   @default("constrained")
+  lastProjectId Int?
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastProject Project? @relation(fields: [lastProjectId], references: [id], onDelete: SetNull)
+
+  @@map("user_settings")
+}
+
+model Session {
+  id                    Int      @id @default(autoincrement())
+  userId                Int
+  accessToken           Bytes
+  refreshToken          Bytes
+  accessTokenExpiresAt  DateTime @db.Timestamptz
+  refreshTokenExpiresAt DateTime @db.Timestamptz
+  userAgent             String?
+  ipAddress             String?
+  createdAt             DateTime @default(now()) @db.Timestamptz
+  lastSeenAt            DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model DataCenter {
+  id              Int    @id @default(autoincrement())
+  name            String
+  code            String @unique
+  latitude        Float
+  longitude       Float
+  emissionFactor  Float
+  energyIntensity Float
+  pue             Float
+
+  hosts Host[]
+
+  @@map("data_center")
+}
+
+model JobAllocation {
+  id           Int       @id @default(autoincrement())
+  jobId        Int       @unique
+  hostId       Int
+  reservedCpu  Int
+  reservedRam  BigInt
+  reservedDisk BigInt
+  gpuIndices   Int[]
+  allocatedAt  DateTime  @default(now()) @db.Timestamptz
+  releasedAt   DateTime? @db.Timestamptz
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  host Host @relation(fields: [hostId], references: [id], onDelete: Restrict)
+
+  @@index([hostId, releasedAt])
+  @@map("job_x_allocation")
+}
+
+model HostMetrics {
+  id          Int      @id @default(autoincrement())
+  hostId      Int
+  cpuLoad     Float
+  memUsage    Float
+  diskUsage   Float
+  ioBandwidth Float?
+  runningJobs Int
+  sampledAt   DateTime @db.Timestamptz
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  host Host @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@index([hostId, sampledAt(sort: Desc)])
+  @@map("host_metrics")
+}
+
+model ProductIngestionHook {
+  id                Int            @id @default(autoincrement())
+  productTypeId     Int
+  productionChainId Int?
+  projectId         Int
+  productionMode    ProductionMode @default(Reprocessing)
+  enabled           Boolean        @default(true)
+  createdAt         DateTime       @default(now()) @db.Timestamptz
+
+  productType     ProductType      @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  productionChain ProductionChain? @relation(fields: [productionChainId], references: [id], onDelete: SetNull)
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([productTypeId, productionChainId])
+  @@map("product_x_ingestion_hook")
+}
+
+model TaskTableImportPlan {
+  id            Int       @id @default(autoincrement())
+  adapter       String
+  content       Json
+  acceptedCount Int       @default(0)
+  rejectedCount Int       @default(0)
+  committedAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  @@map("task_table_import_plan")
+}
+
+model Media {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  type      MediaType
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  catalogs MediaCatalog[]
+
+  @@map("media")
+}
+
+model MediaCatalog {
+  id        Int      @id @default(autoincrement())
+  mediaId   Int
+  name      String
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  media   Media               @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  entries MediaCatalogEntry[]
+
+  @@unique([mediaId, name])
+  @@map("media_catalog")
+}
+
+model MediaCatalogEntry {
+  id             Int      @id @default(autoincrement())
+  mediaCatalogId Int
+  path           String
+  size           BigInt?
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  mediaCatalog          MediaCatalog               @relation(fields: [mediaCatalogId], references: [id], onDelete: Restrict)
+  productCatalogEntries ProductMediaCatalogEntry[]
+
+  @@unique([mediaCatalogId, path])
+  @@map("media_catalog_entry")
+}
+
+model ProductMediaCatalogEntry {
+  productId           Int
+  mediaCatalogEntryId Int
+
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaCatalogEntry MediaCatalogEntry @relation(fields: [mediaCatalogEntryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, mediaCatalogEntryId])
+  @@map("product_x_media_catalog_entry")
+}
+
+model ProductionChainParameter {
+  id                Int           @id @default(autoincrement())
+  productionChainId Int
+  name              String
+  kind              ParameterKind
+  defaultValue      String?
+  options           Json?
+  isMandatory       Boolean       @default(false)
+
+  productionChain ProductionChain @relation(fields: [productionChainId], references: [id], onDelete: Cascade)
+
+  @@unique([productionChainId, name])
+  @@map("production_chain_x_parameter")
+}
+
+model Dataset {
+  id                Int      @id @default(autoincrement())
+  name              String?
+  producedByBatchId Int?     @unique
+  createdAt         DateTime @default(now()) @db.Timestamptz
+
+  producedByBatch Batch?           @relation("DatasetOut", fields: [producedByBatchId], references: [id], onDelete: Cascade)
+  products        DatasetProduct[]
+  consumers       BatchDatasetIn[]
+  taskInputs      Task[]           @relation("TaskInputDataset")
+
+  @@map("dataset")
+}
+
+model DatasetProduct {
+  datasetId Int
+  productId Int
+  role      String
+  sequence  Int    @default(0)
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([datasetId, productId])
+  @@unique([datasetId, role, sequence])
+  @@map("dataset_x_product")
+}
+
+model BatchDatasetIn {
+  batchId   Int
+  datasetId Int
+  sequence  Int @default(0)
+
+  batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+
+  @@id([batchId, datasetId])
+  @@map("batch_x_dataset_in")
+}

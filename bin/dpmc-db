@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+#
+# dpmc-db — DPMC database utility CLI
+#
+# Direct-SQL helper for dev/test workflows. Bypasses the API.
+
+set -euo pipefail
+
+printf '%s\n' "dpmc-db: warning: deprecated, use 'dpmc product …' (see apps/cli/README.md)" >&2
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=dpmc-db.d/common.sh
+source "$SCRIPT_DIR/dpmc-db.d/common.sh"
+# shellcheck source=dpmc-db.d/product.sh
+source "$SCRIPT_DIR/dpmc-db.d/product.sh"
+
+JSON_OUTPUT=0
+
+usage() {
+    cat <<EOF
+[DEPRECATED] dpmc-db has been replaced by 'dpmc product …' (apps/cli).
+             This bash CLI will be removed in a follow-up PR.
+
+DPMC Database CLI
+
+Usage:
+  dpmc-db [--json] <resource> <command> [args...]
+  dpmc-db --help
+
+Resources:
+  product   Manage products in the DB
+
+Global flags:
+  --json    Emit output as JSON (success and errors)
+  --help    Show this help
+
+Examples:
+  dpmc-db product create --name FOO --type L1B
+  dpmc-db product list --type L1B
+  dpmc-db product get FOO
+  dpmc-db product delete FOO
+
+For resource-specific help:
+  dpmc-db product --help
+EOF
+}
+
+HELP_REQUESTED=0
+for a in "$@"; do
+    case "$a" in
+        --help | -h) HELP_REQUESTED=1 ;;
+    esac
+done
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --json)
+            JSON_OUTPUT=1
+            shift
+            ;;
+        --help | -h)
+            usage
+            exit 0
+            ;;
+        -*)
+            die 1 "unknown global flag: $1"
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [[ $# -eq 0 ]]; then
+    usage >&2
+    exit 1
+fi
+
+RESOURCE="$1"
+shift
+
+if [[ "$HELP_REQUESTED" != "1" ]]; then
+    load_database_url
+    pre_check_db
+fi
+
+case "$RESOURCE" in
+    product) product_dispatch "$@" ;;
+    *) die 1 "unknown resource: $RESOURCE" ;;
+esac

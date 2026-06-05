@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      imagePullSecrets:
+        - name: harbor-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        # Align with the USER set in infra/docker/api/Dockerfile once it exists.
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      tolerations:
+        - key: project
+          operator: Equal
+          value: shared
+          effect: NoSchedule
+      # Apply pending Prisma migrations against the (initially empty) `database`
+      # before the API starts. `migrate deploy` is idempotent, so re-running on
+      # every restart is safe. Runs the @dpmc/prisma package script (in
+      # packages/prisma, so prisma.config.ts + the local prisma binary resolve).
+      initContainers:
+        - name: migrate
+          image: harbor.shared.acrist-services.com/dsy/damps/dpmc/api:development
+          imagePullPolicy: Always
+          # Invoke the prisma binary directly — NOT via pnpm. `pnpm run` triggers
+          # a deps-status check that re-downloads pnpm (packageManager pin) and
+          # writes to /app, which fails as non-root (EACCES). Running from
+          # packages/prisma so prisma.config.ts + the schema path resolve.
+          workingDir: /app/packages/prisma
+          command: ["node_modules/.bin/prisma", "migrate", "deploy"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: DATABASE_URL
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      containers:
+        - name: api
+          image: harbor.shared.acrist-services.com/dsy/damps/dpmc/api:development
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: api
+            - secretRef:
+                name: api
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          # @Public() health endpoints, under the global /api prefix.
+          startupProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/readyz   # also checks DB connectivity (SELECT 1)
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            periodSeconds: 20

@@ -1,16 +1,98 @@
-version: '3.8'
-
 services:
-  dpmc-job-launcher:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: dpmc-job-launcher
-    env_file:
-      - .env
+  database:
+    image: postgres:18-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     volumes:
-      - /exports/dpmc:/exports/dpmc
-      - ./system-core:/root/system-core
-      - ./specific-batch:/root/specific-batch
-    command: python3 /root/system-core/job_launcher.py
-    restart: unless-stopped
+      - database_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Dedicated, persistent database for Keycloak. Kept separate from the DPMC
+  # application database so identity data survives restarts independently and
+  # can be backed up / scaled on its own.
+  keycloak-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+      POSTGRES_DB: keycloak
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.1
+    # start-dev keeps dev ergonomics (relaxed hostname/HTTPS) but is now backed
+    # by a persistent Postgres store via KC_DB, so realm/user changes survive a
+    # restart. --import-realm seeds the realm once into that store.
+    command: start-dev --import-realm
+    ports:
+      - "8080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Persistent database (replaces the ephemeral dev H2 store).
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      # Trust the nginx TLS terminator's forwarded headers so issued tokens and
+      # redirect URLs use the external https scheme/host (see deploy/nginx).
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./keycloak.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+
+  s3:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: adminadmin
+    volumes:
+      - ./data:/data
+
+  # HTTPS termination. Opt-in via the `tls` profile so the default dev stack
+  # (`docker compose up`) stays HTTP-only and needs no certs:
+  #   ./deploy/nginx/generate-dev-certs.sh   # once
+  #   docker compose --profile tls up
+  # In dev the API and web run on the host, so nginx proxies them through
+  # host.docker.internal; in production point those upstreams at containers.
+  nginx:
+    image: nginx:1.27-alpine
+    profiles: ["tls"]
+    ports:
+      - "80:80"      # redirects to 443
+      - "443:443"    # web console + /api
+      - "8443:8443"  # Keycloak
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/certs:/etc/nginx/certs:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - keycloak
+
+volumes:
+  database_data:
+  keycloak_db_data:

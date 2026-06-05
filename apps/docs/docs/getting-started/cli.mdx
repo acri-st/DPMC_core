@@ -1,0 +1,58 @@
+---
+sidebar_position: 2
+title: dpmc CLI
+description: The Python CLI — Keycloak authentication (device grant) and OData queries.
+---
+
+# `dpmc` CLI
+
+`dpmc` is the project's Python CLI (`apps/cli`, Typer framework). It talks to the NestJS API via **OData** and authenticates against **Keycloak** using the **Device Authorization Grant** (RFC 8628) + PKCE.
+
+## Installation
+
+```bash
+# From the repository root
+pnpm install
+uv sync --project apps/cli
+```
+
+## Log in
+
+```bash
+./bin/dpmc login      # opens a browser, validates the device code
+./bin/dpmc whoami     # checks the session
+./bin/dpmc logout
+```
+
+Tokens are stored in `~/.dpmc/credentials.json` and **refreshed automatically** before expiration.
+
+## Usage
+
+```bash
+./bin/dpmc product list
+./bin/dpmc product list --name-like "WARHOL" --type WARHOL_SAT
+./bin/dpmc --json product list      # JSON output for scripting
+```
+
+The listing commands build **OData** queries (`$filter`, `$expand`, `$orderby`) — the `--name-like` option maps to a `contains(...)`, and `--type` to an `eq`.
+
+## Configuration
+
+All variables are optional (defaults assume "localhost"):
+
+| Variable              | Default                      | Purpose                  |
+| --------------------- | ---------------------------- | ------------------------ |
+| `DPMC_API_URL`        | `http://localhost:3000/api`  | API URL                  |
+| `DPMC_KEYCLOAK_URL`   | `http://localhost:8080`      | Keycloak URL             |
+| `DPMC_KEYCLOAK_REALM` | `dpmc`                       | Keycloak realm           |
+| `DPMC_CLIENT_ID`      | `dpmc-api`                   | OAuth client             |
+| `DPMC_CONFIG_DIR`     | `$XDG_CONFIG_HOME/dpmc`      | Credentials directory    |
+
+:::note Growing surface
+As of today, the CLI mainly exposes `login` / `logout` / `whoami` and the `product` group. More groups (`task`, `host`, …) will follow as the OData contracts stabilize on the API side.
+:::
+
+## See also
+
+- [Security — authentication flow](/docs/architecture/security)
+- [Local installation](/docs/getting-started/install)

@@ -1,0 +1,17 @@
+# In-cluster S3 endpoint. The API reaches it at http://s3:9000 (S3_ENDPOINT).
+# Also governs the StatefulSet (serviceName: s3). 9001 is the MinIO console.
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3
+spec:
+  selector:
+    app: s3
+  type: ClusterIP
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: s3
+    - name: console
+      port: 9001
+      targetPort: console

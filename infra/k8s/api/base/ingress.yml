@@ -1,0 +1,25 @@
+# Public HTTPS entrypoint for the API. The app serves everything under the
+# `/api` prefix (e.g. https://dpmc-api.operation.acrist-services.com/api/...).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  annotations:
+    field.cattle.io/description: DPMC API (NestJS)
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - dpmc-api.operation.acrist-services.com
+      secretName: star.acrist-services.com
+  rules:
+    - host: dpmc-api.operation.acrist-services.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 80

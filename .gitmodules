@@ -1,0 +1,8 @@
+[submodule "apps/worker"]
+	path = apps/worker
+	url = git@gitlab.shared.acrist-services.com:damps/orchestratorevolution/dpmc-worker.git
+	branch = develop
+[submodule "apps/dispatcher"]
+	path = apps/dispatcher
+	url = git@gitlab.shared.acrist-services.com:damps/orchestratorevolution/dpmc-dispatcher.git
+	branch = develop

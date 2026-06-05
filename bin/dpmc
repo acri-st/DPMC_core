@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# dpmc — wrapper that invokes the Python CLI via uv.
+#
+# This script does not depend on the user having cd'd into apps/cli.
+# It resolves the workspace root from its own location.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+exec uv run --project "$REPO_ROOT/apps/cli" dpmc "$@"

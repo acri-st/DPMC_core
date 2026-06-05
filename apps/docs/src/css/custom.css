@@ -1,0 +1,92 @@
+/**
+ * Global styles for the DPMC documentation site.
+ * Tokens mirror apps/web/src/styles/index.css (the dashboard charter).
+ * Infima only accepts hex / hsl, so OKLCH values are converted to their
+ * nearest sRGB equivalents.
+ */
+
+@import '@fontsource-variable/figtree';
+@import '@fontsource-variable/roboto';
+
+:root {
+  --ifm-color-primary: #147691;
+  --ifm-color-primary-dark: #11697f;
+  --ifm-color-primary-darker: #0e5c70;
+  --ifm-color-primary-darkest: #0a4554;
+  --ifm-color-primary-light: #1989a8;
+  --ifm-color-primary-lighter: #1d96b8;
+  --ifm-color-primary-lightest: #2ba8ca;
+
+  --ifm-font-family-base: 'Figtree Variable', system-ui, -apple-system, sans-serif;
+  --ifm-heading-font-family: 'Roboto Variable', system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --ifm-global-radius: 0.45rem;
+  --ifm-button-border-radius: 0.45rem;
+  --ifm-code-font-size: 92%;
+  --ifm-heading-font-weight: 700;
+  --ifm-h1-font-size: 2.4rem;
+  --ifm-h2-font-size: 1.8rem;
+  --ifm-h3-font-size: 1.35rem;
+
+  --docusaurus-highlighted-code-line-bg: rgba(20, 118, 145, 0.12);
+
+  --dpmc-navy: #1d2d57;
+  --dpmc-primary-soft: #e8f4f8;
+  --dpmc-surface: #ffffff;
+  --dpmc-muted: #f7f7f8;
+  --dpmc-muted-fg: #6e6e7a;
+  --dpmc-border: #e6e6ea;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #39a3bd;
+  --ifm-color-primary-dark: #2a93ac;
+  --ifm-color-primary-darker: #228aa1;
+  --ifm-color-primary-darkest: #1b7385;
+  --ifm-color-primary-light: #4eb3cc;
+  --ifm-color-primary-lighter: #5fbdd3;
+  --ifm-color-primary-lightest: #7ecadc;
+
+  --docusaurus-highlighted-code-line-bg: rgba(57, 163, 189, 0.16);
+
+  --dpmc-navy: #c5d2f0;
+  --dpmc-primary-soft: #15323a;
+  --dpmc-surface: #1c1c1f;
+  --dpmc-muted: #232327;
+  --dpmc-muted-fg: #a5a5b0;
+  --dpmc-border: #2e2e34;
+}
+
+html,
+body {
+  font-family: var(--ifm-font-family-base);
+  font-feature-settings: 'ss01' on, 'cv11' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.hero__title {
+  font-family: var(--ifm-heading-font-family);
+  letter-spacing: -0.01em;
+}
+
+.navbar__title {
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 700;
+}
+
+.navbar__logo img {
+  height: 28px;
+  width: auto;
+}
+
+.button {
+  font-weight: 500;
+}

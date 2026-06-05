@@ -1,0 +1,91 @@
+import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
+
+import { AuthModule } from '@/auth';
+import {
+  LoggingInterceptor,
+  PrismaExceptionFilter,
+  ValidationPipe,
+} from '@/common';
+import {
+  ConfigModule,
+  CryptoModule,
+  EventModule,
+  HealthModule,
+  KeycloakModule,
+  MetricsModule,
+  MonitoringModule,
+  PrismaModule,
+  S3Module,
+  StatusModule,
+} from '@/core';
+import {
+  AuxiliaryConfigurationModule,
+  BatchModule,
+  DataCenterModule,
+  DatasetModule,
+  HostModule,
+  JobModule,
+  MetricsCo2Module,
+  ODataModule,
+  PoolModule,
+  ProcessingScriptModule,
+  ProcessorVersionModule,
+  ProductIngestionHookModule,
+  ProductionChainModule,
+  ProductModule,
+  ProductTypeModule,
+  ProjectModule,
+  SchedulerModule,
+  TaskModule,
+  TaskScheduleModule,
+  TaskTableModule,
+  UserModule,
+  WorkerModule,
+} from '@/modules';
+
+@Module({
+  imports: [
+    ScheduleModule.forRoot(),
+    ConfigModule,
+    EventModule,
+    PrismaModule,
+    S3Module,
+    CryptoModule,
+    KeycloakModule,
+    AuthModule,
+    MonitoringModule,
+    StatusModule,
+    HealthModule,
+    MetricsModule,
+    BatchModule,
+    UserModule,
+    JobModule,
+    ProductionChainModule,
+    ProcessingScriptModule,
+    DataCenterModule,
+    DatasetModule,
+    HostModule,
+    ProjectModule,
+    ProductModule,
+    ProductTypeModule,
+    PoolModule,
+    AuxiliaryConfigurationModule,
+    ProcessorVersionModule,
+    ProductIngestionHookModule,
+    TaskModule,
+    TaskScheduleModule,
+    ODataModule,
+    WorkerModule,
+    SchedulerModule,
+    MetricsCo2Module,
+    TaskTableModule,
+  ],
+  providers: [
+    { provide: APP_PIPE, useClass: ValidationPipe },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+  ],
+})
+export class AppModule {}

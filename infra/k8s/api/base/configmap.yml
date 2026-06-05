@@ -1,0 +1,43 @@
+# Non-sensitive API config. External URLs use the prod hosts; in-cluster
+# dependencies are reached by Service name (database, keycloak, s3).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api
+data:
+  NODE_ENV: production
+  API_PROTOCOL: https
+  API_HOST: 0.0.0.0
+  API_PORT: "3000"
+  API_PREFIX: api
+  API_URL: https://dpmc-api.operation.acrist-services.com/api
+  FRONTEND_URL: https://dpmc-web.operation.acrist-services.com
+  # Keycloak reached over its public https URL so token issuer/audience match.
+  KEYCLOAK_URL: https://dpmc-keycloak.operation.acrist-services.com
+  KEYCLOAK_REALM: dpmc
+  KEYCLOAK_CLIENT_ID: dpmc-api
+  SESSION_COOKIE_NAME: dpmc.sid
+  OAUTH_COOKIE_NAME: dpmc.oauth
+  # Shared parent so the session cookie set by the API (dpmc-api…) is also sent
+  # from the web console (dpmc-web…). Confirm this matches your domain policy.
+  COOKIE_DOMAIN: .operation.acrist-services.com
+  # Multiplied by 1000 (→ ms) by the config schema.
+  COOKIE_MAX_AGE: "10000"
+  WORKER_OFFLINE_THRESHOLD_S: "60"
+  # S3 / MinIO — NOT yet deployed in k8s. Points at a future in-cluster `s3`
+  # Service; the API validates this at boot but object storage calls fail until
+  # MinIO (or another S3) exists at this endpoint.
+  S3_ENDPOINT: http://s3:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: dpmc
+  S3_FORCE_PATH_STYLE: "true"
+  # WORKAROUND — disables ALL outbound TLS verification for the API process.
+  # The ingress hosts (dpmc-*.operation.acrist-services.com) are NOT covered by
+  # the only available cert (*.acrist-services.com, one level), so nginx serves
+  # its self-signed fallback and Node rejects the API->Keycloak call. We are not
+  # allowed to move hosts under *.acrist-services.com nor get an *.operation
+  # cert, so we accept untrusted certs here. SECURITY TRADEOFF: this also trusts
+  # any other outbound TLS target. Remove this the moment the hosts get a
+  # matching cert. Note: this does NOT fix browser->API (the SPA's fetch is
+  # still hard-blocked by the untrusted cert).
+  NODE_TLS_REJECT_UNAUTHORIZED: "0"
