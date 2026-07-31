@@ -16,8 +16,10 @@ import { deleteHost, registerPayload, resolveDataCenterCode, uniqueHostname, wor
 describe('T13.4 — Runtime compatibility enforcement between jobs and nodes', () => {
   const dockerHostname = uniqueHostname('t13-4-docker');
   const apptainerHostname = uniqueHostname('t13-4-apptainer');
+  const kubernetesHostname = uniqueHostname('t13-4-kubernetes');
   let dockerHostId: string;
   let apptainerHostId: string;
+  let kubernetesHostId: string;
   let dataCenterCode: string;
 
   beforeAll(async () => {
@@ -27,6 +29,7 @@ describe('T13.4 — Runtime compatibility enforcement between jobs and nodes', (
   afterAll(async () => {
     await deleteHost(dockerHostname);
     await deleteHost(apptainerHostname);
+    await deleteHost(kubernetesHostname);
   });
 
   // @plan T13.4
@@ -55,6 +58,20 @@ describe('T13.4 — Runtime compatibility enforcement between jobs and nodes', (
 
   // @plan T13.4
   // @covers EOCP-E13-01
+  it('Step 1 – Kubernetes-capable node registers and its containerRuntime is stored', async () => {
+    const res = await request(API)
+      .post('/host/register')
+      .set(workerHeader())
+      .send({ ...registerPayload(kubernetesHostname, dataCenterCode), containerRuntime: 'Kubernetes' })
+      .expect(200);
+    kubernetesHostId = res.body.data.id;
+    // Host-only capability: a Kubernetes cluster runs OCI images, so it serves
+    // Docker (OCI) script artifacts; the scheduler treats it as Docker-compatible.
+    expect(res.body.data.containerRuntime).toBe('Kubernetes');
+  });
+
+  // @plan T13.4
+  // @covers EOCP-E13-01
   it('Step 2 – both nodes are retrievable and report distinct runtimes (scheduler can filter)', async () => {
     const [dockerRes, apptainerRes] = await Promise.all([
       request(API).get(`/host/${dockerHostId}`).expect(200),
@@ -72,5 +89,6 @@ describe('T13.4 — Runtime compatibility enforcement between jobs and nodes', (
   it('Step 3 – runtime dispatch to matching node only is enforced by live scheduler (infrastructure-blocked)', () => {
     expect(dockerHostId).toBeDefined();
     expect(apptainerHostId).toBeDefined();
+    expect(kubernetesHostId).toBeDefined();
   });
 });

@@ -8,13 +8,36 @@ import {
 import type { TaskSchedule } from '@dpmc/client';
 import { Prisma } from '@dpmc/prisma';
 import { TaskService } from '@/modules/task/task.service';
+import {
+  DEFAULT_PAGE_SIZE,
+  PaginatedResult,
+  buildOrderBy,
+  buildSearchWhere,
+  paginationSkipTake,
+} from '@/common/utils/pagination';
 import { computeNextRun, isValidCron } from './cron.util';
 import type {
   CreateTaskScheduleBody,
+  TaskScheduleListQuery,
   UpdateTaskScheduleBody,
 } from './task-schedule.dto';
 
 const DEFAULT_TZ = 'UTC';
+
+// Columns the schedule list may be sorted by (real TaskSchedule scalar fields
+// only — computed values like the human-readable recurrence or resolved target
+// can't be ordered in the DB).
+const SCHEDULE_SORTABLE = [
+  'name',
+  'kind',
+  'nextRunAt',
+  'lastRunAt',
+  'enabled',
+  'priority',
+  'createdAt',
+  'updatedAt',
+  'id',
+] as const;
 
 function toJson(
   value: unknown,
@@ -31,12 +54,30 @@ export class TaskScheduleService {
     private readonly tasks: TaskService,
   ) {}
 
-  async list(projectId: number): Promise<TaskSchedule[]> {
-    const rows = await this.prisma.taskSchedule.findMany({
-      where: { projectId, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows;
+  async list(
+    projectId: number,
+    query?: TaskScheduleListQuery,
+  ): Promise<PaginatedResult<TaskSchedule>> {
+    const p = query ?? { page: 1, pageSize: DEFAULT_PAGE_SIZE };
+    const { skip, take } = paginationSkipTake(p);
+    const search = buildSearchWhere(['name'], p.q);
+    const where = {
+      projectId,
+      deletedAt: null,
+      ...(query?.kind?.length ? { kind: { in: query.kind } } : {}),
+      ...(query?.enabled !== undefined ? { enabled: query.enabled } : {}),
+      ...(search ?? {}),
+    };
+    // Default: newest-created first (id desc breaks ties for stable ordering);
+    // overridable via ?sort=&order= against the SCHEDULE_SORTABLE allowlist.
+    const orderBy = buildOrderBy(SCHEDULE_SORTABLE, query?.sort, query?.order, [
+      { createdAt: 'desc' },
+    ]);
+    const [items, total] = await Promise.all([
+      this.prisma.taskSchedule.findMany({ where, skip, take, orderBy }),
+      this.prisma.taskSchedule.count({ where }),
+    ]);
+    return { items, total };
   }
 
   async getById(id: number, projectId: number): Promise<TaskSchedule> {

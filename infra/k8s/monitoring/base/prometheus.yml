@@ -1,0 +1,443 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+automountServiceAccountToken: true
+
+---
+# Cluster-scoped: the name is NOT rewritten by the kustomize namespace
+# transformer. Deploying this base twice on the same cluster requires a
+# namePrefix in the second overlay, otherwise both bind the same ClusterRole.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dpmc-prometheus
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+      - nodes/metrics
+      - nodes/proxy
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dpmc-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dpmc-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: eocp-dev
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      # Sibling of /etc/prometheus, not a subdirectory: a ConfigMap volume is a
+      # read-only tmpfs and cannot host a nested mountpoint.
+      - /etc/prometheus-rules/*.yml
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets:
+              - localhost:9090
+
+      # Kubelet's built-in cAdvisor: CPU, memory and filesystem per container.
+      # It does NOT expose per-pod network counters (only the node root cgroup),
+      # which is why the standalone cAdvisor DaemonSet below exists.
+      - job_name: kubelet-cadvisor
+        scheme: https
+
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+        kubernetes_sd_configs:
+          - role: node
+
+        relabel_configs:
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+
+          - source_labels:
+              - __meta_kubernetes_node_name
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: instance
+
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_fs_usage_bytes|container_fs_limit_bytes|container_start_time_seconds|container_last_seen'
+            action: keep
+
+      # Standalone cAdvisor: per-pod network counters, keyed by pod via the
+      # io.kubernetes.* container labels. Discovered pod by pod — a Service +
+      # static target would round-robin across nodes and produce a series that
+      # jumps between hosts on every scrape.
+      - job_name: cadvisor
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              own_namespace: true
+
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_label_app
+            regex: cadvisor
+            action: keep
+
+          - source_labels:
+              - __meta_kubernetes_pod_container_port_name
+            regex: metrics
+            action: keep
+
+          - source_labels:
+              - __meta_kubernetes_pod_node_name
+            target_label: instance
+
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'container_network_receive_bytes_total|container_network_transmit_bytes_total'
+            action: keep
+
+          # cAdvisor sees every container on the node; keep only ours.
+          - source_labels:
+              - container_label_io_kubernetes_pod_namespace
+            regex: eocp-dev
+            action: keep
+
+          - source_labels:
+              - container_label_io_kubernetes_pod_namespace
+            target_label: namespace
+            action: replace
+
+          - source_labels:
+              - container_label_io_kubernetes_pod_name
+            target_label: pod
+            action: replace
+
+          - source_labels:
+              - container_label_io_kubernetes_container_name
+            target_label: container
+            action: replace
+
+          - regex: 'container_label_.*'
+            action: labeldrop
+
+      - job_name: kube-state-metrics
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              own_namespace: true
+
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_label_app
+            regex: kube-state-metrics
+            action: keep
+
+          - source_labels:
+              - __meta_kubernetes_pod_container_port_name
+            regex: metrics
+            action: keep
+
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'kube_pod_labels'
+            action: keep
+
+      # DPMC's own gauges (dpmc_co2_grams, dpmc_energy_wh, …). Without this the
+      # API computes them every minute and nothing ever reads them.
+      - job_name: dpmc-api
+        metrics_path: /api/metrics
+
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              own_namespace: true
+
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_label_app
+            regex: api
+            action: keep
+
+          - source_labels:
+              - __meta_kubernetes_pod_container_port_name
+            regex: http
+            action: keep
+
+      # GPU power draw. No targets unless the dcgm overlay component is
+      # deployed, which is the expected state on CPU-only clusters.
+      - job_name: dcgm-exporter
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              own_namespace: true
+
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_label_app
+            regex: dcgm-exporter
+            action: keep
+
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'DCGM_FI_DEV_POWER_USAGE|DCGM_FI_DEV_GPU_UTIL'
+            action: keep
+
+      # Ingress controller: bytes served to the outside world, the only
+      # traffic that is unambiguously WAN egress.
+      - job_name: ingress-nginx
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - ingress-nginx
+
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_container_port_name
+            regex: metrics
+            action: keep
+
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'nginx_ingress_controller_request_size_sum|nginx_ingress_controller_response_size_sum'
+            action: keep
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+data:
+  dpmc-energy.yml: |
+    groups:
+      - name: dpmc-job-attribution
+        interval: 15s
+        rules:
+          # Raw cAdvisor/DCGM series carry (namespace, pod); DPMC reasons in
+          # job ids. These rules do the join once, so the API can query a
+          # single series per concern instead of rebuilding a group_left
+          # expression in TypeScript.
+          #
+          # Job pods are created by the worker with backoffLimit=0, so there is
+          # exactly one pod per job id and these counters start at 0 with the
+          # pod. That is what lets the API read them with max_over_time()
+          # rather than increase(), avoiding rate extrapolation at the edges.
+          - record: dpmc:job_network_receive_bytes:total
+            expr: |
+              sum by (dpmc_job_id) (
+                label_replace(
+                  container_network_receive_bytes_total{job="cadvisor", interface="eth0"}
+                    * on (namespace, pod) group_left (label_dpmc_job_id)
+                    kube_pod_labels{job="kube-state-metrics", label_dpmc_job_id!=""},
+                  "dpmc_job_id", "$1", "label_dpmc_job_id", "(.*)"
+                )
+              )
+
+          - record: dpmc:job_network_transmit_bytes:total
+            expr: |
+              sum by (dpmc_job_id) (
+                label_replace(
+                  container_network_transmit_bytes_total{job="cadvisor", interface="eth0"}
+                    * on (namespace, pod) group_left (label_dpmc_job_id)
+                    kube_pod_labels{job="kube-state-metrics", label_dpmc_job_id!=""},
+                  "dpmc_job_id", "$1", "label_dpmc_job_id", "(.*)"
+                )
+              )
+
+          # container!="" drops the pod-level cgroup, which would otherwise be
+          # summed on top of the per-container series and double the CPU time.
+          - record: dpmc:job_cpu_usage_seconds:total
+            expr: |
+              sum by (dpmc_job_id) (
+                label_replace(
+                  container_cpu_usage_seconds_total{job="kubelet-cadvisor", container!="", container!="POD"}
+                    * on (namespace, pod) group_left (label_dpmc_job_id)
+                    kube_pod_labels{job="kube-state-metrics", label_dpmc_job_id!=""},
+                  "dpmc_job_id", "$1", "label_dpmc_job_id", "(.*)"
+                )
+              )
+
+          # Watts, not joules: a gauge. The API integrates it with
+          # avg_over_time() × duration.
+          - record: dpmc:job_gpu_power_watts
+            expr: |
+              sum by (dpmc_job_id) (
+                label_replace(
+                  DCGM_FI_DEV_POWER_USAGE
+                    * on (namespace, pod) group_left (label_dpmc_job_id)
+                    kube_pod_labels{job="kube-state-metrics", label_dpmc_job_id!=""},
+                  "dpmc_job_id", "$1", "label_dpmc_job_id", "(.*)"
+                )
+              )
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+spec:
+  replicas: 1
+
+  strategy:
+    # The PVC is RWO: the new pod cannot attach the volume while the old one
+    # still holds it.
+    type: Recreate
+
+  selector:
+    matchLabels:
+      app: prometheus
+
+  template:
+    metadata:
+      labels:
+        app: prometheus
+
+    spec:
+      serviceAccountName: prometheus
+
+      # Same taint the api/worker deployments tolerate: without this the pod
+      # stays Pending forever on the shared cluster.
+      tolerations:
+        - key: project
+          operator: Equal
+          value: shared
+          effect: NoSchedule
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.12.0
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=15d
+            # Hard stop well under the PVC size: a full volume corrupts the
+            # TSDB, whereas hitting the size limit only drops old blocks.
+            - --storage.tsdb.retention.size=8GB
+            - --web.enable-lifecycle
+
+          ports:
+            - name: http
+              containerPort: 9090
+
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          volumeMounts:
+            # Mounted as directories, not subPath: subPath mounts are snapshots
+            # and never see a ConfigMap update, which would make
+            # `curl -XPOST /-/reload` silently reload the old config.
+            - name: config
+              mountPath: /etc/prometheus
+              readOnly: true
+
+            - name: rules
+              mountPath: /etc/prometheus-rules
+              readOnly: true
+
+            - name: data
+              mountPath: /prometheus
+
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+
+        - name: rules
+          configMap:
+            name: prometheus-rules
+
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+spec:
+  type: ClusterIP
+
+  selector:
+    app: prometheus
+
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http

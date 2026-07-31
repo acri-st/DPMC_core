@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID, deleteHost, registerPayload, resolveDataCenterCode, uniqueHostname, workerHeader } from './_shared';
 
 // @plan T03.1 — Static evaluation of task resource requirements
-// @covers EOCP-E3-01 EOCP-E3-03
+// @covers EOCP-E3-01, EOCP-E3-03
 //
 // Description: Verifies that task resource requirements (CPU, RAM, GPU) declared statically in the
 //   task definition are stored and visible for scheduler evaluation.
@@ -49,7 +49,7 @@ describe('T03.1 — Static evaluation of task resource requirements', () => {
   });
 
   // @plan T03.1
-  // @covers EOCP-E3-01
+  // @covers EOCP-E3-01, EOCP-E3-03
   it('Step 1 – host registers with explicit CPU, RAM, and GPU capabilities', async () => {
     log.step(`Step 1 — POST /host/register hostname=${hostname}`);
 
@@ -67,7 +67,7 @@ describe('T03.1 — Static evaluation of task resource requirements', () => {
   });
 
   // @plan T03.1
-  // @covers EOCP-E3-03
+  // @covers EOCP-E3-01, EOCP-E3-03
   it('Step 2 – task with resource parameters is accepted (201)', async () => {
     log.step('Step 2 — POST /task with resource parameters');
 
@@ -83,7 +83,7 @@ describe('T03.1 — Static evaluation of task resource requirements', () => {
   });
 
   // @plan T03.1
-  // @covers EOCP-E3-03
+  // @covers EOCP-E3-01, EOCP-E3-03
   it('Step 3 – resource parameters are preserved in task metadata', async () => {
     const taskId = createdTaskIds[0];
     log.step(`Step 3 — GET /task/${taskId} verifying resource parameters`);
@@ -108,7 +108,7 @@ describe('T03.1 — Static evaluation of task resource requirements', () => {
   });
 
   // @plan T03.1
-  // @covers EOCP-E3-01 EOCP-E3-03
+  // @covers EOCP-E3-01, EOCP-E3-03
   it('Step 4 – task with high resource requirements is accepted (system records declaration)', async () => {
     log.step('Step 4 — POST /task with extreme resource requirements');
 

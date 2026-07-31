@@ -4,7 +4,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T15.6 — Correct metric association under concurrent executions
-// @covers EOCP-E15-03
+// @covers EOCP-E15-02
 //
 // Description: Verifies that concurrent requests to the CO2 endpoint all receive consistent,
 //   non-crossed responses (same data, no race-condition artifacts). Per-job attribution requires
@@ -21,7 +21,7 @@ describe('T15.6 — Correct metric association under concurrent executions', () 
   });
 
   // @plan T15.6
-  // @covers EOCP-E15-03
+  // @covers EOCP-E15-02
   it('Step 1 – 5 concurrent GET /metrics/co2 requests all return 200', async () => {
     log.step('Step 1 — 5 concurrent GET /metrics/co2');
 
@@ -38,7 +38,7 @@ describe('T15.6 — Correct metric association under concurrent executions', () 
   });
 
   // @plan T15.6
-  // @covers EOCP-E15-03
+  // @covers EOCP-E15-02
   it('Step 2 – all concurrent responses return identical data (no cross-contamination)', async () => {
     log.step('Step 2 — verify concurrent responses are identical');
 
@@ -55,7 +55,7 @@ describe('T15.6 — Correct metric association under concurrent executions', () 
   });
 
   // @plan T15.6
-  // @covers EOCP-E15-03
+  // @covers EOCP-E15-02
   it('Step 3 – concurrent requests with different groupBy values each return correctly typed items', async () => {
     log.step('Step 3 — concurrent groupBy=project and groupBy=chain');
 

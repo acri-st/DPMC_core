@@ -28,10 +28,16 @@ import {
   CreateProductionChainResponseSchema,
   GetProductionChainResponse,
   GetProductionChainResponseSchema,
+  ImportAcsProductionChainBody,
+  ImportAcsProductionChainBodyValidationSchema,
+  ImportAcsProductionChainResponse,
+  ImportAcsProductionChainResponseSchema,
   ImportProductionChainBody,
   ImportProductionChainBodyValidationSchema,
   ImportProductionChainResponse,
   ImportProductionChainResponseSchema,
+  PreviewAcsProductionChainResponse,
+  PreviewAcsProductionChainResponseSchema,
   PreviewProductionChainResponse,
   PreviewProductionChainResponseSchema,
   LinkProductTypeResponse,
@@ -79,6 +85,53 @@ export class ProductionChainController {
     const result = await this.taskTableService.createChainFromIpf(
       project.id,
       body.content,
+    );
+    return Response.success(result, { status: HttpCode.CREATED });
+  }
+
+  @ProjectScoped('admin', 'operator')
+  @SuccessResponse(PreviewAcsProductionChainResponseSchema)
+  @Post(PATHS.PRODUCTION_CHAIN.IMPORT_ACS_PREVIEW)
+  async previewAcsTaskTables(
+    @Body(new ZodValidationPipe(ImportAcsProductionChainBodyValidationSchema))
+    body: ImportAcsProductionChainBody,
+  ): Promise<PreviewAcsProductionChainResponse> {
+    const plan = this.taskTableService.previewAcs(body.files, body.options);
+    return Response.success({
+      name: plan.name,
+      nodes: plan.nodes.map((n) => ({
+        acronym: n.acronym,
+        sourceName: n.sourceName,
+        version: n.version,
+        taskCount: n.taskTable.tasks?.length ?? 0,
+        executables: n.executables.map((e) => ({
+          name: e.name,
+          path: e.path,
+          sequence: e.sequence,
+        })),
+        dbOutputTypes: n.dbOutputTypes,
+        externalInputTypes: n.externalInputTypes,
+        suggestedImageUrl: n.suggestedImageUrl,
+      })),
+      edges: plan.edges,
+      detectedSourceRoot: plan.detectedSourceRoot,
+      warnings: plan.warnings,
+    });
+  }
+
+  @ProjectScoped('admin', 'operator')
+  @CreatedResponse(ImportAcsProductionChainResponseSchema)
+  @HttpCodeDec(HttpCode.CREATED)
+  @Post(PATHS.PRODUCTION_CHAIN.IMPORT_ACS)
+  async importFromAcsTaskTables(
+    @Body(new ZodValidationPipe(ImportAcsProductionChainBodyValidationSchema))
+    body: ImportAcsProductionChainBody,
+    @CurrentProject() project: Project,
+  ): Promise<ImportAcsProductionChainResponse> {
+    const result = await this.taskTableService.createChainFromAcs(
+      project.id,
+      body.files,
+      body.options,
     );
     return Response.success(result, { status: HttpCode.CREATED });
   }

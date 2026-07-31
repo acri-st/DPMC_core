@@ -113,6 +113,16 @@ export function renderEocpHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EOCP Requirements Coverage</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Keep colored badges/bars in the printed PDF */
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin: 14mm; }
+    @media print {
+      .print-hide { display: none !important; }            /* interactive toolbars */
+      .max-w-5xl { max-width: none !important; padding: 0 !important; }
+      section, li, tr { break-inside: avoid; }
+    }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">
   <div class="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -123,7 +133,7 @@ export function renderEocpHtml(
       </div>
       <button
         onclick="downloadJson()"
-        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"
+        class="print-hide inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />

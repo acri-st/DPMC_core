@@ -52,7 +52,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
     }
     const validChainRes = await request(API).get(`/production-chain/${validChainId}`).set('Cookie', cookie);
     expect(validChainRes.status).toBe(200);
-    const validPcs = validChainRes.body.data.latestVersion?.processingChains ?? [];
+    const validPcs = validChainRes.body.data.processingChains ?? [];
     const validA = validPcs.find((pc: { name: string }) => pc.name === 'T05.7-valid-A');
     const validB = validPcs.find((pc: { name: string }) => pc.name === 'T05.7-valid-B');
     expect(validA).toBeDefined();
@@ -88,7 +88,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
     }
     const invChainRes = await request(API).get(`/production-chain/${invalidChainId}`).set('Cookie', cookie);
     expect(invChainRes.status).toBe(200);
-    const invPcs = invChainRes.body.data.latestVersion?.processingChains ?? [];
+    const invPcs = invChainRes.body.data.processingChains ?? [];
     const invA = invPcs.find((pc: { name: string }) => pc.name === 'T05.7-inv-A');
     const invB = invPcs.find((pc: { name: string }) => pc.name === 'T05.7-inv-B');
     expect(invA).toBeDefined();
@@ -123,7 +123,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
     log.http('GET', `/production-chain/${validChainId}`, chainRes.status);
     expect(chainRes.status).toBe(200);
 
-    const edges = chainRes.body.data.latestVersion?.edges ?? [];
+    const edges = chainRes.body.data.edges ?? [];
     expect(edges).toHaveLength(1);
     const edge = edges[0];
     log.ok(`edge: id=${edge.id}, mode=${edge.dependencyMode}, parent=${edge.parentChainId}, child=${edge.childChainId}`);
@@ -132,7 +132,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
     expect(edge.parentChainId).not.toBe(edge.childChainId);
 
     // Verify direction by name
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.7-valid-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.7-valid-B');
     expect(edge.parentChainId).toBe(pcA.id);
@@ -167,7 +167,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
     const chainRes = await request(API).get(`/production-chain/${invalidChainId}`).set('Cookie', cookie);
     log.http('GET', `/production-chain/${invalidChainId}`, chainRes.status);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.7-inv-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.7-inv-B');
     expect(pcA).toBeDefined();
@@ -184,7 +184,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
 
     // Error body must carry a meaningful message mentioning cycle
     const body = res.body as Record<string, unknown>;
-    const message = (body.message ?? body.error ?? '') as string;
+    const message = ((body.error as { message?: string } | undefined)?.message ?? (body.message as string | undefined) ?? '');
     log.ok(`cycle rejected (${res.status}): "${message}"`);
     expect(typeof message).toBe('string');
     expect(message.length).toBeGreaterThan(0);
@@ -193,7 +193,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
     // Graph must be unchanged: still exactly 1 edge (A→B), B→A must not have been stored
     const afterRes = await request(API).get(`/production-chain/${invalidChainId}`).set('Cookie', cookie);
     expect(afterRes.status).toBe(200);
-    const edgesAfter = afterRes.body.data.latestVersion?.edges ?? [];
+    const edgesAfter = afterRes.body.data.edges ?? [];
     expect(edgesAfter).toHaveLength(1);
     expect(edgesAfter[0].parentChainId).not.toBe(pcB.id);
     log.ok('graph unchanged after rejected cycle: still 1 edge');
@@ -206,7 +206,7 @@ describe('T05.7 — Pre-deployment validation of dependency graphs', () => {
 
     const chainRes = await request(API).get(`/production-chain/${invalidChainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const edges = chainRes.body.data.latestVersion?.edges ?? [];
+    const edges = chainRes.body.data.edges ?? [];
     log.ok(`edges present: ${edges.length}, mode: ${edges[0]?.dependencyMode}`);
     expect(edges).toHaveLength(1);
     expect(edges[0].dependencyMode).toBe('OnSuccess');

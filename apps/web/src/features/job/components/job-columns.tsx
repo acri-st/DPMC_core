@@ -85,6 +85,7 @@ export function buildJobColumns(ctx: JobRowContext): ColumnDef<Job>[] {
     {
       id: 'duration',
       header: 'Duration',
+      enableSorting: false, // computed from started/ended — not a DB column
       cell: ({ row }) => {
         const dur = durationBetween(
           row.original.startedAt,

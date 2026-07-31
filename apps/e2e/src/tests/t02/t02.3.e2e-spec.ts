@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID, toApiMode, pickAltModes } from './_shared';
 
 // @plan T02.3 — Concurrent execution of productions in different modes
-// @covers EOCP-E2-01 EOCP-E2-02
+// @covers EOCP-E2-01, EOCP-E2-02
 //
 // Description: Ensures that multiple production modes can be used simultaneously without
 //   interference, allowing concurrent productions with different operational constraints.
@@ -52,7 +52,7 @@ describe('T02.3 — Concurrent execution of productions in different modes', () 
   });
 
   // @plan T02.3
-  // @covers EOCP-E2-01 EOCP-E2-02
+  // @covers EOCP-E2-01, EOCP-E2-02
   it('Step 1 – POST /task in Nominal mode is accepted and enters scheduling', async () => {
     log.step('Step 1 — POST /task mode=Nominal');
 
@@ -67,7 +67,7 @@ describe('T02.3 — Concurrent execution of productions in different modes', () 
   });
 
   // @plan T02.3
-  // @covers EOCP-E2-01 EOCP-E2-02
+  // @covers EOCP-E2-01, EOCP-E2-02
   it('Step 2 – POST /task in alternate mode while Nominal task exists creates independent task', async () => {
     log.step(`Step 2 — POST /task mode=${modeA} (concurrent with Nominal)`);
 
@@ -82,7 +82,7 @@ describe('T02.3 — Concurrent execution of productions in different modes', () 
   });
 
   // @plan T02.3
-  // @covers EOCP-E2-01 EOCP-E2-02
+  // @covers EOCP-E2-01, EOCP-E2-02
   it('Step 3 – POST /task in second alternate mode with two others pending — no conflict', async () => {
     log.step(`Step 3 — POST /task mode=${modeB} (3rd concurrent task)`);
 
@@ -96,7 +96,7 @@ describe('T02.3 — Concurrent execution of productions in different modes', () 
   });
 
   // @plan T02.3
-  // @covers EOCP-E2-01 EOCP-E2-02
+  // @covers EOCP-E2-01, EOCP-E2-02
   it('Step 4 – all three concurrent tasks are independently listed with distinct IDs', async () => {
     log.step('Step 4 — GET /task verifying all 3 tasks present');
 

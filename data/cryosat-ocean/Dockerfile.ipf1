@@ -1,0 +1,28 @@
+# cryosat-ocean-ipf1 — COP IPF1 (L1) delivery on top of the shared runtime.
+# Used by the SIR1LGO / SIR1SGO / SIR1NGO ProcessingScripts (baked mode).
+#
+# Build (after Dockerfile.runtime):
+#   docker build --platform linux/386 -f data/cryosat-ocean/Dockerfile.ipf1 \
+#     --build-arg IPF1_VERSION=4.24 \
+#     -t harbor.shared.acrist-services.com/dsy/damps/dpmc/cryosat-ocean-ipf1:development .
+#   (build context = repo root, matching the CI template)
+#
+# Context layout: <IPF1_VERSION>/ = the delivery (bin/, task_tables/[config_files/]).
+
+FROM harbor.shared.acrist-services.com/dsy/damps/dpmc/cryosat-ocean-runtime:development
+
+ARG IPF1_VERSION=4.24
+ARG PKG=/dpmc/scripts/cryosat_ocean_baseline_d/Binaries/COP_IPF1V4.24/processors
+
+COPY data/cryosat-ocean/${IPF1_VERSION}/bin                       ${PKG}/bin
+COPY data/cryosat-ocean/${IPF1_VERSION}/task_tables/config_files  ${PKG}/config_files
+COPY data/cryosat-ocean/${IPF1_VERSION}/task_tables/*.xml         ${PKG}/task_tables/
+# Product header templates — the PCONF references them by ABSOLUTE path
+# under the original install root (resolved via the runtime image symlinks).
+COPY data/cryosat-ocean/${IPF1_VERSION}/ProdHeaderTemplate        ${PKG}/ProdHeaderTemplate
+# Delivery vendor libs (HDF5/NetCDF/Xerces…, i386) onto the runtime's
+# LD_LIBRARY_PATH dir.
+COPY data/cryosat-ocean/${IPF1_VERSION}/so /dpmc/scripts/cryosat_ocean_baseline_d/so
+
+# Deliveries ship the binaries non-executable (rw-r--r--).
+RUN chmod +x ${PKG}/bin/*

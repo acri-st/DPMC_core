@@ -7,7 +7,7 @@ import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 import { workerHeader } from '../t03/_shared';
 
 // @plan T06.8 — Persistence and recovery after scheduler restart
-// @covers EOCP-E6-02
+// @covers EOCP-E6-07
 //
 // Description: This test verifies that scheduling decisions are persisted and replayed after a
 //   scheduler restart.
@@ -40,7 +40,7 @@ describe('T06.8 — Persistence and recovery after scheduler restart', () => {
   });
 
   // @plan T06.8
-  // @covers EOCP-E6-02
+  // @covers EOCP-E6-07
   it('Step 1 – task is created and persisted (state survives in DB)', async () => {
     log.step('Step 1 — POST /task (persistence test)');
     const res = await request(API)
@@ -65,7 +65,7 @@ describe('T06.8 — Persistence and recovery after scheduler restart', () => {
   });
 
   // @plan T06.8
-  // @covers EOCP-E6-02
+  // @covers EOCP-E6-07
   it('Step 2 – scheduler heartbeat endpoint is reachable (scheduler is running)', async () => {
     log.step('Step 2 — POST /scheduler/heartbeat');
     const res = await request(API)
@@ -79,7 +79,7 @@ describe('T06.8 — Persistence and recovery after scheduler restart', () => {
   });
 
   // @plan T06.8
-  // @covers EOCP-E6-02
+  // @covers EOCP-E6-07
   it('Step 3 – task state is retrievable after scheduler heartbeat (persistent state readable)', async () => {
     log.step(`Step 3 — GET /task/${taskId}`);
     const res = await request(API)

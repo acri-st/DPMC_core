@@ -36,6 +36,59 @@ describe('DatasetService', () => {
       expect(res.data).toHaveLength(1);
       expect(res.total).toBe(1);
     });
+
+    it('filters batch-origin datasets (producedByBatchId not null)', async () => {
+      prisma.dataset.findMany.mockResolvedValue([]);
+      prisma.dataset.count.mockResolvedValue(0);
+      await service.list({ skip: 0, take: 10, origin: 'batch' } as any);
+      const where = prisma.dataset.findMany.mock.calls[0][0].where;
+      expect(where.producedByBatchId).toEqual({ not: null });
+    });
+
+    it('filters manual datasets (producedByBatchId null)', async () => {
+      prisma.dataset.findMany.mockResolvedValue([]);
+      prisma.dataset.count.mockResolvedValue(0);
+      await service.list({ skip: 0, take: 10, origin: 'manual' } as any);
+      const where = prisma.dataset.findMany.mock.calls[0][0].where;
+      expect(where.producedByBatchId).toBeNull();
+    });
+
+    it('hides runtime datasets by default (origin=user)', async () => {
+      prisma.dataset.findMany.mockResolvedValue([]);
+      prisma.dataset.count.mockResolvedValue(0);
+      await service.list({ skip: 0, take: 10 });
+      const where = prisma.dataset.findMany.mock.calls[0][0].where;
+      expect(where.producedByBatchId).toBeNull();
+      expect(where.NOT).toEqual([
+        { name: { startsWith: 'task:' } },
+        { name: { startsWith: 'batch:' } },
+      ]);
+    });
+
+    it('does not apply the user default when scoped to a batch', async () => {
+      prisma.dataset.findMany.mockResolvedValue([]);
+      prisma.dataset.count.mockResolvedValue(0);
+      await service.list({ skip: 0, take: 10, producedByBatchId: 42 });
+      const where = prisma.dataset.findMany.mock.calls[0][0].where;
+      expect(where.producedByBatchId).toBe(42);
+      expect(where.NOT).toBeUndefined();
+    });
+
+    it('selects only runtime datasets with origin=system', async () => {
+      prisma.dataset.findMany.mockResolvedValue([]);
+      prisma.dataset.count.mockResolvedValue(0);
+      await service.list({ skip: 0, take: 10, origin: 'system' } as any);
+      const where = prisma.dataset.findMany.mock.calls[0][0].where;
+      expect(where.AND).toEqual([
+        {
+          OR: [
+            { producedByBatchId: { not: null } },
+            { name: { startsWith: 'task:' } },
+            { name: { startsWith: 'batch:' } },
+          ],
+        },
+      ]);
+    });
   });
 
   describe('getById', () => {

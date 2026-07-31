@@ -5,9 +5,9 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T11.12 — Consistency of API responses during failures
-// @covers EOCP-E11-05
+// @covers EOCP-E11-01
 
-const NULL_UUID = '00000000-0000-0000-0000-000000000000';
+const NULL_UUID = 0;
 
 const log = makeLogger('T11.12');
 
@@ -24,7 +24,7 @@ describe('T11.12 — Consistency of API responses during failures', () => {
   });
 
   // @plan T11.12
-  // @covers EOCP-E11-05
+  // @covers EOCP-E11-01
   it('Step 1 & 2 – GET /task/<unknown-uuid> returns 404 with statusCode + message', async () => {
     log.step(`Step 1&2 — GET /task/${NULL_UUID}`);
     const res = await request(API).get(`/task/${NULL_UUID}`).set('Cookie', cookie);
@@ -36,7 +36,7 @@ describe('T11.12 — Consistency of API responses during failures', () => {
   });
 
   // @plan T11.12
-  // @covers EOCP-E11-05
+  // @covers EOCP-E11-01
   it('Step 2 – POST /task with empty body returns 4xx with a structured body', async () => {
     log.step('Step 2 — POST /task (empty body)');
     const res = await request(API).post('/task').set('Cookie', cookie).send({});
@@ -49,7 +49,7 @@ describe('T11.12 — Consistency of API responses during failures', () => {
   });
 
   // @plan T11.12
-  // @covers EOCP-E11-05
+  // @covers EOCP-E11-01
   it('Step 3 – GET /task returns 200 after prior failure conditions', async () => {
     log.step('Step 3 — GET /task (recovery check)');
     const res = await request(API).get('/task').set('Cookie', cookie);
@@ -59,7 +59,7 @@ describe('T11.12 — Consistency of API responses during failures', () => {
   });
 
   // @plan T11.12
-  // @covers EOCP-E11-05
+  // @covers EOCP-E11-01
   it('Step 3 – GET /host returns 200 after prior failure conditions', async () => {
     log.step('Step 3 — GET /host (recovery check)');
     const res = await request(API).get('/host').set('Cookie', cookie);

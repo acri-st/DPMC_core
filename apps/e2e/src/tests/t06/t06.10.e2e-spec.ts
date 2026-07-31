@@ -5,7 +5,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { deleteHost, registerPayload, uniqueHostname, workerHeader } from '../t03/_shared';
 
 // @plan T06.10 — Elastic addition and removal of execution nodes
-// @covers EOCP-E6-09
+// @covers EOCP-E6-10
 //
 // Description: This test verifies that execution nodes can be dynamically added or removed without
 //   disrupting scheduling operations.
@@ -37,7 +37,7 @@ describe('T06.10 — Elastic addition and removal of execution nodes', () => {
   });
 
   // @plan T06.10
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-10
   it('Step 1 – two execution nodes register dynamically (elastic add)', async () => {
     log.step('Step 1 — POST /host/register x2 (elastic add)');
     for (const hostname of hostnames) {
@@ -54,7 +54,7 @@ describe('T06.10 — Elastic addition and removal of execution nodes', () => {
   });
 
   // @plan T06.10
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-10
   it('Step 2 – capacity summary reflects newly registered nodes', async () => {
     log.step('Step 2 — GET /host/capacity-summary');
     const res = await request(API)
@@ -66,7 +66,7 @@ describe('T06.10 — Elastic addition and removal of execution nodes', () => {
   });
 
   // @plan T06.10
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-10
   it('Step 3 – nodes can be set to Off to simulate elastic removal', async () => {
     log.step('Step 3 — PATCH /host/:id/status → Off x2 (elastic remove)');
     for (const id of hostIds) {

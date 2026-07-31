@@ -1,0 +1,337 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: eocp-dev
+
+resources:
+  - namespace.yml
+  - ../../database/base
+  - ../../keycloak-db/base
+  - ../../keycloak/base
+  - ../../s3/base
+  - ../../api/base
+  - ../../web/base
+  - ../../dispatcher/base
+  - ../../worker/base
+  - ../../monitoring/base
+
+images:
+  - name: harbor.shared.acrist-services.com/dsy/damps/dpmc/api
+    newName: dpmc-api
+    newTag: minikube
+
+  - name: harbor.shared.acrist-services.com/dsy/damps/dpmc/web
+    newName: dpmc-web
+    newTag: minikube
+
+  - name: harbor.shared.acrist-services.com/dsy/damps/dpmc/dispatcher
+    newName: dpmc-dispatcher
+    newTag: minikube
+
+  - name: harbor.shared.acrist-services.com/dsy/damps/dpmc/worker
+    newName: dpmc-worker
+    newTag: minikube
+
+patches:
+  # API: URLs externes locales et suppression des paramètres de production.
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: api
+    patch: |-
+      - op: replace
+        path: /data/NODE_ENV
+        value: development
+      - op: replace
+        path: /data/API_PROTOCOL
+        value: http
+      - op: replace
+        path: /data/API_URL
+        value: http://__MINIKUBE_IP__:30030/api
+      - op: replace
+        path: /data/FRONTEND_URL
+        value: http://__MINIKUBE_IP__:30080
+      - op: replace
+        path: /data/KEYCLOAK_URL
+        value: http://__MINIKUBE_IP__:30081
+      - op: replace
+        path: /data/DPMC_STATIC_VOLUMES
+        value: ""
+      - op: replace
+        path: /data/COOKIE_DOMAIN
+        value: '__MINIKUBE_IP__'
+      - op: remove
+        path: /data/NODE_TLS_REJECT_UNAUTHORIZED
+      - op: add
+        path: /data/PROMETHEUS_URL
+        value: http://prometheus.eocp-dev.svc.cluster.local:9090
+
+  # API: images locales, y compris l'initContainer de migration.
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: api
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api
+      spec:
+        template:
+          spec:
+            imagePullSecrets: []
+            initContainers:
+              - name: migrate
+                imagePullPolicy: IfNotPresent
+            containers:
+              - name: api
+                imagePullPolicy: IfNotPresent
+
+  # Web: image locale.
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: web
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+      spec:
+        template:
+          spec:
+            imagePullSecrets: []
+            containers:
+              - name: web
+                imagePullPolicy: IfNotPresent
+
+  # Dispatcher: singleton et image locale.
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: dispatcher
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: dispatcher
+      spec:
+        replicas: 1
+        template:
+          spec:
+            imagePullSecrets: []
+            containers:
+              - name: dispatcher
+                imagePullPolicy: IfNotPresent
+
+  # Worker: backend Kubernetes local avec deux slots.
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: worker
+    patch: |-
+      - op: replace
+        path: /data/DPMC_RUNNER_SLOTS
+        value: "2"
+      - op: remove
+        path: /data/DPMC_K8S_IMAGE_PULL_SECRET
+      - op: remove
+        path: /data/DPMC_K8S_JOB_TOLERATIONS
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: worker
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: worker
+      spec:
+        replicas: 1
+        template:
+          spec:
+            imagePullSecrets: []
+            containers:
+              - name: worker
+                imagePullPolicy: IfNotPresent
+
+  # Minikube utilise la StorageClass standard, pas Longhorn.
+  - target:
+      version: v1
+      kind: PersistentVolumeClaim
+      name: worker-data
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: standard
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 5Gi
+
+  - target:
+      version: v1
+      kind: PersistentVolumeClaim
+      name: prometheus-data
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: standard
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 2Gi
+
+  # Rétention courte en local : le poste de dev n'a pas à porter 15 jours de
+  # séries, et la vérité long terme vit de toute façon en base.
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: prometheus
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: prometheus
+      spec:
+        template:
+          spec:
+            containers:
+              - name: prometheus
+                args:
+                  - --config.file=/etc/prometheus/prometheus.yml
+                  - --storage.tsdb.path=/prometheus
+                  - --storage.tsdb.retention.time=48h
+                  - --storage.tsdb.retention.size=1GB
+                  - --web.enable-lifecycle
+
+  # Exposition locale par NodePort.
+  - target:
+      version: v1
+      kind: Service
+      name: api
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: api
+      spec:
+        type: NodePort
+        ports:
+          - name: http
+            port: 80
+            targetPort: http
+            nodePort: 30030
+
+  - target:
+      version: v1
+      kind: Service
+      name: web
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web
+      spec:
+        type: NodePort
+        ports:
+          - name: http
+            port: 80
+            targetPort: http
+            nodePort: 30080
+
+  - target:
+      version: v1
+      kind: Service
+      name: keycloak
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: keycloak
+      spec:
+        type: NodePort
+        ports:
+          - name: http
+            port: 80
+            targetPort: http
+            nodePort: 30081
+
+  - target:
+      version: v1
+      kind: Service
+      name: prometheus
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: prometheus
+      spec:
+        type: NodePort
+        ports:
+          - name: http
+            port: 9090
+            targetPort: http
+            nodePort: 30090
+
+  - target:
+      version: v1
+      kind: Service
+      name: s3
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: s3
+      spec:
+        type: NodePort
+        ports:
+          - name: s3
+            port: 9000
+            targetPort: s3
+            nodePort: 30900
+          - name: console
+            port: 9001
+            targetPort: console
+            nodePort: 30901
+
+  # Les ingresses et certificats de production ne sont pas utilisés localement.
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: api
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: api
+
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: web
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: web
+
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: keycloak
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: keycloak

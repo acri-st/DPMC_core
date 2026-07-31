@@ -117,9 +117,8 @@ describe('T07.1 — Support for multiple triggering mechanisms', () => {
     log.http('POST', '/task', res.status, res.status === 201 ? { id: res.body.data.id } : res.body);
     expect(res.status).toBe(201);
     createdTaskIds.push(res.body.data.id);
-    expect(res.body.data.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
+    expect(typeof res.body.data.id).toBe('number');
+    expect(res.body.data.id).toBeGreaterThan(0);
     log.ok(`API trigger task: ${res.body.data.id}`);
   });
 

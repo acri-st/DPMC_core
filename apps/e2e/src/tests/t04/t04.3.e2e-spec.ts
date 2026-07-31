@@ -69,7 +69,7 @@ describe('T04.3 — Embedding of processing chains within production chains', ()
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     log.ok(`processingChains count: ${pcs.length}`);
     expect(pcs.length).toBeGreaterThanOrEqual(2);
   });
@@ -108,7 +108,7 @@ describe('T04.3 — Embedding of processing chains within production chains', ()
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     const names = pcs.map((pc: { name: string }) => pc.name);
     log.ok(`processing chain names: ${names.join(', ')}`);
     expect(names).toContain('T04.3-chain-alpha');

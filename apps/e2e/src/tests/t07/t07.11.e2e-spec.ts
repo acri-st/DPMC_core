@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T07.11 — Rate limiting of API-based triggers
-// @covers EOCP-E7-04
+// @covers EOCP-E7-03
 //
 // Description: This test verifies that API-based triggering is protected against abuse.
 //   Application-level rate limiting (ThrottlerModule) is not configured in the current build.
@@ -42,7 +42,7 @@ describe('T07.11 — Rate limiting of API-based triggers', () => {
   });
 
   // @plan T07.11
-  // @covers EOCP-E7-04
+  // @covers EOCP-E7-03
   it('Step 1 – multiple sequential authenticated trigger requests are accepted', async () => {
     log.step('Step 1 — POST /task x3 (sequential authenticated)');
     for (let i = 0; i < 3; i++) {
@@ -68,7 +68,7 @@ describe('T07.11 — Rate limiting of API-based triggers', () => {
   });
 
   // @plan T07.11
-  // @covers EOCP-E7-04
+  // @covers EOCP-E7-03
   it('Step 2 – unauthenticated rapid trigger requests are rejected at the auth layer', async () => {
     log.step('Step 2 — POST /task x5 (unauthenticated burst)');
     const results = await Promise.all(
@@ -94,7 +94,7 @@ describe('T07.11 — Rate limiting of API-based triggers', () => {
   });
 
   // @plan T07.11
-  // @covers EOCP-E7-04
+  // @covers EOCP-E7-03
   it('Step 3 – system is stable after burst and continues to accept valid requests', async () => {
     log.step('Step 3 — GET /status + GET /task');
     const status = await request(API).get('/status');

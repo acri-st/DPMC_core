@@ -90,7 +90,7 @@ export function DataCenterDetailPage() {
               />
               <Stat
                 label="Energy intensity"
-                value={`${data.energyIntensity} kWh/u`}
+                value={`${data.energyIntensity} kWh/Go`}
               />
               <Stat label="Hosts" value={data.hosts.length.toString()} />
             </CardContent>

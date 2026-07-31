@@ -51,7 +51,7 @@ describe('T05.14 — Automatic resumption after dependency resolution', () => {
     log.action('GET chain to resolve IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.14-blocker');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.14-blocked');
 
@@ -86,7 +86,7 @@ describe('T05.14 — Automatic resumption after dependency resolution', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const blocking = edges.find((e: { dependencyMode: string }) => e.dependencyMode === 'OnSuccess');
     log.ok(`blocking edge found: ${!!blocking}, id: ${blocking?.id}`);
     expect(blocking).toBeDefined();
@@ -109,11 +109,11 @@ describe('T05.14 — Automatic resumption after dependency resolution', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.14-blocked');
     expect(pcB).toBeDefined();
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const incomingToB = edges.filter((e: { childChainId: string }) => e.childChainId === pcB.id);
     log.ok(`incoming edges to 'blocked' after delete: ${incomingToB.length}`);
     expect(incomingToB.length).toBe(0);

@@ -1,10 +1,10 @@
 import {
   CreatedResponse,
   NoContentResponse,
-  Public,
   Response,
   SuccessResponse,
 } from '@/common';
+import { ProjectScoped } from '@/common/decorators/project-scoped.decorator';
 import { HttpCode, PATHS } from '@dpmc/client';
 import {
   Body,
@@ -30,7 +30,7 @@ import { EdgesService } from './edges.service';
 export class EdgesController {
   constructor(private readonly edgesService: EdgesService) {}
 
-  @Public()
+  @ProjectScoped('admin', 'operator')
   @CreatedResponse(AddEdgeResponseSchema)
   @HttpCodeDec(HttpCode.CREATED)
   @Post(PATHS.PRODUCTION_CHAIN.ADD_EDGE)
@@ -42,7 +42,7 @@ export class EdgesController {
     return Response.success(response, { status: HttpCode.CREATED });
   }
 
-  @Public()
+  @ProjectScoped('admin', 'operator')
   @SuccessResponse(UpdateEdgeResponseSchema)
   @Patch(PATHS.PRODUCTION_CHAIN.UPDATE_EDGE)
   async update(
@@ -54,7 +54,7 @@ export class EdgesController {
     return Response.success(response);
   }
 
-  @Public()
+  @ProjectScoped('admin', 'operator')
   @NoContentResponse()
   @HttpCodeDec(HttpCode.NO_CONTENT)
   @Delete(PATHS.PRODUCTION_CHAIN.DELETE_EDGE)

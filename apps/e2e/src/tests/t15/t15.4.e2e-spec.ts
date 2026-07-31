@@ -9,7 +9,9 @@ import { requireEnvReady } from '../t01/_env-check';
 //
 // Description: Calibration relies on the data_center pue × emissionFactor parameters.
 //   This test verifies that those parameters are stored in the DB and that the CO2 endpoint
-//   reflects them (avg_factor drives co2Grams = energyWh × avgFactor / 1000).
+//   reflects them. Each job is billed at the factor of the data center that ran it, so an
+//   aggregate over several sites lands between the greenest and dirtiest site's factor
+//   rather than on any single closed-form value.
 // Prerequisites: e2e stack is running (start with "pnpm dashboard").
 
 const log = makeLogger('T15.4');
@@ -37,15 +39,16 @@ describe('T15.4 — Calibration of footprint estimation using reference workload
     log.http('GET', '/data-center', res.status, res.body);
     expect(res.status).toBe(200);
 
-    const items: Record<string, unknown>[] = res.body.data?.items ?? res.body.data ?? [];
+    const items: Record<string, unknown>[] =
+      res.body.data?.items ?? res.body.data ?? [];
     expect(items.length).toBeGreaterThan(0);
     log.ok(`${items.length} data center(s) found`);
 
     for (const dc of items) {
       expect(typeof dc.pue).toBe('number');
       expect(typeof dc.emissionFactor).toBe('number');
-      expect((dc.pue as number)).toBeGreaterThan(0);
-      expect((dc.emissionFactor as number)).toBeGreaterThan(0);
+      expect(dc.pue as number).toBeGreaterThan(0);
+      expect(dc.emissionFactor as number).toBeGreaterThan(0);
     }
     log.ok('all data centers have valid pue and emissionFactor');
   });
@@ -67,23 +70,25 @@ describe('T15.4 — Calibration of footprint estimation using reference workload
     }
 
     for (const item of items) {
-      expect((item.co2Grams as number)).toBeGreaterThanOrEqual(0);
-      expect((item.energyWh as number)).toBeGreaterThanOrEqual(0);
+      expect(item.co2Grams as number).toBeGreaterThanOrEqual(0);
+      expect(item.energyWh as number).toBeGreaterThanOrEqual(0);
     }
     log.ok('all items have non-negative co2Grams and energyWh');
   });
 
   // @plan T15.4
   // @covers EOCP-E15-01
-  it('Step 3 – co2Grams is consistent with energyWh × pue × emissionFactor formula', async () => {
-    log.step('Step 3 — verify co2Grams formula consistency');
+  it('Step 3 – co2Grams is bounded by the per-site pue × emissionFactor factors', async () => {
+    log.step('Step 3 — verify co2Grams sits within the per-site factor range');
 
     const [metricsRes, dcRes] = await Promise.all([
       request(API).get('/metrics/co2'),
       request(API).get('/data-center').set('Cookie', cookie),
     ]);
     log.http('GET', '/metrics/co2', metricsRes.status, metricsRes.body);
-    log.http('GET', '/data-center', dcRes.status, { count: (dcRes.body.data?.items ?? dcRes.body.data ?? []).length });
+    log.http('GET', '/data-center', dcRes.status, {
+      count: (dcRes.body.data?.items ?? dcRes.body.data ?? []).length,
+    });
     expect(metricsRes.status).toBe(200);
     expect(dcRes.status).toBe(200);
 
@@ -93,14 +98,37 @@ describe('T15.4 — Calibration of footprint estimation using reference workload
       return;
     }
 
-    const dataCenters: Record<string, unknown>[] = dcRes.body.data?.items ?? dcRes.body.data ?? [];
-    const avgFactor = dataCenters.reduce((sum, dc) => sum + (dc.pue as number) * (dc.emissionFactor as number), 0) / dataCenters.length;
-    log.ok(`avgFactor=${avgFactor.toFixed(4)}`);
+    const dataCenters: Record<string, unknown>[] =
+      dcRes.body.data?.items ?? dcRes.body.data ?? [];
+    const factors = dataCenters.map(
+      (dc) => (dc.pue as number) * (dc.emissionFactor as number),
+    );
+    const minFactor = Math.min(...factors);
+    const maxFactor = Math.max(...factors);
+    log.ok(`factor range=[${minFactor.toFixed(4)}, ${maxFactor.toFixed(4)}]`);
+
+    // Tolerance absorbs float accumulation over the SUM in the view.
+    const EPSILON = 0.001;
 
     for (const item of items) {
-      const expected = ((item.energyWh as number) * avgFactor) / 1000;
-      expect(Math.abs((item.co2Grams as number) - expected)).toBeLessThan(0.001);
+      const energyWh = item.energyWh as number;
+      const co2Grams = item.co2Grams as number;
+
+      expect(co2Grams).toBeGreaterThanOrEqual(
+        (energyWh * minFactor) / 1000 - EPSILON,
+      );
+      expect(co2Grams).toBeLessThanOrEqual(
+        (energyWh * maxFactor) / 1000 + EPSILON,
+      );
+
+      // The per-concern split must reconcile with the totals it is derived from.
+      const concerns = item.co2GramsByConcern as Record<string, number>;
+      const summed =
+        concerns.cpu + concerns.gpu + concerns.ingress + concerns.egress;
+      expect(Math.abs(summed - co2Grams)).toBeLessThan(EPSILON);
     }
-    log.ok('co2Grams matches energyWh × avgFactor / 1000 for all items');
+    log.ok(
+      'co2Grams is within the per-site factor range and matches its concern breakdown',
+    );
   });
 });

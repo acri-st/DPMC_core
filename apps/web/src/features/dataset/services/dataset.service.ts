@@ -22,11 +22,17 @@ const GetResponseSchema = z.object({
   data: DatasetSchema,
 });
 
+export type SortOrder = 'asc' | 'desc';
+
 export type ListDatasetsParams = {
   page?: number;
   pageSize?: number;
   producedByBatchId?: number;
   name?: string;
+  origin?: 'batch' | 'manual' | 'user' | 'system' | 'all';
+  q?: string;
+  sort?: string;
+  order?: SortOrder;
 };
 
 export type ListDatasetsResult = {
@@ -45,6 +51,12 @@ export async function listDatasets(
     search.set('producedByBatchId', String(params.producedByBatchId));
   }
   if (params.name) search.set('name', params.name);
+  if (params.origin) search.set('origin', params.origin);
+  if (params.q) search.set('q', params.q);
+  if (params.sort) {
+    search.set('sort', params.sort);
+    search.set('order', params.order ?? 'desc');
+  }
   const { data, headers } = await apiFetchWithMeta<unknown>(
     `/dataset?${search.toString()}`,
   );

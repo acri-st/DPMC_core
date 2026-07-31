@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T06.5 — Queue separation by project, priority, and site
-// @covers EOCP-E6-06
+// @covers EOCP-E6-04
 //
 // Description: This test verifies that the queue manager maintains independent queues per project,
 //   priority class, and site.
@@ -39,7 +39,7 @@ describe('T06.5 — Queue separation by project, priority, and site', () => {
   });
 
   // @plan T06.5
-  // @covers EOCP-E6-06
+  // @covers EOCP-E6-04
   it('Step 1 – NRT task submitted to project queue is accepted with correct priorityClass', async () => {
     log.step('Step 1 — POST /task (NRT queue)');
     const res = await request(API)
@@ -64,7 +64,7 @@ describe('T06.5 — Queue separation by project, priority, and site', () => {
   });
 
   // @plan T06.5
-  // @covers EOCP-E6-06
+  // @covers EOCP-E6-04
   it('Step 2 – RT task submitted to priority queue is accepted with correct priorityClass', async () => {
     log.step('Step 2 — POST /task (Super queue)');
     const res = await request(API)
@@ -88,7 +88,7 @@ describe('T06.5 — Queue separation by project, priority, and site', () => {
   });
 
   // @plan T06.5
-  // @covers EOCP-E6-06
+  // @covers EOCP-E6-04
   it('Step 3 – task status summary exists and reflects multi-queue state', async () => {
     log.step('Step 3 — GET /task/status-summary');
     const res = await request(API)

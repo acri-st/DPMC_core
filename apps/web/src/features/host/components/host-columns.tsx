@@ -92,7 +92,9 @@ export function buildHostColumns({
             ? 'border-sky-500/40 text-sky-600'
             : r === 'Apptainer'
               ? 'border-indigo-500/40 text-indigo-600'
-              : 'border-zinc-400/40 text-zinc-500';
+              : r === 'Kubernetes'
+                ? 'border-blue-600/40 text-blue-700'
+                : 'border-zinc-400/40 text-zinc-500';
         return (
           <Badge variant="outline" className={tone}>
             {r}

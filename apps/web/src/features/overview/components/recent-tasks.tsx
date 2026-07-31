@@ -14,12 +14,41 @@ import {
   durationBetween,
   formatDurationMs,
 } from '@/features/batch/libs/format-duration';
+import { cn } from '@/shared/utils';
 import type { Task } from '@/features/task/types';
 
 type RecentTasksProps = {
   tasks: Task[];
   isLoading: boolean;
 };
+
+// Distinguish the three lifecycle phases the status badge alone doesn't convey:
+// a past run (already started), a future scheduled run (Queued with a
+// scheduledStartTime ahead), and an unscheduled draft (Edited).
+function taskTiming(t: Task): { text: string; className: string } {
+  if (t.startedAt) {
+    return {
+      text: `started ${formatDistanceToNow(new Date(t.startedAt), { addSuffix: true })}`,
+      className: 'text-muted-foreground',
+    };
+  }
+  if (t.status === 'Edited') {
+    return {
+      text: 'draft — not scheduled',
+      className: 'text-muted-foreground',
+    };
+  }
+  const scheduledMs = t.scheduledStartTime
+    ? new Date(t.scheduledStartTime).getTime()
+    : null;
+  if (scheduledMs && scheduledMs > Date.now()) {
+    return {
+      text: `scheduled ${formatDistanceToNow(new Date(scheduledMs), { addSuffix: true })}`,
+      className: 'text-amber-500',
+    };
+  }
+  return { text: 'queued', className: 'text-muted-foreground' };
+}
 
 export function RecentTasks({ tasks, isLoading }: RecentTasksProps) {
   return (
@@ -43,6 +72,7 @@ export function RecentTasks({ tasks, isLoading }: RecentTasksProps) {
         ) : (
           tasks.map((t) => {
             const dur = durationBetween(t.startedAt, t.completedAt);
+            const timing = taskTiming(t);
             return (
               <Link
                 key={t.id}
@@ -58,14 +88,12 @@ export function RecentTasks({ tasks, isLoading }: RecentTasksProps) {
                   <span className="text-muted-foreground hidden font-mono md:inline">
                     {t.kind}
                   </span>
-                  <span className="text-muted-foreground hidden lg:inline">
-                    {t.startedAt
-                      ? formatDistanceToNow(new Date(t.startedAt), {
-                          addSuffix: true,
-                        })
-                      : '—'}
+                  <span className={cn('hidden sm:inline', timing.className)}>
+                    {timing.text}
                   </span>
-                  <span className="font-mono">{formatDurationMs(dur)}</span>
+                  <span className="font-mono">
+                    {t.startedAt ? formatDurationMs(dur) : '—'}
+                  </span>
                 </span>
               </Link>
             );

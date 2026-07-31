@@ -59,7 +59,7 @@ describe('T07.8 — Suppression of triggers on invalid metadata', () => {
       .post('/product')
       .set('Cookie', cookie)
       .send({
-        productTypeId: '00000000-0000-0000-0000-000000000000',
+        productTypeId: 0,
         name: 'T07.8-unknown-type',
         version: '1.0',
         comment: 'T07.8 – unknown product type',

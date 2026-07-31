@@ -10,6 +10,7 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  type Connection,
   type Edge,
   type Node,
 } from '@xyflow/react';
@@ -33,21 +34,52 @@ const NODE_TYPES = {
   script: ScriptFlowNode,
 };
 
+type EdgeStyleKey = ProductionChainGraphEdge['dependencyMode'] | 'FanOut';
+
 const EDGE_STYLE: Record<
-  ProductionChainGraphEdge['dependencyMode'] | 'FanOut',
-  { stroke: string; dashed: boolean }
+  EdgeStyleKey,
+  { stroke: string; dashed: boolean; label: string }
 > = {
-  OnSuccess: { stroke: 'oklch(0.6 0.18 150)', dashed: false },
-  OnFailure: { stroke: 'oklch(0.6 0.22 25)', dashed: false },
-  Optional: { stroke: 'oklch(0.65 0 0)', dashed: true },
-  OnCompletion: { stroke: 'oklch(0.65 0 0)', dashed: false },
-  OnDataAvailable: { stroke: 'oklch(0.65 0 0)', dashed: false },
-  FanOut: { stroke: 'oklch(0.6 0.2 290)', dashed: true },
+  OnSuccess: {
+    stroke: 'oklch(0.6 0.18 150)',
+    dashed: false,
+    label: 'On success',
+  },
+  OnFailure: {
+    stroke: 'oklch(0.6 0.22 25)',
+    dashed: false,
+    label: 'On failure',
+  },
+  OnCompletion: {
+    stroke: 'oklch(0.65 0 0)',
+    dashed: false,
+    label: 'On completion',
+  },
+  OnDataAvailable: {
+    stroke: 'oklch(0.6 0.15 230)',
+    dashed: false,
+    label: 'On data available',
+  },
+  Optional: { stroke: 'oklch(0.65 0 0)', dashed: true, label: 'Optional' },
+  FanOut: { stroke: 'oklch(0.6 0.2 290)', dashed: true, label: 'Fan-out' },
 };
+
+// Order shown in the legend (dependency modes first, fan-out marker last).
+const LEGEND_KEYS: EdgeStyleKey[] = [
+  'OnSuccess',
+  'OnFailure',
+  'OnCompletion',
+  'OnDataAvailable',
+  'Optional',
+  'FanOut',
+];
 
 type ProductionChainGraphProps = {
   graph: ProductionChainGraph;
+  editable?: boolean;
   onNodeClick?: (nodeId: string) => void;
+  onEdgeClick?: (edgeId: string) => void;
+  onConnect?: (params: { parentChainId: number; childChainId: number }) => void;
 };
 
 export function ProductionChainGraph(props: ProductionChainGraphProps) {
@@ -60,7 +92,10 @@ export function ProductionChainGraph(props: ProductionChainGraphProps) {
 
 function ProductionChainGraphInner({
   graph,
+  editable,
   onNodeClick,
+  onEdgeClick,
+  onConnect,
 }: ProductionChainGraphProps) {
   const resolvedTheme = useResolvedTheme();
 
@@ -93,6 +128,17 @@ function ProductionChainGraphInner({
     fitView({ padding: 0.2, duration: 250 });
   }, [fitView]);
 
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+      onConnect?.({
+        parentChainId: Number(connection.source),
+        childChainId: Number(connection.target),
+      });
+    },
+    [onConnect],
+  );
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -100,13 +146,15 @@ function ProductionChainGraphInner({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onNodeClick={(_, node) => onNodeClick?.(node.id)}
+      onConnect={handleConnect}
+      onEdgeClick={(_, edge) => onEdgeClick?.(edge.id)}
       nodeTypes={NODE_TYPES}
       fitView
       fitViewOptions={{ padding: 0.2 }}
       minZoom={0.2}
       maxZoom={1.5}
       nodesDraggable
-      nodesConnectable={false}
+      nodesConnectable={Boolean(editable)}
       proOptions={{ hideAttribution: true }}
       colorMode={resolvedTheme === 'dark' ? 'dark' : 'light'}
     >
@@ -116,9 +164,14 @@ function ProductionChainGraphInner({
         position="bottom-right"
         className="flex flex-col gap-1.5 rounded-md border bg-card p-2 shadow-sm text-[11px]"
       >
-        <LegendRow color="oklch(0.6 0.18 150)" label="On success" />
-        <LegendRow color="oklch(0.6 0.22 25)" label="On failure" />
-        <LegendRow color="oklch(0.6 0.2 290)" label="Fan-out" dashed />
+        {LEGEND_KEYS.map((key) => (
+          <LegendRow
+            key={key}
+            color={EDGE_STYLE[key].stroke}
+            label={EDGE_STYLE[key].label}
+            dashed={EDGE_STYLE[key].dashed}
+          />
+        ))}
       </Panel>
       <Panel position="top-right" className="flex items-center gap-2">
         <Button

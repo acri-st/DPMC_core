@@ -61,7 +61,7 @@ describe('T05.5 — Support for multiple dependency types', () => {
     log.action(`GET chain ${suffix} to resolve IDs`);
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const stepAId = pcs.find((pc: { name: string }) => pc.name === `T05.5-${suffix}-A`)?.id as string;
     const stepBId = pcs.find((pc: { name: string }) => pc.name === `T05.5-${suffix}-B`)?.id as string;
     return { chainId, stepAId, stepBId };

@@ -282,6 +282,96 @@ export async function previewProductionChainFromTaskTable(input: {
   return parsed.data;
 }
 
+// ---- Old-ACS (CryoSat-style, root <Task_Table>) multi-file import ----------
+
+export type AcsTaskTableFile = { name: string; content: string };
+
+export type AcsImportOptions = {
+  installRoot?: string;
+  chainName?: string;
+  images?: Record<string, { imageUrl: string; imageTag?: string }>;
+};
+
+/** True for old-ACS task tables (CryoSat deliveries) as opposed to the
+ * Sentinel-style `<Ipf_Task_Table>` handled by the `ipf` adapter. */
+export function isAcsTaskTableContent(content: string): boolean {
+  return (
+    /<Task_Table[\s>]/.test(content) && !/<Ipf_Task_Table[\s>]/.test(content)
+  );
+}
+
+const AcsPreviewResponseSchema = z.object({
+  status: z.number(),
+  success: z.string(),
+  data: z.object({
+    name: z.string(),
+    nodes: z.array(
+      z.object({
+        acronym: z.string(),
+        sourceName: z.string(),
+        version: z.string(),
+        taskCount: z.number(),
+        executables: z.array(
+          z.object({
+            name: z.string(),
+            path: z.string(),
+            sequence: z.number(),
+          }),
+        ),
+        dbOutputTypes: z.array(z.string()),
+        externalInputTypes: z.array(z.string()),
+        suggestedImageUrl: z.string().nullable(),
+      }),
+    ),
+    edges: z.array(
+      z.object({
+        parentAcronym: z.string(),
+        childAcronym: z.string(),
+        dependencyMode: z.enum(['OnSuccess', 'OnCompletion']),
+        viaTypes: z.array(z.string()),
+      }),
+    ),
+    detectedSourceRoot: z.string().nullable(),
+    warnings: z.array(z.string()),
+  }),
+});
+
+export type AcsChainImportPreview = z.infer<
+  typeof AcsPreviewResponseSchema
+>['data'];
+
+export async function previewAcsProductionChain(input: {
+  files: AcsTaskTableFile[];
+  options?: AcsImportOptions;
+}): Promise<AcsChainImportPreview> {
+  const raw = await apiFetch<unknown>('/production-chain/import/acs/preview', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return AcsPreviewResponseSchema.parse(raw).data;
+}
+
+const AcsImportResponseSchema = z.object({
+  status: z.number(),
+  success: z.string(),
+  data: z.object({
+    chainId: z.number(),
+    nodeCount: z.number().int().nonnegative(),
+    edgeCount: z.number().int().nonnegative(),
+  }),
+});
+
+export async function importAcsProductionChain(input: {
+  files: AcsTaskTableFile[];
+  options?: AcsImportOptions;
+}): Promise<{ chainId: number; nodeCount: number; edgeCount: number }> {
+  const raw = await apiFetch<unknown>('/production-chain/import/acs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return AcsImportResponseSchema.parse(raw).data;
+}
+
 export async function getProductionChainGraph(
   id: string,
   _versionId?: string | null,
@@ -374,6 +464,7 @@ function toSummary(chain: ApiProductionChain): ProductionChainSummary {
     name: chain.name,
     comment: chain.comment,
     isActive: chain.isActive,
+    kind: chain.kind,
     createdAt: chain.createdAt.toISOString(),
     updatedAt: chain.updatedAt.toISOString(),
   };
@@ -569,4 +660,138 @@ function toEdge(edge: ApiProductionChainEdge): ProductionChainGraphEdge {
     dependencyMode: edge.dependencyMode as DependencyMode,
     isFanOut: edge.isFanOut ?? false,
   };
+}
+
+// ---- DAG editor mutations -------------------------------------------------
+
+const AddProcessingChainResponseSchema = z.object({
+  status: z.number(),
+  success: z.string(),
+  data: ProcessingChainNodeSchema,
+});
+
+const AddEdgeResponseSchema = z.object({
+  status: z.number(),
+  success: z.string(),
+  data: ProductionChainEdgeSchema,
+});
+
+export async function addProcessingChain(
+  chainId: string,
+  input: {
+    processingScriptId: number;
+    name: string;
+    comment?: string | null;
+    configuration?: unknown;
+  },
+): Promise<{ id: number }> {
+  const raw = await apiFetch<unknown>(
+    `/production-chain/${chainId}/processing-chains`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        processingScriptId: input.processingScriptId,
+        name: input.name,
+        comment: input.comment ?? null,
+        configuration: input.configuration ?? null,
+      }),
+    },
+  );
+  const parsed = AddProcessingChainResponseSchema.parse(raw);
+  return { id: parsed.data.id };
+}
+
+/** Patch chain-level fields (name/comment/configuration). */
+export async function updateProductionChain(
+  chainId: string,
+  input: { name?: string; comment?: string | null; configuration?: unknown },
+): Promise<void> {
+  await apiFetch<unknown>(`/production-chain/${chainId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateProcessingChain(
+  chainId: string,
+  pcId: string,
+  input: { name: string },
+): Promise<void> {
+  await apiFetch<unknown>(
+    `/production-chain/${chainId}/processing-chains/${pcId}`,
+    { method: 'PATCH', body: JSON.stringify({ name: input.name }) },
+  );
+}
+
+export async function deleteProcessingChain(
+  chainId: string,
+  pcId: string,
+): Promise<void> {
+  await apiFetch<unknown>(
+    `/production-chain/${chainId}/processing-chains/${pcId}`,
+    { method: 'DELETE' },
+  );
+}
+
+export async function addEdge(
+  chainId: string,
+  input: {
+    parentChainId: number;
+    childChainId: number;
+    dependencyMode?: DependencyMode;
+    isFanOut?: boolean;
+  },
+): Promise<{ id: number }> {
+  const raw = await apiFetch<unknown>(`/production-chain/${chainId}/edges`, {
+    method: 'POST',
+    body: JSON.stringify({
+      parentChainId: input.parentChainId,
+      childChainId: input.childChainId,
+      dependencyMode: input.dependencyMode ?? 'OnSuccess',
+      isFanOut: input.isFanOut ?? false,
+    }),
+  });
+  const parsed = AddEdgeResponseSchema.parse(raw);
+  return { id: parsed.data.id };
+}
+
+export async function updateEdge(
+  chainId: string,
+  edgeId: string,
+  input: { dependencyMode?: DependencyMode; isFanOut?: boolean },
+): Promise<void> {
+  await apiFetch<unknown>(`/production-chain/${chainId}/edges/${edgeId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteEdge(
+  chainId: string,
+  edgeId: string,
+): Promise<void> {
+  await apiFetch<unknown>(`/production-chain/${chainId}/edges/${edgeId}`, {
+    method: 'DELETE',
+  });
+}
+
+export type ProcessingScriptOption = {
+  id: number;
+  acronym: string;
+  name: string;
+  version: string;
+};
+
+export async function listProcessingScripts(): Promise<
+  ProcessingScriptOption[]
+> {
+  const index = await listScriptsWithDefaultVersion();
+  return [...index.values()]
+    .map((s) => ({
+      id: s.id,
+      acronym: s.acronym,
+      name: s.name,
+      version: s.defaultVersion?.version ?? '—',
+    }))
+    .sort((a, b) => a.acronym.localeCompare(b.acronym));
 }

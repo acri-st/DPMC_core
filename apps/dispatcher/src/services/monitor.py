@@ -5,23 +5,15 @@ from __future__ import annotations
 import logging
 
 from domain.enums import JobStatus
-from domain.retry import RetryPolicy
-from repositories.jobs import retry_or_fail_job
+from repositories.jobs import fail_job_and_release_allocation
 from repositories.tables import T
 
 log = logging.getLogger("dispatcher.monitor")
 
 
-async def monitor_tick(db, lost_host_threshold_s: float, retry: RetryPolicy) -> int:
-    """Run one tick. Returns the number of lost jobs handled.
-
-    Each Running job on a silent host is run through the retry policy: it is
-    either re-queued for another attempt or, once attempts are exhausted, left
-    terminally Failed (with an operator escalation logged).
-    """
-    handled = 0
-    retried = 0
-    exhausted = 0
+async def monitor_tick(db, lost_host_threshold_s: float) -> int:
+    """Run one tick. Returns the number of jobs marked Failed."""
+    failed = 0
     async with db.tx() as conn:
         cur = await conn.execute(
             f"""
@@ -37,22 +29,14 @@ async def monitor_tick(db, lost_host_threshold_s: float, retry: RetryPolicy) -> 
         )
         rows = await cur.fetchall()
         for r in rows:
-            outcome = await retry_or_fail_job(
+            await fail_job_and_release_allocation(
                 conn,
                 job_id=r["id"],
-                attempt=r["attempt"],
                 allocation_id=r["alloc_id"],
                 error="host lost",
-                policy=retry,
+                increment_attempt=True,
             )
-            handled += 1
-            if outcome == "retried":
-                retried += 1
-            else:
-                exhausted += 1
-    if handled:
-        log.warning(
-            "monitor_tick: %d lost job(s) — %d retried, %d exhausted",
-            handled, retried, exhausted,
-        )
-    return handled
+            failed += 1
+    if failed:
+        log.warning("monitor_tick marked %d jobs Failed", failed)
+    return failed

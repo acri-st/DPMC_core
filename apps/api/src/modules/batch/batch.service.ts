@@ -2,15 +2,34 @@ import { PrismaService } from '@/core/prisma';
 import {
   DEFAULT_PAGE_SIZE,
   PaginatedResult,
+  buildOrderBy,
   buildSearchWhere,
   paginationSkipTake,
 } from '@/common/utils/pagination';
 import type { BatchListQuery } from './batch.dto';
+
+// Columns the batch list may be sorted by (real Batch scalar fields only —
+// computed values like co2/duration can't be ordered in the DB).
+const BATCH_SORTABLE = [
+  'createdAt',
+  'scheduledAt',
+  'startedAt',
+  'endedAt',
+  'status',
+  'kind',
+  'priority',
+  'executionTag',
+  'updatedAt',
+  'id',
+] as const;
 import {
   Batch,
+  type BatchStatusSummary,
   CreateBatchRequest,
   CreateChainBatch,
   CreateStandaloneBatch,
+  type Co2Concern,
+  type TransferSource,
   type HostLog,
   type HostLogLevel,
 } from '@dpmc/client';
@@ -25,10 +44,29 @@ import type { UpdateBatchPriorityBody } from './batch.dto';
 import { toHostLogDto } from '@/modules/host/host.utils';
 import { randomUUID } from 'crypto';
 
-type EnrichedBatch = Batch & {
+type BatchEnergyMetrics = {
   co2Grams: number | null;
+  energyWh: number | null;
   totalDurationMs: number | null;
+  co2GramsByConcern: Co2Concern | null;
+  energyWhByConcern: Co2Concern | null;
+  transferSource: TransferSource | null;
+  transferSourceMixed: boolean;
 };
+
+const EMPTY_BATCH_METRICS: BatchEnergyMetrics = {
+  co2Grams: null,
+  energyWh: null,
+  totalDurationMs: null,
+  co2GramsByConcern: null,
+  energyWhByConcern: null,
+  transferSource: null,
+  transferSourceMixed: false,
+};
+
+const round4 = (value: number): number => Number(Number(value).toFixed(4));
+
+type EnrichedBatch = Batch & BatchEnergyMetrics;
 
 @Injectable()
 export class BatchService {
@@ -43,12 +81,18 @@ export class BatchService {
     const search = buildSearchWhere(['executionTag'], p.q);
     const where = {
       projectId,
-      ...(query?.status ? { status: query.status } : {}),
-      ...(query?.kind ? { kind: query.kind } : {}),
+      ...(query?.status?.length ? { status: { in: query.status } } : {}),
+      ...(query?.kind?.length ? { kind: { in: query.kind } } : {}),
       ...(search ?? {}),
     };
+    // Default: newest-created first (id desc breaks ties for stable pagination);
+    // overridable via ?sort=&order= against the BATCH_SORTABLE allowlist.
+    const orderBy = buildOrderBy(BATCH_SORTABLE, query?.sort, query?.order, [
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ]);
     const [items, total] = await Promise.all([
-      this.prisma.batch.findMany({ where, skip, take }),
+      this.prisma.batch.findMany({ where, skip, take, orderBy }),
       this.prisma.batch.count({ where }),
     ]);
     const metrics = await this.computeBatchMetricsMany(items.map((b) => b.id));
@@ -71,6 +115,27 @@ export class BatchService {
     }
     const metrics = await this.computeBatchMetrics(id);
     return { ...batch, ...metrics };
+  }
+
+  async statusSummary(projectId: number): Promise<BatchStatusSummary> {
+    // Mirrors the list() where-clause (projectId only; batch has no soft-delete
+    // filtering in this module), so the summary counts match the list.
+    const rows = await this.prisma.batch.groupBy({
+      by: ['status'],
+      where: { projectId },
+      _count: { _all: true },
+    });
+    const out: BatchStatusSummary = {
+      Pending: 0,
+      Running: 0,
+      Success: 0,
+      Failed: 0,
+      Cancelled: 0,
+    };
+    for (const r of rows) {
+      out[r.status] = r._count._all;
+    }
+    return out;
   }
 
   /**
@@ -381,96 +446,85 @@ export class BatchService {
 
   async computeBatchMetricsMany(
     batchIds: number[],
-  ): Promise<
-    Map<number, { co2Grams: number | null; totalDurationMs: number | null }>
-  > {
-    const out = new Map<
-      number,
-      { co2Grams: number | null; totalDurationMs: number | null }
-    >();
+  ): Promise<Map<number, BatchEnergyMetrics>> {
+    const out = new Map<number, BatchEnergyMetrics>();
     if (batchIds.length === 0) return out;
 
-    const jobs = await this.prisma.job.findMany({
-      where: { batchId: { in: batchIds } },
-      select: {
-        batchId: true,
-        startedAt: true,
-        endedAt: true,
-        avgPower: true,
-        host: { include: { dataCenter: true } },
-      },
-    });
-
     for (const id of batchIds) {
-      out.set(id, { co2Grams: null, totalDurationMs: null });
+      out.set(id, EMPTY_BATCH_METRICS);
     }
-    const accum = new Map<
-      number,
-      { co2: number; duration: number; any: boolean }
-    >();
-    for (const job of jobs) {
-      const start = job.startedAt?.getTime();
-      const end = job.endedAt?.getTime();
-      if (!start || !end || end <= start) continue;
-      const ms = end - start;
-      const acc = accum.get(job.batchId) ?? { co2: 0, duration: 0, any: false };
-      acc.duration += ms;
-      acc.any = true;
-      const dc = job.host?.dataCenter;
-      if (job.avgPower && dc) {
-        const hours = ms / 3_600_000;
-        acc.co2 += (job.avgPower * hours * dc.pue * dc.emissionFactor) / 1000;
-      }
-      accum.set(job.batchId, acc);
-    }
-    for (const [id, a] of accum) {
-      out.set(id, {
-        co2Grams: a.any ? Number(a.co2.toFixed(4)) : null,
-        totalDurationMs: a.any ? a.duration : null,
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        batch_id: number;
+        co2_grams: number;
+        energy_wh: number;
+        duration_ms: number;
+        timed_job_count: bigint;
+        transfer_source: TransferSource | null;
+        transfer_source_count: bigint;
+        cpu_co2_grams: number;
+        gpu_co2_grams: number;
+        ingress_co2_grams: number;
+        egress_co2_grams: number;
+        cpu_wh: number;
+        gpu_wh: number;
+        ingress_wh: number;
+        egress_wh: number;
+      }>
+    >(Prisma.sql`
+      SELECT batch_id,
+             co2_grams::float8         AS co2_grams,
+             energy_wh::float8         AS energy_wh,
+             duration_ms::float8       AS duration_ms,
+             timed_job_count,
+             transfer_source,
+             transfer_source_count,
+             cpu_co2_grams::float8     AS cpu_co2_grams,
+             gpu_co2_grams::float8     AS gpu_co2_grams,
+             ingress_co2_grams::float8 AS ingress_co2_grams,
+             egress_co2_grams::float8  AS egress_co2_grams,
+             cpu_wh::float8            AS cpu_wh,
+             gpu_wh::float8            AS gpu_wh,
+             ingress_wh::float8        AS ingress_wh,
+             egress_wh::float8         AS egress_wh
+      FROM "batch_energy"
+      WHERE batch_id IN (${Prisma.join(batchIds)})
+    `);
+
+    for (const row of rows) {
+      // Nothing ran yet → null, not 0; the console renders them differently.
+      const hasRun = Number(row.timed_job_count) > 0;
+
+      if (!hasRun) continue;
+
+      out.set(row.batch_id, {
+        co2Grams: round4(row.co2_grams),
+        energyWh: round4(row.energy_wh),
+        totalDurationMs: Math.round(Number(row.duration_ms)),
+        co2GramsByConcern: {
+          cpu: round4(row.cpu_co2_grams),
+          gpu: round4(row.gpu_co2_grams),
+          ingress: round4(row.ingress_co2_grams),
+          egress: round4(row.egress_co2_grams),
+        },
+        energyWhByConcern: {
+          cpu: round4(row.cpu_wh),
+          gpu: round4(row.gpu_wh),
+          ingress: round4(row.ingress_wh),
+          egress: round4(row.egress_wh),
+        },
+        transferSource: row.transfer_source,
+        transferSourceMixed: Number(row.transfer_source_count) > 1,
       });
     }
+
     return out;
   }
 
-  async computeBatchMetrics(batchId: number): Promise<{
-    co2Grams: number | null;
-    totalDurationMs: number | null;
-  }> {
-    const jobs = await this.prisma.job.findMany({
-      where: { batchId },
-      include: {
-        host: { include: { dataCenter: true } },
-      },
-    });
-
-    if (jobs.length === 0) {
-      return { co2Grams: null, totalDurationMs: null };
-    }
-
-    let co2Sum = 0;
-    let durationSum = 0;
-    let anyMetric = false;
-
-    for (const job of jobs) {
-      const start = job.startedAt?.getTime();
-      const end = job.endedAt?.getTime();
-      if (start && end && end > start) {
-        const ms = end - start;
-        durationSum += ms;
-        anyMetric = true;
-        const dc = job.host?.dataCenter;
-        if (job.avgPower && dc) {
-          // co2 (g) = avgPower(W) * hours * pue * emissionFactor(gCO2/kWh) / 1000
-          const hours = ms / 3_600_000;
-          co2Sum += (job.avgPower * hours * dc.pue * dc.emissionFactor) / 1000;
-        }
-      }
-    }
-
-    return {
-      co2Grams: anyMetric ? Number(co2Sum.toFixed(4)) : null,
-      totalDurationMs: anyMetric ? durationSum : null,
-    };
+  async computeBatchMetrics(batchId: number): Promise<BatchEnergyMetrics> {
+    const metrics = await this.computeBatchMetricsMany([batchId]);
+    return metrics.get(batchId) ?? EMPTY_BATCH_METRICS;
   }
 
   // -- Internal creators --

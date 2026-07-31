@@ -5,11 +5,13 @@ import { buildEocpReport } from './libs/builders/eocp';
 import { buildPlanReport } from './libs/builders/plan';
 import { openInBrowser } from './libs/browser';
 import { loadCoverage } from './libs/data/load-coverage';
+import { validateTags } from './libs/data/validate-tags';
 import { renderEocpConsole } from './libs/render/eocp-console';
 import { renderEocpHtml } from './libs/render/eocp-html';
 import { renderEocpJson } from './libs/render/eocp-json';
 import { renderEocpMd } from './libs/render/eocp-md';
 import { renderPlanConsole } from './libs/render/plan-console';
+import { renderPlanEvidenceMd } from './libs/render/plan-evidence-md';
 import { renderPlanHtml } from './libs/render/plan-html';
 import { renderPlanMd } from './libs/render/plan-md';
 
@@ -22,6 +24,13 @@ const consoleMode = argv.has('--console');
 const noOpen = argv.has('--no-open');
 
 const { tags, results } = loadCoverage(TESTS_DIR, JEST_RESULTS, CONFIG.paths.e2eDir);
+
+const tagErrors = validateTags(tags);
+if (tagErrors.length > 0) {
+  console.error('Requirement mapping is inconsistent — refusing to emit a report:');
+  for (const err of tagErrors) console.error(`  - ${err}`);
+  process.exit(1);
+}
 const eocpReport = buildEocpReport(tags);
 const planReport = buildPlanReport(tags, results);
 
@@ -41,6 +50,7 @@ const artifacts: Array<[string, string]> = [
   [planHtmlPath, renderPlanHtml(planReport)],
   [join(COVERAGE_DIR, 'plan-coverage.json'), JSON.stringify(planReport, null, 2) + '\n'],
   [join(COVERAGE_DIR, 'plan-coverage.md'), renderPlanMd(planReport)],
+  [join(COVERAGE_DIR, 'plan-evidence.md'), renderPlanEvidenceMd(planReport)],
   [join(COVERAGE_DIR, 'requirements.html'), renderEocpHtml(eocpReport, eocpJson)],
   [join(CONFIG.paths.e2eDir, 'TRACEABILITY.md'), renderEocpMd(eocpReport)],
 ];

@@ -5,7 +5,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { deleteHost, registerPayload, uniqueHostname, workerHeader } from '../t03/_shared';
 
 // @plan T06.13 — Heartbeat scalability under large node population
-// @covers EOCP-E6-11
+// @covers EOCP-E6-05
 //
 // Description: This test verifies heartbeat handling scalability with a large number of nodes.
 // Prerequisites: A large number of nodes can be simulated.
@@ -35,7 +35,7 @@ describe('T06.13 — Heartbeat scalability under large node population', () => {
   });
 
   // @plan T06.13
-  // @covers EOCP-E6-11
+  // @covers EOCP-E6-05
   it('Step 1 – 10 nodes register concurrently without error', async () => {
     log.step('Step 1 — POST /host/register x10 (concurrent)');
     const results = await Promise.all(
@@ -56,7 +56,7 @@ describe('T06.13 — Heartbeat scalability under large node population', () => {
   });
 
   // @plan T06.13
-  // @covers EOCP-E6-11
+  // @covers EOCP-E6-05
   it('Step 2 – all 10 nodes send heartbeats concurrently without error', async () => {
     log.step('Step 2 — POST /host/:id/heartbeat x10 (concurrent)');
     const results = await Promise.all(
@@ -75,7 +75,7 @@ describe('T06.13 — Heartbeat scalability under large node population', () => {
   });
 
   // @plan T06.13
-  // @covers EOCP-E6-11
+  // @covers EOCP-E6-05
   it('Step 3 – scheduler heartbeat still responds after node heartbeat burst (no overload)', async () => {
     log.step('Step 3 — POST /scheduler/heartbeat');
     const res = await request(API)

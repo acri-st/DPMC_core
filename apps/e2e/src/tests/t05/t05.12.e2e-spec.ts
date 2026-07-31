@@ -50,7 +50,7 @@ describe('T05.12 — Exclusion of hard-coded dependency logic', () => {
     log.action('GET chain to resolve IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.12-step-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.12-step-B');
 
@@ -82,7 +82,7 @@ describe('T05.12 — Exclusion of hard-coded dependency logic', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const edge = edges.find((e: { id: string }) => e.id === edgeId);
     log.ok(`edge found: ${!!edge}, dependencyMode: ${edge?.dependencyMode}`);
     expect(edges.length).toBeGreaterThan(0);
@@ -122,7 +122,7 @@ describe('T05.12 — Exclusion of hard-coded dependency logic', () => {
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     log.http('GET', `/production-chain/${chainId}`, chainRes.status);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.12-step-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.12-step-B');
     expect(pcA).toBeDefined();

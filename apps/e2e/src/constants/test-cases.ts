@@ -1,4 +1,4 @@
-// Auto-extracted from DAMPS.ACR.PLN.012 - EOCP Test Plan (test-plan.docx).
+// Auto-extracted from DAMPS.ACR.PLN.012 - i0r3 - EOCP Test Plan.
 // Each case has a docx-derived id (TXX.Y) plus mappings to EOCP-Ex-yy requirements
 // and an optional blocker indicating why the case is not yet e2e-implementable.
 // See ANOMALIES.md for the list of normalisations applied during extraction.
@@ -18,6 +18,13 @@ export interface TestCase {
   steps: TestStep[];
   covers: string[];
   blocker?: string;
+  /**
+   * Excluded from the delivery by decision, with its reason. A descoped case
+   * is not an implementation gap and is left out of the ratio, but it is
+   * always listed — "we chose not to build this" must stay distinguishable
+   * from "we have not written it yet".
+   */
+  descoped?: string;
 }
 
 export const TEST_CASES: TestCase[] = [
@@ -48,7 +55,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Monitor communications`, expected: `No undocumented access is detected` },
       { n: 4, step: `Restore the real component`, expected: `System returns to nominal behavior` },
     ],
-    covers: ['EOCP-E1-01'],
+    covers: ['EOCP-E1-01', 'EOCP-E1-02'],
     blocker: `Architecture/design review — partially e2e-testable`,
   },
   {
@@ -163,7 +170,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Observe scheduler decision process`, expected: `No dispatch occurs without evaluation` },
       { n: 4, step: `Query job metadata`, expected: `Evaluated requirements are traceable` },
     ],
-    covers: ['EOCP-E3-01'],
+    covers: ['EOCP-E3-01', 'EOCP-E3-03'],
   },
   {
     id: 'T03.2',
@@ -260,7 +267,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Submit the task`, expected: `Job is rejected` },
       { n: 3, step: `Inspect error message`, expected: `Clear explanation is provided` },
     ],
-    covers: ['EOCP-E3-02'],
+    covers: ['EOCP-E3-01'],
     blocker: `Requires runner + host API (node self-registration)`,
   },
   {
@@ -316,7 +323,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Evaluate scheduler decision`, expected: `No node is selected` },
       { n: 3, step: `Observe system behavior`, expected: `Task remains pending or is rejected with clear message` },
     ],
-    covers: ['EOCP-E3-04'],
+    covers: ['EOCP-E3-02'],
     blocker: `Requires runner + host API (node self-registration)`,
   },
   {
@@ -330,7 +337,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe node assignment`, expected: `Tasks are distributed across nodes` },
       { n: 3, step: `Monitor usage`, expected: `Load is balanced` },
     ],
-    covers: ['EOCP-E3-06'],
+    covers: ['EOCP-E3-02', 'EOCP-E3-06'],
     blocker: `Requires runner + host API (node self-registration)`,
   },
   {
@@ -358,8 +365,8 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Validate task definition`, expected: `Validation fails` },
       { n: 3, step: `Inspect error message`, expected: `Conflict is clearly reported` },
     ],
-    covers: ['EOCP-E3-05', 'EOCP-E3-06'],
-    blocker: `Requires runner + host API (node self-registration)`,
+    covers: ['EOCP-E3-03'],
+    blocker: `No consistency validation exists: task parameters are accepted unvalidated`,
   },
   {
     id: 'T03.16',
@@ -372,17 +379,8 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Submit multiple tasks`, expected: `Scheduler evaluates pool` },
       { n: 3, step: `Observe performance`, expected: `Selection remains responsive without degradation` },
     ],
-    covers: ['EOCP-E3-01'],
+    covers: ['EOCP-E3-02'],
     blocker: `Requires runner + host API (node self-registration)`,
-  },
-  {
-    id: 'T4.1',
-    section: 'T4',
-    title: `This test validates the capability of the system to implement a production chain based on several processing chains.`,
-    description: `An input image is first resized, then modified into several pop-art images that are grouped together in a last step to form a Warhol-like image. Input data: One PNG image Parameters: N: number of modified images in horintal direction in the final output image M: number of modified images in vertical direction in the final output image Size: size of the modified images Output: A pop-art image composed on NxM resized images, modified versions of the input image.`,
-    prerequisites: `DPMC deployed in the test environment (DB, CTRL, NFS) Database is almost empty (contains only dummy records) One processing node is available The ImageMagick container is available The input image is stored on the NFS server`,
-    steps: [],
-    covers: ['EOCP-E4-01', 'EOCP-E4-03', 'EOCP-E4-04'],
   },
   {
     id: 'T04.1',
@@ -528,15 +526,6 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Inspect system logs`, expected: `Clear explanation is provided` },
     ],
     covers: ['EOCP-E4-05', 'EOCP-E4-06'],
-  },
-  {
-    id: 'T5.1',
-    section: 'T5',
-    title: `This test validates the capability of the system to execute processing chains in case of success or failure of the previous one.`,
-    description: ``,
-    prerequisites: `DPMC deployed in the test environment (DB, CTRL) Database is almost empty (contains only dummy records) One processing node is available The input image is stored on the NFS server`,
-    steps: [],
-    covers: ['EOCP-E5-01', 'EOCP-E5-04'],
   },
   {
     id: 'T05.1',
@@ -744,11 +733,12 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Monitor queue evolution`, expected: `Jobs are ordered correctly` },
       { n: 3, step: `Observe throughput`, expected: `No degradation beyond design limits` },
     ],
-    covers: ['EOCP-E6-03'],
+    covers: ['EOCP-E6-01', 'EOCP-E6-03'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
     id: 'T06.3',
+    descoped: `Multi-site production is not part of the delivered system`,
     section: 'T6',
     title: `Multisite job delegation`,
     description: `This test verifies that jobs can be delegated to remote sites based on resource availability.`,
@@ -758,7 +748,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Detect remote resource availability`, expected: `Remote site is selected` },
       { n: 3, step: `Observe job execution`, expected: `Job runs on the remote site` },
     ],
-    covers: ['EOCP-E6-04'],
+    covers: ['EOCP-E6-02'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -772,7 +762,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe dispatch order`, expected: `Highpriority jobs are favored` },
       { n: 3, step: `Verify dependency constraints`, expected: `Dependencies are enforced` },
     ],
-    covers: ['EOCP-E6-05'],
+    covers: ['EOCP-E6-03'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -786,7 +776,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Submit jobs with different priorities`, expected: `Priority queues are respected` },
       { n: 3, step: `Observe scheduling`, expected: `No crossqueue interference` },
     ],
-    covers: ['EOCP-E6-06'],
+    covers: ['EOCP-E6-04'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -801,7 +791,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Wait for heartbeat timeout`, expected: `Node is evicted` },
       { n: 4, step: `Observe impacted jobs`, expected: `Jobs are rescheduled` },
     ],
-    covers: ['EOCP-E6-07'],
+    covers: ['EOCP-E6-05'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -815,7 +805,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Monitor execution state`, expected: `State transitions are correct` },
       { n: 3, step: `Observe completion`, expected: `Final status is reported` },
     ],
-    covers: ['EOCP-E6-08'],
+    covers: ['EOCP-E6-06'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -829,11 +819,12 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Restart scheduler service`, expected: `Scheduler restarts cleanly` },
       { n: 3, step: `Observe job state`, expected: `Job state is recovered` },
     ],
-    covers: ['EOCP-E6-02'],
+    covers: ['EOCP-E6-07'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
     id: 'T06.9',
+    descoped: `Federated scheduling is not part of the delivered system`,
     section: 'T6',
     title: `Federated scheduling with master and satellite orchestrators`,
     description: `This test verifies coordination between a master scheduler and satellite orchestrators.`,
@@ -843,7 +834,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe delegation decision`, expected: `Satellite is selected` },
       { n: 3, step: `Observe execution`, expected: `Job completes successfully` },
     ],
-    covers: ['EOCP-E6-09'],
+    covers: ['EOCP-E6-08'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -857,7 +848,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Submit jobs`, expected: `New nodes are used` },
       { n: 3, step: `Remove nodes`, expected: `Scheduler adapts gracefully` },
     ],
-    covers: ['EOCP-E6-09'],
+    covers: ['EOCP-E6-10'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -871,8 +862,8 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe scheduler reaction`, expected: `Job is requeued` },
       { n: 3, step: `Observe reexecution`, expected: `Job runs on a healthy node` },
     ],
-    covers: ['EOCP-E6-10'],
-    blocker: `Requires runner / scheduler engine`,
+    covers: ['EOCP-E6-11'],
+    blocker: `No automatic requeue exists: a failed job is not rescheduled`,
   },
   {
     id: 'T06.12',
@@ -899,7 +890,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe heartbeat traffic`, expected: `No overload occurs` },
       { n: 3, step: `Monitor scheduler CPU`, expected: `Remains within limits` },
     ],
-    covers: ['EOCP-E6-11'],
+    covers: ['EOCP-E6-05'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -915,7 +906,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 4, step: `Inject a transient network interruption`, expected: `Communication errors are detected` },
       { n: 5, step: `Observe scheduling behavior`, expected: `Jobs are rescheduled or paused without corruption` },
     ],
-    covers: ['EOCP-E6-01'],
+    covers: ['EOCP-E6-11'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -931,7 +922,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 4, step: `Reconstruct job execution timeline`, expected: `Full scheduling history is traceable` },
       { n: 5, step: `Verify log completeness`, expected: `No critical event is missing` },
     ],
-    covers: ['EOCP-E6-09'],
+    covers: ['EOCP-E6-01'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -945,11 +936,12 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Measure queue latency`, expected: `Latency remains acceptable` },
       { n: 3, step: `Compare against baseline`, expected: `No regression detected` },
     ],
-    covers: ['EOCP-E6-10'],
+    covers: ['EOCP-E6-03'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
     id: 'T06.17',
+    descoped: `Multi-site production is not part of the delivered system`,
     section: 'T6',
     title: `Multisite isolation under network partition`,
     description: `This test verifies that a network partition between production sites does not corrupt scheduling decisions or job states, and that each site behaves safely in isolation.`,
@@ -960,7 +952,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Observe local scheduling behavior`, expected: `Local site continues safely` },
       { n: 4, step: `Restore network connectivity`, expected: `System resynchronizes cleanly` },
     ],
-    covers: ['EOCP-E6-08'],
+    covers: ['EOCP-E6-02', 'EOCP-E6-08'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -1002,7 +994,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Force abnormal container termination`, expected: `Termination is detected` },
       { n: 3, step: `Observe job state`, expected: `Job marked as failed and handled according to policy` },
     ],
-    covers: ['EOCP-E6-09'],
+    covers: ['EOCP-E6-06', 'EOCP-E6-11'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -1016,11 +1008,12 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Make database temporarily unavailable`, expected: `Scheduler enters degraded mode` },
       { n: 3, step: `Restore database connectivity`, expected: `Scheduler resumes normal operation` },
     ],
-    covers: ['EOCP-E6-11'],
+    covers: ['EOCP-E6-07'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
     id: 'T06.22',
+    descoped: `Federated scheduling is not part of the delivered system`,
     section: 'T6',
     title: `Failover between master and slave orchestrators`,
     description: `This test verifies that slave orchestrators can take over scheduling responsibilities after a master failure.`,
@@ -1031,7 +1024,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Observe slave behavior`, expected: `Slave takes over scheduling` },
       { n: 4, step: `Restart master`, expected: `System stabilizes` },
     ],
-    covers: ['EOCP-E6-07'],
+    covers: ['EOCP-E6-08'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -1061,7 +1054,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 4, step: `Maintain test over extended duration`, expected: `No state corruption or deadlock occurs` },
       { n: 5, step: `Stop fault injection and workload`, expected: `System returns to stable nominal state` },
     ],
-    covers: ['EOCP-E6-01'],
+    covers: ['EOCP-E6-11'],
     blocker: `Requires runner / scheduler engine`,
   },
   {
@@ -1184,7 +1177,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe job creation`, expected: `Jobs are created consistently` },
       { n: 3, step: `Verify system stability`, expected: `No conflicts occur` },
     ],
-    covers: ['EOCP-E7-06'],
+    covers: ['EOCP-E7-01'],
     blocker: `Scheduled triggering not implemented`,
   },
   {
@@ -1198,7 +1191,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Attempt manual trigger with unauthorized user`, expected: `Action is denied` },
       { n: 3, step: `Inspect security logs`, expected: `Access attempt is logged` },
     ],
-    covers: ['EOCP-E7-01'],
+    covers: ['EOCP-E7-02'],
   },
   {
     id: 'T07.11',
@@ -1211,7 +1204,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Exceed rate limit`, expected: `Requests are rejected` },
       { n: 3, step: `Inspect API response`, expected: `Proper error code is returned` },
     ],
-    covers: ['EOCP-E7-04'],
+    covers: ['EOCP-E7-03'],
     blocker: `Data-driven triggering not implemented`,
   },
   {
@@ -1279,7 +1272,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Modify an auxiliary file in a new version`, expected: `New version is distinguishable` },
       { n: 3, step: `Execute jobs with both versions`, expected: `Each job uses the correct bundle` },
     ],
-    covers: ['EOCP-E8-02'],
+    covers: ['EOCP-E8-03'],
   },
   {
     id: 'T08.4',
@@ -1293,7 +1286,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Execute new jobs`, expected: `Jobs use the previous version` },
       { n: 4, step: `Inspect past executions`, expected: `Historical jobs remain unchanged` },
     ],
-    covers: ['EOCP-E8-03'],
+    covers: ['EOCP-E8-01', 'EOCP-E8-03'],
   },
   {
     id: 'T08.5',
@@ -1306,7 +1299,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Inspect logs and metadata`, expected: `Processor version is identifiable` },
       { n: 3, step: `Correlate with processor registry`, expected: `Version details match registry` },
     ],
-    covers: ['EOCP-E8-01', 'EOCP-E8-02'],
+    covers: ['EOCP-E8-02'],
   },
   {
     id: 'T08.6',
@@ -1417,7 +1410,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Observe lowpriority job over time`, expected: `Effective priority increases` },
       { n: 4, step: `Observe execution`, expected: `Lowpriority job is eventually executed` },
     ],
-    covers: ['EOCP-E10-01'],
+    covers: ['EOCP-E10-03'],
     blocker: `Requires runner with priority engine`,
   },
   {
@@ -1432,7 +1425,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Define requestlevel priority`, expected: `Configuration is accepted` },
       { n: 4, step: `Execute jobs`, expected: `Scheduler applies correct priority resolution` },
     ],
-    covers: ['EOCP-E10-02'],
+    covers: ['EOCP-E10-01'],
     blocker: `Requires runner with priority engine`,
   },
   {
@@ -1446,7 +1439,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Observe scheduling behavior`, expected: `Higherweight project favored` },
       { n: 3, step: `Monitor execution over time`, expected: `Lowerweight project still progresses` },
     ],
-    covers: ['EOCP-E10-03'],
+    covers: ['EOCP-E10-02'],
     blocker: `Requires runner with priority engine`,
   },
   {
@@ -1475,8 +1468,8 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Observe scheduler decision`, expected: `Running jobs are preempted` },
       { n: 4, step: `Observe execution`, expected: `Critical job starts immediately` },
     ],
-    covers: ['EOCP-E10-01'],
-    blocker: `Requires runner with priority engine`,
+    covers: ['EOCP-E10-04'],
+    blocker: `Preemption of running jobs is not implemented`,
   },
   {
     id: 'T10.6',
@@ -1545,7 +1538,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Submit the job`, expected: `Job is rejected` },
       { n: 3, step: `Inspect error message`, expected: `Priority error is clearly reported` },
     ],
-    covers: ['EOCP-E10-02'],
+    covers: ['EOCP-E10-01'],
     blocker: `Requires runner with priority engine`,
   },
   {
@@ -1559,7 +1552,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Submit new jobs`, expected: `New weight is applied` },
       { n: 3, step: `Observe scheduling behavior`, expected: `Execution adapts dynamically` },
     ],
-    covers: ['EOCP-E10-02', 'EOCP-E10-03'],
+    covers: ['EOCP-E10-02'],
     blocker: `Requires runner with priority engine`,
   },
   {
@@ -1575,7 +1568,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 4, step: `Relaunch job`, expected: `Job executes normally` },
     ],
     covers: ['EOCP-E10-04'],
-    blocker: `Requires runner with priority engine`,
+    blocker: `Preemption of running jobs is not implemented`,
   },
   {
     id: 'T11.1',
@@ -1590,7 +1583,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 4, step: `Query production status via API`, expected: `Status is returned correctly` },
       { n: 5, step: `Retrieve execution summary via API`, expected: `Summary data is accessible` },
     ],
-    covers: ['EOCP-E11-01'],
+    covers: ['EOCP-E11-01', 'EOCP-E1-02'],
   },
   {
     id: 'T11.2',
@@ -1691,7 +1684,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Query with page and size parameters`, expected: `Correct subset is returned` },
       { n: 3, step: `Navigate pages`, expected: `No duplication or gap` },
     ],
-    covers: ['EOCP-E11-01'],
+    covers: ['EOCP-E11-07'],
   },
   {
     id: 'T11.9',
@@ -1704,7 +1697,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Combine filters`, expected: `Intersection is applied correctly` },
       { n: 3, step: `Use invalid filter`, expected: `Validation error is returned` },
     ],
-    covers: ['EOCP-E11-02'],
+    covers: ['EOCP-E11-07'],
   },
   {
     id: 'T11.10',
@@ -1717,7 +1710,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Call deprecated feature`, expected: `Warning or fallback is applied` },
       { n: 3, step: `Compare behaviors`, expected: `No breaking change observed` },
     ],
-    covers: ['EOCP-E11-03'],
+    covers: ['EOCP-E11-01'],
   },
   {
     id: 'T11.11',
@@ -1730,7 +1723,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Query job state`, expected: `State is unchanged` },
       { n: 3, step: `Inspect error message`, expected: `Clear explanation is provided` },
     ],
-    covers: ['EOCP-E11-04'],
+    covers: ['EOCP-E11-02'],
     blocker: `Resource reservation API not implemented`,
   },
   {
@@ -1744,7 +1737,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Query API during failure`, expected: `Consistent error response` },
       { n: 3, step: `Restore backend`, expected: `Normal responses resume` },
     ],
-    covers: ['EOCP-E11-05'],
+    covers: ['EOCP-E11-01'],
     blocker: `Catalogue API not implemented`,
   },
   {
@@ -1785,7 +1778,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Inspect response`, expected: `Validation error is returned` },
       { n: 3, step: `Verify server stability`, expected: `API remains operational` },
     ],
-    covers: ['EOCP-E11-01', 'EOCP-E11-07'],
+    covers: ['EOCP-E11-01'],
   },
   {
     id: 'T11.16',
@@ -1798,7 +1791,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Monitor response time`, expected: `Within acceptable limits` },
       { n: 3, step: `Observe error rate`, expected: `No abnormal error burst` },
     ],
-    covers: ['EOCP-E11-02'],
+    covers: ['EOCP-E11-01'],
   },
   {
     id: 'T12.1',
@@ -1824,7 +1817,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Use token to access API`, expected: `Request succeeds` },
       { n: 3, step: `Expire or revoke token`, expected: `Further access is denied` },
     ],
-    covers: ['EOCP-E12-02'],
+    covers: ['EOCP-E12-01'],
   },
   {
     id: 'T12.3',
@@ -1837,7 +1830,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Access same operation with unauthorized role`, expected: `Access is denied` },
       { n: 3, step: `Attempt privilege escalation`, expected: `Operation is blocked` },
     ],
-    covers: ['EOCP-E12-03'],
+    covers: ['EOCP-E12-02'],
     blocker: `HTTPS termination is an infra concern (TLS proxy)`,
   },
   {
@@ -1851,7 +1844,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Attempt administrative operation`, expected: `Access is denied` },
       { n: 3, step: `Authenticate as administrator`, expected: `Operation succeeds` },
     ],
-    covers: ['EOCP-E12-04'],
+    covers: ['EOCP-E12-02', 'EOCP-E1-04'],
     blocker: `Security event logging not implemented`,
   },
   {
@@ -1865,7 +1858,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Connect using secure protocol`, expected: `Connection is accepted` },
       { n: 3, step: `Inspect connection parameters`, expected: `Security settings are enforced` },
     ],
-    covers: ['EOCP-E12-05'],
+    covers: ['EOCP-E12-03'],
   },
   {
     id: 'T12.6',
@@ -1878,7 +1871,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Perform failed login attempt`, expected: `Failure is logged` },
       { n: 3, step: `Attempt unauthorized action`, expected: `Security event is logged` },
     ],
-    covers: ['EOCP-E12-01'],
+    covers: ['EOCP-E12-04'],
   },
   {
     id: 'T12.7',
@@ -1891,7 +1884,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Revoke user in IAM`, expected: `Access is denied` },
       { n: 3, step: `Restore IAM access`, expected: `Access is restored` },
     ],
-    covers: ['EOCP-E12-02'],
+    covers: ['EOCP-E12-05'],
   },
   {
     id: 'T12.8',
@@ -1904,7 +1897,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Correct the configuration`, expected: `Deployment succeeds` },
       { n: 3, step: `Verify running configuration`, expected: `Secure settings are active` },
     ],
-    covers: ['EOCP-E12-04'],
+    covers: ['EOCP-E12-03', 'EOCP-E1-04'],
     blocker: `Security event logging not implemented`,
   },
   {
@@ -1918,7 +1911,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Attempt API access`, expected: `Access is denied` },
       { n: 3, step: `Renew credentials`, expected: `Access is restored` },
     ],
-    covers: ['EOCP-E12-05'],
+    covers: ['EOCP-E12-01'],
   },
   {
     id: 'T12.10',
@@ -1972,7 +1965,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Attempt authentication`, expected: `Behavior follows fallback policy` },
       { n: 3, step: `Restore IAM`, expected: `Normal authentication resume` },
     ],
-    covers: ['EOCP-E12-01'],
+    covers: ['EOCP-E12-05'],
   },
   {
     id: 'T13.1',
@@ -1986,6 +1979,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 3, step: `Compare output products`, expected: `Outputs are functionally identical` },
     ],
     covers: ['EOCP-E13-01'],
+    blocker: `Apptainer runtime not available in the test environment`,
   },
   {
     id: 'T13.2',
@@ -2040,8 +2034,8 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Schedule job on Apptaineronly node`, expected: `Conversion is triggered` },
       { n: 3, step: `Observe execution`, expected: `Job runs using converted image` },
     ],
-    covers: ['EOCP-E13-02'],
-    blocker: `Requires runner / container execution layer`,
+    covers: ['EOCP-E13-01'],
+    blocker: `Apptainer image conversion toolchain is not implemented`,
   },
   {
     id: 'T13.6',
@@ -2054,11 +2048,12 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Attempt job execution`, expected: `Execution is blocked` },
       { n: 3, step: `Inspect error message`, expected: `Definition error is clearly reported` },
     ],
-    covers: ['EOCP-E13-03'],
+    covers: ['EOCP-E13-02'],
     blocker: `Requires runner / container execution layer`,
   },
   {
     id: 'T13.7',
+    descoped: `Container hardening is not part of the delivered system`,
     section: 'T13',
     title: `Prevention of privilege escalation inside containers`,
     description: `This test verifies that containerized tasks cannot gain elevated privileges on the host system.`,
@@ -2068,7 +2063,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Attempt privileged operation inside container`, expected: `Operation is denied` },
       { n: 3, step: `Inspect execution logs`, expected: `Security violation is logged` },
     ],
-    covers: ['EOCP-E13-01'],
+    covers: ['EOCP-E13-03'],
     blocker: `Requires runner / container execution layer`,
   },
   {
@@ -2238,7 +2233,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Collect resource metrics`, expected: `Metrics are collected per job` },
       { n: 3, step: `Inspect metric attribution`, expected: `No crosscontamination occurs` },
     ],
-    covers: ['EOCP-E15-03'],
+    covers: ['EOCP-E15-02'],
     blocker: `Environmental footprint metrics not implemented`,
   },
   {
@@ -2252,7 +2247,7 @@ export const TEST_CASES: TestCase[] = [
       { n: 2, step: `Trigger the export`, expected: `Export completes without failure` },
       { n: 3, step: `Measure export duration`, expected: `Performance remains acceptable` },
     ],
-    covers: ['EOCP-E15-01'],
+    covers: ['EOCP-E15-03'],
     blocker: `Environmental footprint metrics not implemented`,
   },
 ];

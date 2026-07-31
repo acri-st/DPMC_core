@@ -3,7 +3,7 @@ import { API } from '../../support/auth';
 import { asAdminSession } from '../../support/session';
 
 // @plan T10.11 — Rejection of invalid priority values
-// @covers EOCP-E10-02
+// @covers EOCP-E10-01
 //
 // Description: This test verifies that invalid or out-of-range priority values are rejected.
 // Prerequisites: Priority validation rules are enforced.
@@ -28,7 +28,7 @@ describe('T10.11 — Rejection of invalid priority values', () => {
   });
 
   // @plan T10.11
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 1 – task with a non-integer priority value is rejected (400)', async () => {
     const res = await request(API)
       .post('/task')
@@ -48,7 +48,7 @@ describe('T10.11 — Rejection of invalid priority values', () => {
   });
 
   // @plan T10.11
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 2 – PATCH /task/:id/priority with an invalid priorityClass is rejected', async () => {
     const createRes = await request(API)
       .post('/task')
@@ -77,7 +77,7 @@ describe('T10.11 — Rejection of invalid priority values', () => {
   });
 
   // @plan T10.11
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 3 – error response for invalid priority is structured (no stack trace)', async () => {
     const res = await request(API)
       .post('/task')

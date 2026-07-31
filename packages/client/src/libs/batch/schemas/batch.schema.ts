@@ -4,6 +4,10 @@ import {
   PriorityClassSchema,
   ProductionModeSchema,
 } from '../../_shared';
+import {
+  Co2ConcernSchema,
+  TransferSourceSchema,
+} from '../../metrics/schemas/co2.schema';
 
 export const BatchStatusSchema = z.enum([
   'Pending',
@@ -43,7 +47,12 @@ export const BatchSchema = z.object({
   processingChainId: IdSchema.nullish(),
   // Computed (carbon-aware): not stored, derived from jobs. Optional in API.
   co2Grams: z.number().nullable().optional(),
+  energyWh: z.number().nullable().optional(),
   totalDurationMs: z.number().nullable().optional(),
+  co2GramsByConcern: Co2ConcernSchema.nullable().optional(),
+  energyWhByConcern: Co2ConcernSchema.nullable().optional(),
+  transferSource: TransferSourceSchema.nullable().optional(),
+  transferSourceMixed: z.boolean().nullable().optional(),
 });
 
 export type BatchStatus = z.infer<typeof BatchStatusSchema>;

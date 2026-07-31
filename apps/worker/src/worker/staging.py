@@ -92,13 +92,19 @@ def _parse_s3_url(url: str) -> tuple[str, str]:
     return parsed.netloc, key
 
 
-def stage_in(s3, entries: list[StageInEntry], workdir: str) -> None:
-    """Stage every entry into ``workdir/<local_name>``.
+def stage_in(s3, entries: list[StageInEntry], workdir: str) -> int:
+    """Stage every entry into ``workdir/<local_name>``, returning total bytes.
 
     Content entries (``entry.content`` is set) are written directly as UTF-8
     text. URL entries are downloaded from S3.
+
+    The byte total is what DPMC bills as the job's `ingress` concern. It is
+    measured on the staged file rather than taken from the declaration,
+    because the declaration carries no size and the catalogue's recorded size
+    can drift from what is actually on the object store.
     """
     os.makedirs(workdir, exist_ok=True)
+    total_bytes = 0
     for entry in entries:
         dest = os.path.join(workdir, entry.local_name)
         os.makedirs(os.path.dirname(dest) or workdir, exist_ok=True)
@@ -110,6 +116,13 @@ def stage_in(s3, entries: list[StageInEntry], workdir: str) -> None:
             bucket, key = _parse_s3_url(entry.url)
             log.info("stage-in s3://%s/%s → %s", bucket, key, dest)
             s3.download_file(bucket, key, dest)
+        try:
+            total_bytes += os.path.getsize(dest)
+        except OSError:
+            # Never fail a job over a metric: a missing file here would have
+            # already broken the download above.
+            log.warning("could not size staged file %s", dest)
+    return total_bytes
 
 
 def stage_out(

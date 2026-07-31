@@ -3,10 +3,25 @@ import { S3Service } from '@/core/s3';
 import {
   DEFAULT_PAGE_SIZE,
   PaginatedResult,
+  buildOrderBy,
   buildSearchWhere,
   paginationSkipTake,
 } from '@/common/utils/pagination';
 import type { TaskListQuery } from './task.dto';
+
+// Columns the task list may be sorted by (real Task scalar fields only).
+const TASK_SORTABLE = [
+  'createdAt',
+  'scheduledStartTime',
+  'startedAt',
+  'completedAt',
+  'status',
+  'kind',
+  'priority',
+  'executionTag',
+  'updatedAt',
+  'id',
+] as const;
 import {
   BadRequestException,
   Injectable,
@@ -49,17 +64,19 @@ export class TaskService {
     const where = {
       projectId,
       deletedAt: null,
-      ...(query?.status ? { status: query.status } : {}),
-      ...(query?.kind ? { kind: query.kind } : {}),
+      ...(query?.status?.length ? { status: { in: query.status } } : {}),
+      ...(query?.kind?.length ? { kind: { in: query.kind } } : {}),
       ...(search ?? {}),
     };
+    // Default: newest-created first; id desc breaks ties for tasks created
+    // within the same second (e.g. a scripted batch). Overridable via
+    // ?sort=&order= against the TASK_SORTABLE allowlist.
+    const orderBy = buildOrderBy(TASK_SORTABLE, query?.sort, query?.order, [
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ]);
     const [records, total] = await Promise.all([
-      this.prisma.task.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { scheduledStartTime: 'desc' },
-      }),
+      this.prisma.task.findMany({ where, skip, take, orderBy }),
       this.prisma.task.count({ where }),
     ]);
     return { items: records.map(taskToDto), total };
@@ -561,6 +578,7 @@ export class TaskService {
         // datasetOut. Each instance gets its own executionTag.
         const buildInstance = async (
           instanceInputDatasetId: number | null,
+          auxDatasetId: number | null,
         ): Promise<void> => {
           const instanceTag = randomUUID();
           const batchIdByNodeKey = new Map<number, number>();
@@ -636,6 +654,19 @@ export class TaskService {
                   },
                 });
               }
+              // Propagate the shared aux products (e.g. DPMC_TST ADFs) to every
+              // downstream node: entry batches receive them via the input
+              // dataset, but children only inherit the parent's datasetOut, so
+              // a stage like L2 (which needs ADF4) would otherwise miss them.
+              if (auxDatasetId !== null) {
+                await tx.batchDatasetIn.create({
+                  data: {
+                    batchId: batch.id,
+                    datasetId: auxDatasetId,
+                    sequence: parentEdges.length,
+                  },
+                });
+              }
             }
           }
 
@@ -650,12 +681,36 @@ export class TaskService {
           });
         };
 
+        // Shared aux dataset (role=aux products such as DPMC_TST ADFs), attached
+        // to every non-entry batch by buildInstance so downstream stages can
+        // read them. Created once; safely referenced by all instances/batches.
+        let auxDatasetId: number | null = null;
+        if (auxInputs.length > 0) {
+          const auxDs = await tx.dataset.create({
+            data: {
+              name: `task:${task.id}:aux`,
+              products: {
+                create: auxInputs.map((a, i) => ({
+                  productId: a.productId,
+                  role: 'aux',
+                  sequence: i,
+                })),
+              },
+            },
+            select: { id: true },
+          });
+          auxDatasetId = auxDs.id;
+        }
+
         if (fanOut) {
           // One independent chain instance per role=input product.
           for (const mi of mainInputs) {
             const perProducts = [
               { productId: mi.productId, role: 'input' },
-              ...auxInputs.map((a) => ({ productId: a.productId, role: 'aux' })),
+              ...auxInputs.map((a) => ({
+                productId: a.productId,
+                role: 'aux',
+              })),
             ];
             const ds = await tx.dataset.create({
               data: {
@@ -670,7 +725,7 @@ export class TaskService {
               },
               select: { id: true },
             });
-            await buildInstance(ds.id);
+            await buildInstance(ds.id, auxDatasetId);
           }
         } else {
           // Legacy single instance: reuse Task.inputDatasetId if provided, else
@@ -692,7 +747,7 @@ export class TaskService {
             });
             taskInputDatasetId = created.id;
           }
-          await buildInstance(taskInputDatasetId);
+          await buildInstance(taskInputDatasetId, auxDatasetId);
         }
       },
       { timeout: 30_000 },
@@ -1092,7 +1147,7 @@ export class TaskService {
     await this.getById(id, projectId); // throws 404 if missing
     const batches = await this.prisma.batch.findMany({
       where: { taskId: id },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         jobs: {
           select: {

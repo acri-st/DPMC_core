@@ -7,7 +7,7 @@ import { CONFIG } from '../../constants/config';
 import { keycloak } from '../../setup/services/keycloak';
 
 // @plan T12.9 — Handling of expired credentials
-// @covers EOCP-E12-09
+// @covers EOCP-E12-01
 //
 // Description: This test verifies correct handling of expired or revoked credentials.
 //   Full token expiry requires waiting for TTL; we simulate it by inserting a session with
@@ -31,15 +31,15 @@ function encrypt(plaintext: string): Buffer {
   return Buffer.concat([iv, tag, enc]);
 }
 
-async function insertExpiredSession(userId: string): Promise<string> {
+async function insertExpiredSession(userId: number): Promise<number> {
   const c = new Client({ connectionString: CONFIG.database.url });
   await c.connect();
   try {
     const past = new Date(Date.now() - 60_000); // 1 minute in the past
-    const r = await c.query<{ id: string }>(
-      `INSERT INTO "session" (id, "userId", "accessToken", "refreshToken",
+    const r = await c.query<{ id: number }>(
+      `INSERT INTO "session" ("userId", "accessToken", "refreshToken",
          "accessTokenExpiresAt", "refreshTokenExpiresAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5) RETURNING id`,
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
       [
         userId,
         encrypt('expired-access-token'),
@@ -55,7 +55,7 @@ async function insertExpiredSession(userId: string): Promise<string> {
 }
 
 describe('T12.9 — Handling of expired credentials', () => {
-  let adminUserId: string;
+  let adminUserId: number;
 
   beforeAll(async () => {
     const { userId } = await asAdminSession();
@@ -63,7 +63,7 @@ describe('T12.9 — Handling of expired credentials', () => {
   });
 
   // @plan T12.9
-  // @covers EOCP-E12-09
+  // @covers EOCP-E12-01
   it('Step 1 – a session with past expiry timestamps is treated as expired', async () => {
     const expiredSessionId = await insertExpiredSession(adminUserId);
     const cookie = `${CONFIG.session.cookieName}=${expiredSessionId}`;
@@ -73,7 +73,7 @@ describe('T12.9 — Handling of expired credentials', () => {
   });
 
   // @plan T12.9
-  // @covers EOCP-E12-09
+  // @covers EOCP-E12-01
   it('Step 2 – API access with expired session is denied on all protected endpoints', async () => {
     const expiredSessionId = await insertExpiredSession(adminUserId);
     const cookie = `${CONFIG.session.cookieName}=${expiredSessionId}`;
@@ -87,7 +87,7 @@ describe('T12.9 — Handling of expired credentials', () => {
   });
 
   // @plan T12.9
-  // @covers EOCP-E12-09
+  // @covers EOCP-E12-01
   it('Step 3 – a fresh valid session restores access', async () => {
     const { cookie } = await asAdminSession();
     await request(API).get('/task').set('Cookie', cookie).expect(200);

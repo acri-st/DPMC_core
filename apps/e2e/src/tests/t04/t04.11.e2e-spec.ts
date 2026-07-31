@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSING_SCRIPT_ID } from './_shared';
 
 // @plan T04.11 — Negative conditions preventing chain execution
-// @covers EOCP-E4-05 EOCP-E4-06
+// @covers EOCP-E4-05, EOCP-E4-06
 //
 // Description: Verifies that tasks with negative execution parameters are accepted (API-level
 //   contract), a deleted chain reference is rejected, and error responses are structured.
@@ -59,7 +59,7 @@ describe('T04.11 — Negative conditions preventing chain execution', () => {
   });
 
   // @plan T04.11
-  // @covers EOCP-E4-05
+  // @covers EOCP-E4-05, EOCP-E4-06
   it('Step 1 – production chain with configuration indicating skip condition is accepted', async () => {
     log.step('Step 1 — POST /task (negative execution parameters)');
 
@@ -85,7 +85,7 @@ describe('T04.11 — Negative conditions preventing chain execution', () => {
   });
 
   // @plan T04.11
-  // @covers EOCP-E4-06
+  // @covers EOCP-E4-05, EOCP-E4-06
   it('Step 2 – attempting to create a task for a deleted production chain is rejected', async () => {
     log.step('Step 2 — create+delete temp chain, then POST /task referencing it');
 
@@ -123,21 +123,21 @@ describe('T04.11 — Negative conditions preventing chain execution', () => {
   });
 
   // @plan T04.11
-  // @covers EOCP-E4-05 EOCP-E4-06
+  // @covers EOCP-E4-05, EOCP-E4-06
   it('Step 3 – error response for invalid chain reference is structured (clear explanation)', async () => {
     log.step('Step 3 — POST /task (nil chain UUID, check error shape)');
 
     const payload = {
       projectId: PROJECT_ID,
       kind: 'Chain',
-      productionChainId: '00000000-0000-0000-0000-000000000000',
+      productionChainId: 0,
       priority: 0,
       productionMode: 'Nominal',
       priorityClass: 'NRT',
       scheduledStartTime: new Date().toISOString(),
       comment: 'T04.11 – non-existent chain',
     };
-    log.action('POST /task', { productionChainId: '00000000-0000-0000-0000-000000000000' });
+    log.action('POST /task', { productionChainId: 0 });
 
     const res = await request(API).post('/task').set('Cookie', cookie).send(payload);
     log.http('POST', '/task (nil chain)', res.status, res.body);

@@ -6,7 +6,7 @@ import {
   type JobStatusChangedPayload,
   type TaskStatusChangedPayload,
 } from '@/core/monitoring/monitoring.events';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Prisma,
@@ -19,6 +19,12 @@ import { posix as path } from 'path';
 import { TaskService } from '@/modules/task/task.service';
 
 import type { JobResultBody } from './worker.dto';
+import {
+  buildJobOrder,
+  parseSensingFromName,
+  type ResolvedInputFile,
+  type TaskTableConfig,
+} from './job-order';
 
 const TERMINAL_JOB_STATUSES = new Set([
   'Success',
@@ -52,7 +58,9 @@ interface StageOutEntry {
 interface DispatchPayload {
   jobId: number;
   image: string | null;
-  runtime: ContainerRuntime;
+  // The script's artifact type, never the host-only `Kubernetes` capability —
+  // a Kubernetes host serves these Docker (OCI) dispatches transparently.
+  runtime: Exclude<ContainerRuntime, 'Kubernetes'>;
   command: string[];
   env: Record<string, string>;
   mounts: DispatchMount[];
@@ -68,9 +76,103 @@ const INTERPRETERS: Partial<Record<ScriptType, string>> = {
 
 const SCRIPT_TARGET_DIR = '/app';
 const WORKDIR_TARGET = '/work';
+// Baked Warhol/dpmc_io scripts live at this in-image prefix (see
+// data/warhol/Dockerfile). They use the same `--output` + dpmc_io contract as
+// `/app` bind-mounted dev scripts, but need no host mounts — so they run on the
+// Kubernetes backend, where bind-mount sources have nowhere to come from.
+const BAKED_SCRIPT_DIR = '/dpmc/scripts';
+
+/**
+ * Three execution shapes, distinguished by where the executable lives:
+ * - `mounted`  — `/app/…`: dev bind-mount of `data/warhol/<exe>/<ver>` +
+ *   `_lib`; `--output` + dpmc_io self-fetch. Host mounts only work on Docker.
+ * - `baked`    — `/dpmc/scripts/…`: same dpmc_io contract, script + `_lib`
+ *   baked into the image; only the `/work` run dir is mounted. Runs anywhere.
+ * - `positional` — anything else (self-contained processor image): the worker
+ *   stages inputs to `/work/input` and the script takes `<input_dir>
+ *   <output_dir>` positionally.
+ */
+type ExecutableMode = 'mounted' | 'baked' | 'positional';
+function executableMode(scriptPath: string): ExecutableMode {
+  if (scriptPath.startsWith(SCRIPT_TARGET_DIR + '/')) return 'mounted';
+  if (scriptPath.startsWith(BAKED_SCRIPT_DIR + '/')) return 'baked';
+  return 'positional';
+}
+
+/** Static-volume request a chain node may declare in its configuration. */
+interface StaticVolumeRequest {
+  /** Name resolved against the DPMC_STATIC_VOLUMES `name=hostPath` map. */
+  name: string;
+  /** Container-side mount target. */
+  target: string;
+  readOnly?: boolean;
+}
+
+/** Parse the DPMC_STATIC_VOLUMES `name=path,name=path` config value. */
+export function parseStaticVolumes(raw: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const pair of raw.split(',')) {
+    const idx = pair.indexOf('=');
+    if (idx <= 0) continue;
+    map.set(pair.slice(0, idx).trim(), pair.slice(idx + 1).trim());
+  }
+  return map;
+}
+
+/** Quote a token for safe inclusion in a `sh -c` command line. */
+function shellQuote(token: string): string {
+  return /^[A-Za-z0-9@%+=:,./_-]+$/.test(token)
+    ? token
+    : `'${token.replaceAll("'", `'\\''`)}'`;
+}
+
+/**
+ * Join a multi-executable script version (e.g. an IPF task table whose pools
+ * are sequenced executables) into a single `sh -c` chain: each executable
+ * runs in `(stage, sequence)` order and `&&` stops the chain at the first
+ * non-zero exit. Starts with `cd /work` so executables writing relative
+ * paths land in the staged run directory.
+ *
+ * With `jobOrderPath`, every step receives the job order as its single
+ * positional argument (the IPF invocation contract). With `logFile`, all
+ * step output is captured there — it becomes the IPF_REPORT_GENERATOR's LOG
+ * input — then echoed to stdout so container logs stay useful, while the
+ * first failing step's exit code still fails the chain.
+ */
+export function buildExecutableChain(
+  executables: Array<{
+    scriptType: ScriptType;
+    path: string;
+    args: string | null;
+  }>,
+  opts: { jobOrderPath?: string; logFile?: string } = {},
+): string {
+  const steps = executables.map((exe) => {
+    const interpreter = INTERPRETERS[exe.scriptType];
+    const flags = exe.args ? exe.args.split(/\s+/).filter(Boolean) : [];
+    return [
+      ...(interpreter ? [interpreter] : []),
+      exe.path,
+      ...flags,
+      ...(opts.jobOrderPath ? [opts.jobOrderPath] : []),
+    ]
+      .map(shellQuote)
+      .join(' ');
+  });
+  if (opts.logFile) {
+    const log = shellQuote(opts.logFile);
+    return (
+      `cd ${WORKDIR_TARGET} && { ${steps.join(' && ')}; } >> ${log} 2>&1; ` +
+      `rc=$?; cat ${log}; exit $rc`
+    );
+  }
+  return [`cd ${WORKDIR_TARGET}`, ...steps].join(' && ');
+}
 
 @Injectable()
 export class WorkerService {
+  private readonly logger = new Logger(WorkerService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
@@ -288,15 +390,92 @@ export class WorkerService {
         batch?.processingChainId ?? null,
       );
 
-      // In-image scripts (DPMC_TST) keep the legacy stage-in flow: the worker
-      // downloads each DatasetIn Product into `/work/input/<name>` before the
-      // container starts. Mounted scripts (Warhol) fetch their own inputs
-      // from the API at runtime — no worker-side staging.
+      const nodeConfig = batch?.processingChainId
+        ? await tx.processingChain.findUnique({
+            where: { id: batch.processingChainId },
+            select: { configuration: true },
+          })
+        : null;
+      const nodeCfg = nodeConfig?.configuration as {
+        taskTable?: TaskTableConfig;
+        staticVolumes?: StaticVolumeRequest[];
+      } | null;
+      const taskTable = nodeCfg?.taskTable;
+
+      // Resolve the node's declared static volumes against the configured
+      // name → host-path map; unknown names are logged and skipped so a
+      // mis-configured environment fails loudly in the job, not silently.
+      const volumeMap = parseStaticVolumes(
+        this.config.get('DPMC_STATIC_VOLUMES') || '',
+      );
+      const extraMounts: DispatchMount[] = [];
+      for (const req of nodeCfg?.staticVolumes ?? []) {
+        const source = volumeMap.get(req.name);
+        if (!source) {
+          this.logger.warn(
+            `Job ${row.id}: static volume '${req.name}' is not configured in DPMC_STATIC_VOLUMES — mount skipped`,
+          );
+          continue;
+        }
+        extraMounts.push({
+          source,
+          target: req.target,
+          readOnly: req.readOnly ?? true,
+        });
+      }
+
+      // Stage-in shapes:
+      // - IPF task-table nodes: DB input Products are downloaded to
+      //   `/work/input/<name>` and a generated Ipf_Job_Order is staged as
+      //   inline content; every executable gets its path as positional arg.
+      // - positional self-contained processors: DatasetIn Products downloaded
+      //   to `/work/input` (no job order).
+      // - dpmc_io scripts (mounted `/app` or baked `/dpmc/scripts`): fetch
+      //   their own inputs from the API at runtime, no worker-side staging.
       const exe = psv.executables[0];
-      const isInImage = exe ? !exe.path.startsWith('/app/') : false;
-      const stageIn = isInImage
-        ? await this.resolveStageInDir(tx, row.batchId)
-        : [];
+      const mode = exe ? executableMode(exe.path) : 'positional';
+      let stageIn: StageInEntry[] = [];
+      let jobOrderPath: string | undefined;
+      if (taskTable) {
+        const inputs = await this.resolveTaskTableInputs(tx, row.batchId);
+        const filesByType = new Map<string, ResolvedInputFile[]>();
+        for (const input of inputs) {
+          // EE products come as .DBL/.HDR pairs ingested as sibling
+          // Products; both are staged, but the reference job orders list
+          // only the data file — processors derive the header path.
+          if (input.name.toUpperCase().endsWith('.HDR')) continue;
+          const files = filesByType.get(input.acronym) ?? [];
+          files.push({
+            path: `${WORKDIR_TARGET}/${input.localName}`,
+            ...(parseSensingFromName(input.name) ?? {}),
+          });
+          filesByType.set(input.acronym, files);
+        }
+        const jobOrder = buildJobOrder({
+          taskTable,
+          filesByType,
+          processingStation:
+            this.config.get('IPF_PROCESSING_STATION') || 'DPMC',
+          workdir: WORKDIR_TARGET,
+        });
+        if (jobOrder.missingMandatory.length > 0) {
+          this.logger.warn(
+            `Job ${row.id} (${taskTable.processorName}): no staged Product for mandatory inputs ${jobOrder.missingMandatory.join(', ')}`,
+          );
+        }
+        const jobOrderName = `JobOrder.${row.id}.xml`;
+        jobOrderPath = `${WORKDIR_TARGET}/${jobOrderName}`;
+        stageIn = [
+          ...inputs.map(({ url, localName, role }) => ({
+            url,
+            localName,
+            role,
+          })),
+          { content: jobOrder.xml, localName: jobOrderName },
+        ];
+      } else if (mode === 'positional') {
+        stageIn = await this.resolveStageInDir(tx, row.batchId);
+      }
 
       const { command, mounts } = this.buildExecution({
         batchId: row.batchId,
@@ -304,19 +483,25 @@ export class WorkerService {
         scriptVersion: psv.version,
         executables: psv.executables,
         stageOut,
+        jobOrderPath,
+        extraMounts,
       });
 
       return {
         jobId: row.id,
         image: resolvedImage,
-        runtime: psv.runtime,
+        // psv.runtime is the broad Prisma enum, but a ProcessingScriptVersion
+        // only ever declares an artifact type (Docker/Apptainer/None) — the
+        // host-only `Kubernetes` capability is never stored here.
+        runtime: psv.runtime as Exclude<ContainerRuntime, 'Kubernetes'>,
         command,
         env: {
-          // Mounted (Warhol) scripts import the shared `dpmc_io` lib bind-mounted
-          // at /dpmc_lib by buildExecution(). Guarantee it's on the import path
-          // here so scripts work on any base image, not only data/warhol/Dockerfile.
-          // In-image scripts don't mount /dpmc_lib — leave their PYTHONPATH alone.
-          ...(isInImage ? {} : { PYTHONPATH: '/dpmc_lib' }),
+          // dpmc_io scripts import the shared `dpmc_io` lib from /dpmc_lib —
+          // bind-mounted there by buildExecution() for `/app` dev scripts, or
+          // baked there in the image for `/dpmc/scripts` scripts. Pin it on the
+          // import path either way. Positional processors get their own image's
+          // PYTHONPATH left alone.
+          ...(mode === 'positional' ? {} : { PYTHONPATH: '/dpmc_lib' }),
           DPMC_JOB_ID: String(row.id),
           DPMC_BATCH_ID: String(row.batchId),
           DPMC_TASK_ID: String(row.taskId),
@@ -392,6 +577,78 @@ export class WorkerService {
   }
 
   /**
+   * Like {@link resolveStageInDir} but keyed for job-order generation: each
+   * staged Product carries its type acronym (to group inputs by File_Type)
+   * and its name (to parse the sensing interval).
+   */
+  private async resolveTaskTableInputs(
+    tx: Prisma.TransactionClient,
+    batchId: number,
+  ): Promise<
+    Array<{
+      url: string;
+      localName: string;
+      role: string | null;
+      acronym: string;
+      name: string;
+    }>
+  > {
+    const ins = await tx.batchDatasetIn.findMany({
+      where: { batchId },
+      orderBy: { sequence: 'asc' },
+      include: {
+        dataset: {
+          include: {
+            products: {
+              orderBy: { sequence: 'asc' },
+              include: {
+                product: {
+                  include: {
+                    productType: { select: { acronym: true } },
+                    mediaCatalogEntries: {
+                      select: {
+                        mediaCatalogEntry: { select: { path: true } },
+                      },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const out: Array<{
+      url: string;
+      localName: string;
+      role: string | null;
+      acronym: string;
+      name: string;
+    }> = [];
+    for (const { dataset } of ins) {
+      for (const { role, product } of dataset.products) {
+        const url = product.mediaCatalogEntries[0]?.mediaCatalogEntry.path;
+        if (!url) continue;
+        // Chain-produced Products are named `<batchId>-out-<file>` for
+        // uniqueness, but the staged copy must keep its Earth-Explorer file
+        // name — processors parse type/validity out of it. The S3 key ends
+        // with the original file name, so stage under its basename.
+        const fileName = url.split('/').pop() || product.name;
+        out.push({
+          url,
+          localName: `input/${fileName}`,
+          role,
+          acronym: product.productType.acronym,
+          name: fileName,
+        });
+      }
+    }
+    return out;
+  }
+
+  /**
    * Build the dispatch's stageOut array from ProcessingChain.outputs. Each
    * entry is keyed under `products/<batchId>/<basename>` so concurrent batches
    * cannot collide on a shared S3 prefix.
@@ -421,13 +678,15 @@ export class WorkerService {
   }
 
   /**
-   * Build the container command and bind mounts for a Warhol-style job.
-   *
-   * Convention: scripts mounted from `data/warhol/<exe.name>/<psv.version>/`
-   * into `/app`, the task's run directory mounted at `/work`. The API
-   * auto-appends `--output` from `ProcessingChain.outputs`; scripts fetch
-   * their own inputs from the API (DPMC_BATCH_ID + DPMC_API_URL env) and
-   * download Products directly from S3.
+   * Build the container command and mounts for a job. The shape depends on the
+   * executable's {@link executableMode}:
+   * - `mounted`/`baked` (Warhol dpmc_io): the API auto-appends `--output` from
+   *   `ProcessingChain.outputs`; the script fetches its own inputs from the API
+   *   (DPMC_BATCH_ID + DPMC_API_URL env) and downloads Products directly. The
+   *   `mounted` dev variant bind-mounts the script (`/app`) + `_lib`; the
+   *   `baked` variant ships them in the image, so only `/work` is mounted.
+   * - `positional` (self-contained processor): positional `<input_dir>
+   *   <output_dir>` args, with inputs staged in by the worker.
    */
   private buildExecution(args: {
     batchId: number;
@@ -440,6 +699,10 @@ export class WorkerService {
       args: string | null;
     }>;
     stageOut: StageOutEntry[];
+    /** Set for IPF task-table jobs — see the job-order branch below. */
+    jobOrderPath?: string;
+    /** Node-declared static volumes, already resolved to host paths. */
+    extraMounts?: DispatchMount[];
   }): {
     command: string[];
     mounts: DispatchMount[];
@@ -451,6 +714,47 @@ export class WorkerService {
     const exe = args.executables[0];
     if (!exe) return { command: [], mounts: [] };
 
+    const workdirSource = path.join(warholRoot, 'runs', String(args.batchId));
+
+    const extraMounts = args.extraMounts ?? [];
+
+    if (args.jobOrderPath) {
+      // IPF task-table job: run the sequenced executables against the staged
+      // job order, capturing all output into /work/LOG (the report
+      // generator's input). Binaries are baked into the image — only the
+      // /work run dir (plus any node-declared static volumes) is mounted.
+      return {
+        command: [
+          '/bin/sh',
+          '-c',
+          buildExecutableChain(args.executables, {
+            jobOrderPath: args.jobOrderPath,
+            logFile: `${WORKDIR_TARGET}/LOG`,
+          }),
+        ],
+        mounts: [
+          { source: workdirSource, target: WORKDIR_TARGET },
+          ...extraMounts,
+        ],
+      };
+    }
+
+    if (args.executables.length > 1) {
+      // Multi-executable script (IPF task-table pools mapped to sequenced
+      // executables): backends pass `command` verbatim as the container
+      // argv, so the sequential run is encoded as one `sh -c` chain. Only
+      // the /work run dir is mounted — multi-executable scripts are baked
+      // into the image, and the single-executable dpmc_io `--output` and
+      // mounted-mode dev bind-mount contracts don't apply.
+      return {
+        command: ['/bin/sh', '-c', buildExecutableChain(args.executables)],
+        mounts: [
+          { source: workdirSource, target: WORKDIR_TARGET },
+          ...extraMounts,
+        ],
+      };
+    }
+
     const interpreter = INTERPRETERS[exe.scriptType];
     const scriptFlags = exe.args ? exe.args.split(/\s+/).filter(Boolean) : [];
     const command = [
@@ -459,36 +763,46 @@ export class WorkerService {
       ...scriptFlags,
     ];
 
-    const workdirSource = path.join(warholRoot, 'runs', String(args.batchId));
-    const scriptSource = path.join(warholRoot, exe.name, args.scriptVersion);
-    const libSource = path.join(warholRoot, '_lib');
-    const isInImage = !exe.path.startsWith(SCRIPT_TARGET_DIR + '/');
+    const mode = executableMode(exe.path);
 
-    if (isInImage) {
-      // In-image scripts use positional args: <input_dir> <output_dir>.
+    if (mode === 'positional') {
+      // Self-contained processor: positional args <input_dir> <output_dir>.
       command.push(
         path.join(WORKDIR_TARGET, 'input'),
         path.join(WORKDIR_TARGET, 'out'),
       );
       return {
         command,
-        mounts: [{ source: workdirSource, target: WORKDIR_TARGET }],
+        mounts: [
+          { source: workdirSource, target: WORKDIR_TARGET },
+          ...extraMounts,
+        ],
       };
     }
 
+    // dpmc_io contract (mounted dev or baked image): the script self-fetches
+    // inputs and writes to the auto-appended `--output` path; the worker
+    // stages the result out afterwards.
     const out = args.stageOut[0];
     if (out) {
       command.push('--output', path.join(WORKDIR_TARGET, out.localName));
     }
 
-    return {
-      command,
-      mounts: [
+    const mounts: DispatchMount[] = [
+      { source: workdirSource, target: WORKDIR_TARGET },
+    ];
+    if (mode === 'mounted') {
+      // Dev-only bind mounts; baked images already contain the script + _lib.
+      const scriptSource = path.join(warholRoot, exe.name, args.scriptVersion);
+      const libSource = path.join(warholRoot, '_lib');
+      mounts.unshift(
         { source: scriptSource, target: SCRIPT_TARGET_DIR, readOnly: true },
         { source: libSource, target: '/dpmc_lib', readOnly: true },
-        { source: workdirSource, target: WORKDIR_TARGET },
-      ],
-    };
+      );
+    }
+    mounts.push(...extraMounts);
+
+    return { command, mounts };
   }
 
   async reportResult(
@@ -517,8 +831,11 @@ export class WorkerService {
       );
     }
 
-    const m = body.metrics ?? {};
     const now = new Date();
+
+    // No Prometheus read here: the job's last scrape hasn't happened yet.
+    // EnergyReconcilerService picks it up a minute later.
+    const m = { ...(body.metrics ?? {}) };
     let batchTransition: {
       status: BatchStatus;
       startedAt: Date | null;
@@ -542,9 +859,9 @@ export class WorkerService {
           avgPower: m.avgPower ?? null,
           dataVolume: m.dataVolume == null ? null : BigInt(m.dataVolume),
           metrics:
-            body.metrics === undefined
+            Object.keys(m).length === 0
               ? Prisma.JsonNull
-              : (body.metrics as Prisma.InputJsonValue),
+              : (m as Prisma.InputJsonValue),
         },
       });
       await tx.jobAllocation.update({
@@ -690,26 +1007,12 @@ export class WorkerService {
       TERMINAL_BATCH_STATUSES.has(b.status),
     );
 
-    // When a batch fails, cascade-cancel any batches that are still pending
-    // (they'll never be able to run since their upstream dependency failed).
-    if (!allTerminal && anyFailed) {
-      const nonTerminalIds = batches
-        .filter((b) => !TERMINAL_BATCH_STATUSES.has(b.status))
-        .map((b) => b.id);
-      await tx.job.updateMany({
-        where: {
-          batchId: { in: nonTerminalIds },
-          status: { notIn: ['Success', 'Failed', 'Skipped', 'Cancelled'] },
-        },
-        data: { status: 'Cancelled', endedAt: at },
-      });
-      await tx.batch.updateMany({
-        where: { id: { in: nonTerminalIds } },
-        data: { status: 'Cancelled', endedAt: at },
-      });
-    } else if (!allTerminal) {
-      return null;
-    }
+    // A failed batch does NOT doom the whole task: the dispatcher's
+    // dependency pass walks the DAG per edge (OnSuccess children of the
+    // failed branch get Skipped, OnCompletion merges still run) and its
+    // finalizer seals the resulting batches — so siblings of a failed
+    // branch must be left alone here, not cascade-cancelled.
+    if (!allTerminal) return null;
 
     // Only `Failed` flips the task to Error. A `Cancelled` batch means
     // we walked an OnFailure / unused DAG branch (its job got Skipped by
@@ -911,9 +1214,7 @@ export class WorkerService {
           create: {
             acronym,
             name: acronym,
-            ...(levelOverride
-              ? { processingLevel: levelOverride.level }
-              : {}),
+            ...(levelOverride ? { processingLevel: levelOverride.level } : {}),
           },
           select: { id: true },
         });
@@ -928,23 +1229,16 @@ export class WorkerService {
           : `${job.batch.id}-${o.localName.replace(/[/]/g, '-')}`;
         const url = `s3://${bucket}/${o.key}`;
 
-        const existing = await this.prisma.product.findFirst({
-          where: { name, version: null },
-          select: { id: true },
+        const product = await this.prisma.product.upsert({
+          where: { name_version: { name, version: '' } },
+          update: { parentBatchId: job.batch.id },
+          create: {
+            name,
+            productTypeId: productType.id,
+            parentBatchId: job.batch.id,
+            generatedAt: new Date(),
+          },
         });
-        const product = existing
-          ? await this.prisma.product.update({
-              where: { id: existing.id },
-              data: { parentBatchId: job.batch.id },
-            })
-          : await this.prisma.product.create({
-              data: {
-                name,
-                productTypeId: productType.id,
-                parentBatchId: job.batch.id,
-                generatedAt: new Date(),
-              },
-            });
 
         // Persist the S3 URL so downstream resolveStageIn can find it via
         // Product → ProductMediaCatalogEntry → MediaCatalogEntry.path.

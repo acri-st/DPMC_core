@@ -4,7 +4,7 @@ import { deleteHost, registerPayload, resolveDataCenterCode, uniqueHostname, wor
 import { asAdminSession } from '../../support/session';
 
 // @plan T13.6 — Detection and handling of invalid container image definitions
-// @covers EOCP-E13-03
+// @covers EOCP-E13-02
 //
 // Description: This test verifies that invalid or incomplete container image definitions are
 //   detected and rejected before execution.
@@ -14,7 +14,7 @@ import { asAdminSession } from '../../support/session';
 //   2. Attempt job execution → Execution is blocked
 //   3. Inspect error message → Definition error is clearly reported
 
-const NON_EXISTENT_ID = '00000000-0000-0000-0000-000000000000';
+const NON_EXISTENT_ID = 0;
 const hostname = uniqueHostname('t13-6-invalid-rt');
 
 describe('T13.6 — Detection and handling of invalid container image definitions', () => {
@@ -36,7 +36,7 @@ describe('T13.6 — Detection and handling of invalid container image definition
   });
 
   // @plan T13.6
-  // @covers EOCP-E13-03
+  // @covers EOCP-E13-02
   it('Step 1 – host registration with an invalid containerRuntime value is rejected', async () => {
     const res = await request(API)
       .post('/host/register')
@@ -47,7 +47,7 @@ describe('T13.6 — Detection and handling of invalid container image definition
   });
 
   // @plan T13.6
-  // @covers EOCP-E13-03
+  // @covers EOCP-E13-02
   it('Step 2 – task referencing a non-existent processorVersionId is rejected', async () => {
     const res = await request(API)
       .post('/task')
@@ -67,7 +67,7 @@ describe('T13.6 — Detection and handling of invalid container image definition
   });
 
   // @plan T13.6
-  // @covers EOCP-E13-03
+  // @covers EOCP-E13-02
   it('Step 3 – error response for invalid container definition is structured (no stack trace)', async () => {
     const res = await request(API)
       .post('/host/register')

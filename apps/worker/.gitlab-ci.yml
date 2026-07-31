@@ -1,0 +1,36 @@
+# Builds & pushes harbor.shared.acrist-services.com/dsy/damps/dpmc/worker
+# from this repo, independently of the dpmc superproject (which only records
+# the submodule pointer).
+include:
+  - remote: https://gitlab.shared.acrist-services.com/devops/ci-templates/-/raw/main/workflow_template.yaml
+
+stages:
+  - test
+  - docker
+
+lint:
+  stage: test
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+  script:
+    - uv sync --frozen
+    - uv run ruff check .
+
+test:
+  stage: test
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+  script:
+    - uv sync --frozen
+    - uv run pytest
+
+build-worker:
+  extends: .build
+  stage: docker
+  variables:
+    SOURCEPATH: ${CI_PROJECT_DIR}
+    HARBOR_IMAGE_PROJECT: "damps/dpmc"
+    DOCKERFILE: "Dockerfile"
+    SERVICE_NAME: worker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - when: manual
+      allow_failure: true

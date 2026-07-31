@@ -1,5 +1,5 @@
 // @plan T03.15 — Validation of resource requirement consistency
-// @covers EOCP-E3-05 EOCP-E3-06
+// @covers EOCP-E3-03
 // blocked: Requires runner + host API (node self-registration)
 //
 // Description: This test verifies that incoherent or contradictory task requirements are detected.
@@ -11,7 +11,7 @@
 
 describe('T03.15 — Validation of resource requirement consistency', () => {
   // @plan T03.15
-  // @covers EOCP-E3-05 EOCP-E3-06
+  // @covers EOCP-E3-03
   // blocked: Requires runner + host API (node self-registration)
   it.todo('T03.15 — Validation of resource requirement consistency');
 });

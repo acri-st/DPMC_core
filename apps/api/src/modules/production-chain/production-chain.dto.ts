@@ -3,8 +3,11 @@ import {
   CreateProductionChainResponse201Schema,
   DeleteProductionChainResponse204Schema,
   GetProductionChainResponse200Schema,
+  ImportAcsProductionChainBodySchema,
+  ImportAcsProductionChainResponse201Schema,
   ImportProductionChainBodySchema,
   ImportProductionChainResponse201Schema,
+  PreviewAcsProductionChainResponse200Schema,
   LinkProductTypeResponse200Schema,
   ListCompatibleProductsResponse200Schema,
   ListProductionChainResponse200Schema,
@@ -115,4 +118,21 @@ export const PreviewProductionChainResponseSchema =
   PreviewProductionChainResponse200Schema;
 export class PreviewProductionChainResponse extends createZodDto(
   PreviewProductionChainResponseSchema,
+) {}
+
+// POST /production-chain/import/acs[/preview] — old-ACS multi-file import
+export const ImportAcsProductionChainBodyValidationSchema =
+  ImportAcsProductionChainBodySchema;
+export class ImportAcsProductionChainBody extends createZodDto(
+  ImportAcsProductionChainBodyValidationSchema,
+) {}
+export const PreviewAcsProductionChainResponseSchema =
+  PreviewAcsProductionChainResponse200Schema;
+export class PreviewAcsProductionChainResponse extends createZodDto(
+  PreviewAcsProductionChainResponseSchema,
+) {}
+export const ImportAcsProductionChainResponseSchema =
+  ImportAcsProductionChainResponse201Schema;
+export class ImportAcsProductionChainResponse extends createZodDto(
+  ImportAcsProductionChainResponseSchema,
 ) {}

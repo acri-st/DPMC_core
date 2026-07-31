@@ -5,7 +5,7 @@ type PrismaProduct = {
   productTypeId: number;
   parentBatchId: number | null;
   name: string;
-  version: string | null;
+  version: string;
   isDefault: boolean;
   generatedAt: Date | null;
   parameters: unknown;

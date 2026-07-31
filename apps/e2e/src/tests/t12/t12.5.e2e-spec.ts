@@ -3,7 +3,7 @@ import { CONFIG } from '../../constants/config';
 import { API } from '../../support/auth';
 
 // @plan T12.5 — Secure communication enforcement
-// @covers EOCP-E12-05
+// @covers EOCP-E12-03
 //
 // Description: This test verifies that all system communications use secure protocols.
 //   In the e2e environment the API runs over HTTP (TLS is terminated by a reverse proxy in
@@ -18,7 +18,7 @@ import { API } from '../../support/auth';
 
 describe('T12.5 — Secure communication enforcement', () => {
   // @plan T12.5
-  // @covers EOCP-E12-05
+  // @covers EOCP-E12-03
   it('Step 1 – API does not expose plaintext credentials or secrets in response bodies', async () => {
     const res = await request(API).get('/status').expect(200);
     const body = JSON.stringify(res.body);
@@ -28,7 +28,7 @@ describe('T12.5 — Secure communication enforcement', () => {
   });
 
   // @plan T12.5
-  // @covers EOCP-E12-05
+  // @covers EOCP-E12-03
   it('Step 2 – API is reachable and responds correctly over the configured protocol', async () => {
     // The API_URL is used as the base — confirms the stack accepts connections on its configured URL
     expect(CONFIG.api.url).toMatch(/^https?:\/\//);
@@ -37,7 +37,7 @@ describe('T12.5 — Secure communication enforcement', () => {
   });
 
   // @plan T12.5
-  // @covers EOCP-E12-05
+  // @covers EOCP-E12-03
   it('Step 3 – auth/login redirect does not expose sensitive state in visible response body', async () => {
     const res = await request(API).get('/auth/login').redirects(0);
     // Must redirect to Keycloak, not return a 200 with credentials embedded

@@ -57,9 +57,8 @@ describe('T07.3 — Triggering jobs via REST API', () => {
     log.http('POST', '/task', res.status, res.status === 201 ? { id: res.body.data.id, kind: res.body.data.kind } : res.body);
     expect(res.status).toBe(201);
     createdTaskIds.push(res.body.data.id);
-    expect(res.body.data.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-    );
+    expect(typeof res.body.data.id).toBe('number');
+    expect(res.body.data.id).toBeGreaterThan(0);
     expect(res.body.data.kind).toBe('Standalone');
     log.ok(`task created: ${res.body.data.id}`);
   });

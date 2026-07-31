@@ -25,7 +25,7 @@ def _client() -> ApiClient:
 def _human_size(n: int | None) -> str:
     if n is None:
         return ""
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
     val = float(n)
     for unit in units:
         if val < 1024 or unit == units[-1]:

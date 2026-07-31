@@ -41,26 +41,30 @@ describe('T15.5 — Crossvalidation of footprint metrics with system counters', 
     const res = await request(API).get('/metrics');
     log.http('GET', '/metrics', res.status, { length: res.text?.length });
     expect(res.status).toBe(200);
-    expect(res.text).toMatch(/nodejs_heap_size_used_bytes|process_resident_memory_bytes/);
+    expect(res.text).toMatch(
+      /nodejs_heap_size_used_bytes|process_resident_memory_bytes/,
+    );
     log.ok('memory metric present for cross-validation');
   });
 
   // @plan T15.5
   // @covers EOCP-E15-02
-  it('Step 3 – dpmc_co2_grams_total gauge is present and parseable as a numeric value', async () => {
-    log.step('Step 3 — GET /metrics (dpmc_co2_grams_total parseable)');
+  it('Step 3 – dpmc_co2_grams gauge is present and parseable as a numeric value', async () => {
+    log.step('Step 3 — GET /metrics (dpmc_co2_grams parseable)');
 
     log.action('GET /metrics');
     const res = await request(API).get('/metrics');
     log.http('GET', '/metrics', res.status, { length: res.text?.length });
     expect(res.status).toBe(200);
 
-    expect(res.text).toContain('dpmc_co2_grams_total');
+    expect(res.text).toContain('dpmc_co2_grams');
 
-    // Find all dpmc_co2_grams_total lines that carry a numeric value
+    // Find all dpmc_co2_grams lines that carry a numeric value
     const valueLines = res.text
       .split('\n')
-      .filter((line) => line.startsWith('dpmc_co2_grams_total') && !line.startsWith('#'));
+      .filter(
+        (line) => line.startsWith('dpmc_co2_grams') && !line.startsWith('#'),
+      );
 
     if (valueLines.length === 0) {
       log.ok('no project data yet — gauge defined but no label values emitted');
@@ -73,6 +77,8 @@ describe('T15.5 — Crossvalidation of footprint metrics with system counters', 
       expect(isNaN(value)).toBe(false);
       expect(value).toBeGreaterThanOrEqual(0);
     }
-    log.ok(`${valueLines.length} dpmc_co2_grams_total value(s) are valid non-negative numbers`);
+    log.ok(
+      `${valueLines.length} dpmc_co2_grams value(s) are valid non-negative numbers`,
+    );
   });
 });

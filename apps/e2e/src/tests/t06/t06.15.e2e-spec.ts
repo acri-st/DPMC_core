@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T06.15 — Observability and traceability during scheduling failures
-// @covers EOCP-E6-09
+// @covers EOCP-E6-01
 //
 // Description: This test verifies that, during and after scheduling failures, the system provides
 //   sufficient observability to reconstruct scheduling decisions and execution history.
@@ -42,7 +42,7 @@ describe('T06.15 — Observability and traceability during scheduling failures',
   });
 
   // @plan T06.15
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-01
   it('Step 1 – task is created and gets a unique ID (correlation anchor for tracing)', async () => {
     log.step('Step 1 — POST /task (observability test)');
     const res = await request(API)
@@ -67,7 +67,7 @@ describe('T06.15 — Observability and traceability during scheduling failures',
   });
 
   // @plan T06.15
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-01
   it('Step 3 – scheduler status endpoint provides observability data', async () => {
     log.step('Step 3 — GET /scheduler/status');
     const res = await request(API)
@@ -79,7 +79,7 @@ describe('T06.15 — Observability and traceability during scheduling failures',
   });
 
   // @plan T06.15
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-01
   it('Step 4 – task history endpoint provides execution timeline', async () => {
     log.step(`Step 4 — GET /task/${taskId}/history`);
     const res = await request(API)
@@ -92,7 +92,7 @@ describe('T06.15 — Observability and traceability during scheduling failures',
   });
 
   // @plan T06.15
-  // @covers EOCP-E6-09
+  // @covers EOCP-E6-01
   it('Step 5 – task status-summary provides aggregate scheduling state (completeness check)', async () => {
     log.step('Step 5 — GET /task/status-summary');
     const res = await request(API)

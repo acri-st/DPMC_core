@@ -6,7 +6,9 @@ import { AlertCircleIcon, CalendarClockIcon, PlusIcon } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { DataTable } from '@/shared/components/data-table';
-import { PageHeader } from '@/shared/components/page-header';
+import { ListHeader } from '@/shared/components/list-header';
+import { PagePagination } from '@/shared/components/page-pagination';
+import { useListParams } from '@/shared/hooks/use-list-params';
 import { useScheduleList } from '@/features/schedule/hooks/use-schedule-list';
 import {
   useDeleteSchedule,
@@ -20,7 +22,14 @@ import { buildScheduleColumns } from '@/features/schedule/components/schedule-co
 
 export function ScheduleListPage() {
   const navigate = useNavigate();
-  const list = useScheduleList();
+  const lp = useListParams({ filterKeys: [], defaultPageSize: 25 });
+  const list = useScheduleList({
+    page: lp.page,
+    pageSize: lp.pageSize,
+    q: lp.trimmedQ || undefined,
+    sort: lp.sort,
+    order: lp.order,
+  });
   const update = useUpdateSchedule();
   const del = useDeleteSchedule();
 
@@ -55,24 +64,31 @@ export function ScheduleListPage() {
     [chainNames, processorNames, update, del, navigate],
   );
 
-  const items = list.data ?? [];
+  const items = list.data?.items ?? [];
+  const total = list.data?.total ?? 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
+    <div className="flex flex-1 flex-col gap-2">
+      <ListHeader
         icon={CalendarClockIcon}
         title="Schedules"
         subtitle="Recurring tasks created automatically from a cron expression."
-        count={list.data ? items.length : undefined}
+        count={list.data ? total : undefined}
         noun="schedule"
-      >
-        <Button size="sm" asChild>
-          <Link to="/tasks/new">
-            <PlusIcon />
-            New schedule
-          </Link>
-        </Button>
-      </PageHeader>
+        search={{
+          value: lp.q,
+          onChange: lp.setQ,
+          placeholder: 'Search by name…',
+        }}
+        actions={
+          <Button size="sm" asChild>
+            <Link to="/tasks/new">
+              <PlusIcon />
+              New schedule
+            </Link>
+          </Button>
+        }
+      />
 
       {list.isError ? (
         <div className="text-destructive flex items-start gap-2 rounded-md border p-4 text-sm">
@@ -87,10 +103,24 @@ export function ScheduleListPage() {
         <DataTable
           data={items}
           columns={columns}
+          sorting={lp.sorting}
+          onSortingChange={lp.setSorting}
           onRowClick={(row) =>
             navigate({ to: '/schedules/$id', params: { id: String(row.id) } })
           }
           emptyMessage="No schedules yet."
+        />
+      ) : null}
+
+      {list.data ? (
+        <PagePagination
+          page={lp.page}
+          pageSize={lp.pageSize}
+          total={total}
+          onPageChange={lp.setPage}
+          onPageSizeChange={lp.setPageSize}
+          noun="schedule"
+          isFetching={list.isFetching}
         />
       ) : null}
     </div>

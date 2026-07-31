@@ -53,7 +53,7 @@ describe('T05.6 — Runtime enforcement of dependency rules', () => {
     log.action('GET chain to resolve IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.6-upstream')?.id;
     stepBId = pcs.find((pc: { name: string }) => pc.name === 'T05.6-downstream')?.id;
     expect(stepAId).toBeDefined();
@@ -118,7 +118,7 @@ describe('T05.6 — Runtime enforcement of dependency rules', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const version = res.body.data.latestVersion;
+    const version = res.body.data;
     expect(version).toBeDefined();
     const edges = version?.edges ?? [];
     expect(edges).toHaveLength(1);
@@ -148,7 +148,7 @@ describe('T05.6 — Runtime enforcement of dependency rules', () => {
     // Re-fetch latest edge id after potential version bump from beforeAll edge POST
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const edges = chainRes.body.data.latestVersion?.edges ?? [];
+    const edges = chainRes.body.data.edges ?? [];
     const currentEdge = edges[0];
     expect(currentEdge).toBeDefined();
     const currentEdgeId: string = currentEdge.id;

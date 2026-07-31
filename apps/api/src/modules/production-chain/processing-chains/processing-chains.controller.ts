@@ -1,10 +1,10 @@
 import {
   CreatedResponse,
   NoContentResponse,
-  Public,
   Response,
   SuccessResponse,
 } from '@/common';
+import { ProjectScoped } from '@/common/decorators/project-scoped.decorator';
 import { HttpCode, PATHS } from '@dpmc/client';
 import {
   Body,
@@ -32,7 +32,7 @@ export class ProcessingChainsController {
     private readonly processingChainsService: ProcessingChainsService,
   ) {}
 
-  @Public()
+  @ProjectScoped('admin', 'operator')
   @CreatedResponse(AddProcessingChainResponseSchema)
   @HttpCodeDec(HttpCode.CREATED)
   @Post(PATHS.PRODUCTION_CHAIN.ADD_PROCESSING_CHAIN)
@@ -44,7 +44,7 @@ export class ProcessingChainsController {
     return Response.success(response, { status: HttpCode.CREATED });
   }
 
-  @Public()
+  @ProjectScoped('admin', 'operator')
   @SuccessResponse(UpdateProcessingChainResponseSchema)
   @Patch(PATHS.PRODUCTION_CHAIN.UPDATE_PROCESSING_CHAIN)
   async update(
@@ -60,7 +60,7 @@ export class ProcessingChainsController {
     return Response.success(response);
   }
 
-  @Public()
+  @ProjectScoped('admin', 'operator')
   @NoContentResponse()
   @HttpCodeDec(HttpCode.NO_CONTENT)
   @Delete(PATHS.PRODUCTION_CHAIN.DELETE_PROCESSING_CHAIN)

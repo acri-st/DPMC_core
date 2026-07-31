@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSING_SCRIPT_ID } from './_shared';
 
 // @plan T04.1 — Execution of linear processing chains
-// @covers EOCP-E4-01 EOCP-E4-03 EOCP-E4-04
+// @covers EOCP-E4-01
 //
 // Description: Verifies that simple linear production chains are accepted, tasks referencing them
 //   are created, and the chain structure is retrievable.
@@ -128,7 +128,7 @@ describe('T04.1 — Execution of linear processing chains', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     log.ok(`processingChains count: ${pcs.length}`);
     expect(pcs.length).toBeGreaterThanOrEqual(2);
     const names = pcs.map((pc: { name: string }) => pc.name);

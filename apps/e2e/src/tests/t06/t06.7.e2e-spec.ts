@@ -7,7 +7,7 @@ import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 import { deleteHost, registerPayload, uniqueHostname, workerHeader } from '../t03/_shared';
 
 // @plan T06.7 — Execution engine interface and job monitoring
-// @covers EOCP-E6-08
+// @covers EOCP-E6-06
 //
 // Description: This test verifies that the execution engine interface correctly launches jobs and
 //   monitors their execution status.
@@ -61,7 +61,7 @@ describe('T06.7 — Execution engine interface and job monitoring', () => {
   });
 
   // @plan T06.7
-  // @covers EOCP-E6-08
+  // @covers EOCP-E6-06
   it('Step 1 – task is created and submitted to the execution queue', async () => {
     log.step('Step 1 — POST /task (standalone)');
     const res = await request(API)
@@ -86,7 +86,7 @@ describe('T06.7 — Execution engine interface and job monitoring', () => {
   });
 
   // @plan T06.7
-  // @covers EOCP-E6-08
+  // @covers EOCP-E6-06
   it('Step 2 – task state is readable via GET /task/:id (execution monitored)', async () => {
     log.step(`Step 2 — GET /task/${taskId}`);
     const res = await request(API)
@@ -100,7 +100,7 @@ describe('T06.7 — Execution engine interface and job monitoring', () => {
   });
 
   // @plan T06.7
-  // @covers EOCP-E6-08
+  // @covers EOCP-E6-06
   it('Step 3 – task history is available (execution trace reachable)', async () => {
     log.step(`Step 3 — GET /task/${taskId}/history`);
     const res = await request(API)

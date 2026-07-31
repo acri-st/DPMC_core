@@ -7,7 +7,7 @@ import { PROJECT_ID } from './_shared';
 import { FIXTURES } from '../../setup/fixtures';
 
 // @plan T08.4 — Rollback to a previous processor version
-// @covers EOCP-E8-03
+// @covers EOCP-E8-01, EOCP-E8-03
 //
 // Description: This test verifies that the system allows reverting to an older processor version
 //   without impacting historical executions.
@@ -100,7 +100,7 @@ describe('T08.4 — Rollback to a previous processor version', () => {
   });
 
   // @plan T08.4
-  // @covers EOCP-E8-03
+  // @covers EOCP-E8-01, EOCP-E8-03
   it('Step 1 – task submitted with the latest processor version is accepted', async () => {
     log.step('Step 1 — POST /task (latest processor version)');
     const res = await request(API)
@@ -124,7 +124,7 @@ describe('T08.4 — Rollback to a previous processor version', () => {
   });
 
   // @plan T08.4
-  // @covers EOCP-E8-03
+  // @covers EOCP-E8-01, EOCP-E8-03
   it('Step 2 – processor version registry lists both versions (rollback target exists)', async () => {
     log.step('Step 2 — GET /processor-version (list)');
     const res = await request(API).get('/processor-version');
@@ -137,7 +137,7 @@ describe('T08.4 — Rollback to a previous processor version', () => {
   });
 
   // @plan T08.4
-  // @covers EOCP-E8-03
+  // @covers EOCP-E8-01, EOCP-E8-03
   it('Step 3 – task submitted with the previous (rollback) processor version is accepted', async () => {
     log.step('Step 3 — POST /task (previous/rollback processor version)');
     const res = await request(API)
@@ -161,7 +161,7 @@ describe('T08.4 — Rollback to a previous processor version', () => {
   });
 
   // @plan T08.4
-  // @covers EOCP-E8-03
+  // @covers EOCP-E8-01, EOCP-E8-03
   it('Step 4 – historical task still references the latest version (past executions unchanged)', async () => {
     log.step(`Step 4 — GET /task/${taskWithLatestId}`);
     const res = await request(API)

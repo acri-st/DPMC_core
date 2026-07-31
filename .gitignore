@@ -24,6 +24,9 @@ lib-cov
 coverage
 *.lcov
 
+# Generated e2e coverage report PDFs (reproducible via apps/e2e/src/scripts/to-pdf.mjs)
+apps/e2e/reports/
+
 # nyc test coverage
 .nyc_output
 
@@ -373,10 +376,8 @@ data/.minio.sys/
 data/dpmc/
 data/warhol/runs/
 
-# Agents Skills
-.agents/skills/
-.claude/skills/
-skills-lock.json
+# CryoSat .lst listings: bulky seed fixtures uploaded to S3, not versioned
+data/seed/cryosat_listings/
 
 # Acri ST Design Documents
 design.pdf
@@ -395,3 +396,15 @@ docs/superpowers/
 .codex
 !data/in
 !data/out
+
+# Demo
+cryosat.zip
+demo/
+cryosat/
+# CryoSat Ocean ESA deliveries (~200MB of binaries + vendor libs) — kept out
+# of git; the cryosat-ocean image builds need them provisioned on the build
+# host (see data/cryosat-ocean/Dockerfile.runtime header). Task tables for
+# wizard imports live in the deliveries too (copies under tt/ stay local).
+data/cryosat-ocean/4.*/
+data/cryosat-ocean/components/
+tt/

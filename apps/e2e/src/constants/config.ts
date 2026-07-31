@@ -92,6 +92,15 @@ export const CONFIG = {
     registrationToken: WORKER_REGISTRATION_TOKEN,
     headerName: 'X-Worker-Token',
   },
+  // The e2e stack has no real object store; these placeholders only satisfy the
+  // API's config schema so it can boot. No test in the suite exercises S3 I/O.
+  s3: {
+    endpoint: env('S3_ENDPOINT', 'http://127.0.0.1:9000'),
+    region: env('S3_REGION', 'us-east-1'),
+    accessKey: env('S3_ACCESS_KEY', 'e2e-access-key'),
+    secretKey: env('S3_SECRET_KEY', 'e2e-secret-key'),
+    bucket: env('S3_BUCKET', 'e2e-bucket'),
+  },
   cookies: {
     maxAgeSeconds: '604800',
     domain: 'localhost',
@@ -122,8 +131,14 @@ export function buildApiEnv(): NodeJS.ProcessEnv {
     SESSION_ENCRYPTION_KEY: CONFIG.session.encryptionKey,
     SESSION_COOKIE_NAME: CONFIG.session.cookieName,
     WORKER_REGISTRATION_TOKEN: CONFIG.worker.registrationToken,
+    S3_ENDPOINT: CONFIG.s3.endpoint,
+    S3_REGION: CONFIG.s3.region,
+    S3_ACCESS_KEY: CONFIG.s3.accessKey,
+    S3_SECRET_KEY: CONFIG.s3.secretKey,
+    S3_BUCKET: CONFIG.s3.bucket,
     COOKIE_DOMAIN: CONFIG.cookies.domain,
     COOKIE_MAX_AGE: CONFIG.cookies.maxAgeSeconds,
     WORKER_OFFLINE_THRESHOLD_S: '15',
+    SCHEDULER_STALE_THRESHOLD_S: '10',
   };
 }

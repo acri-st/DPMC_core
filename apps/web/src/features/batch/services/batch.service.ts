@@ -33,12 +33,16 @@ const ReplayResponseSchema = z.object({
   data: BatchSchema,
 });
 
+export type SortOrder = 'asc' | 'desc';
+
 export type ListBatchesParams = {
   page: number;
   pageSize: number;
   q?: string;
-  status?: BatchStatus;
-  kind?: BatchKind;
+  status?: BatchStatus[];
+  kind?: BatchKind[];
+  sort?: string;
+  order?: SortOrder;
 };
 
 export type ListBatchesResult = {
@@ -54,8 +58,12 @@ export async function listBatches(
     pageSize: String(params.pageSize),
   });
   if (params.q) search.set('q', params.q);
-  if (params.status) search.set('status', params.status);
-  if (params.kind) search.set('kind', params.kind);
+  for (const s of params.status ?? []) search.append('status', s);
+  for (const k of params.kind ?? []) search.append('kind', k);
+  if (params.sort) {
+    search.set('sort', params.sort);
+    search.set('order', params.order ?? 'desc');
+  }
   const { data, headers } = await apiFetchWithMeta<unknown>(
     `/batch?${search.toString()}`,
   );
@@ -66,6 +74,20 @@ export async function listBatches(
     items: parsed.data.map(toBatch),
     total: Number.isFinite(total) ? total : 0,
   };
+}
+
+const BatchStatusSummarySchema = z.object({
+  Pending: z.number(),
+  Running: z.number(),
+  Success: z.number(),
+  Failed: z.number(),
+  Cancelled: z.number(),
+});
+export type BatchStatusSummary = z.infer<typeof BatchStatusSummarySchema>;
+
+export async function getBatchStatusSummary(): Promise<BatchStatusSummary> {
+  const raw = await apiFetch<unknown>('/batch/status-summary');
+  return z.object({ data: BatchStatusSummarySchema }).parse(raw).data;
 }
 
 export async function getBatch(id: number): Promise<Batch> {

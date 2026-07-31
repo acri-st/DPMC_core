@@ -37,6 +37,8 @@ import {
   ListBatchResponseSchema,
   ReplayBatchResponse,
   ReplayBatchResponseSchema,
+  BatchStatusSummaryResponse,
+  BatchStatusSummaryResponseSchema,
   UpdateBatchPriorityBody,
   UpdateBatchPriorityResponse,
   UpdateBatchPriorityResponseSchema,
@@ -59,6 +61,18 @@ export class BatchController {
     const { items, total } = await this.batchService.list(project.id, query);
     res.setHeader('X-Total-Count', String(total));
     return Response.success(items);
+  }
+
+  // IMPORTANT: statusSummary must be declared BEFORE getById to prevent
+  // Nest from matching /batch/status-summary against the :id param route.
+  @ProjectScoped('admin', 'operator', 'internal-viewer', 'external-viewer')
+  @SuccessResponse(BatchStatusSummaryResponseSchema)
+  @Get(PATHS.BATCH.STATUS_SUMMARY)
+  async statusSummary(
+    @CurrentProject() project: Project,
+  ): Promise<BatchStatusSummaryResponse> {
+    const response = await this.batchService.statusSummary(project.id);
+    return Response.success(response);
   }
 
   @ProjectScoped('admin', 'operator', 'internal-viewer', 'external-viewer')

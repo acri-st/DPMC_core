@@ -1,0 +1,75 @@
+# GPU power draw, for the `gpu` energy concern. Not part of the monitoring
+# base: it requires the NVIDIA device plugin and a node with an NVIDIA driver,
+# so overlays for CPU-only clusters (minikube included) leave it out and the
+# gpu concern simply reports 0 Wh.
+#
+# Add to an overlay with:
+#   resources:
+#     - ../../monitoring/gpu
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: dcgm-exporter
+
+  template:
+    metadata:
+      labels:
+        app: dcgm-exporter
+
+    spec:
+      # Without this the DaemonSet also lands on CPU nodes, where the container
+      # crashloops because it cannot open the NVIDIA device files.
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+
+      containers:
+        - name: dcgm-exporter
+          image: nvcr.io/nvidia/k8s/dcgm-exporter:4.1.1-4.0.4-ubuntu22.04
+          imagePullPolicy: IfNotPresent
+
+          env:
+            # Makes the exporter attach pod/namespace/container labels to every
+            # GPU sample, which is what the dpmc:job_gpu_power_watts recording
+            # rule joins on.
+            - name: DCGM_EXPORTER_KUBERNETES
+              value: "true"
+
+          ports:
+            - name: metrics
+              containerPort: 9400
+
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+            capabilities:
+              add:
+                - SYS_ADMIN
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+
+          volumeMounts:
+            - name: pod-resources
+              mountPath: /var/lib/kubelet/pod-resources
+              readOnly: true
+
+      volumes:
+        # The kubelet pod-resources socket is how the exporter maps a physical
+        # GPU to the pod currently holding it.
+        - name: pod-resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources

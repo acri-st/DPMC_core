@@ -65,7 +65,7 @@ describe('T15.1 — Collection of resource consumption metrics', () => {
 
     for (const item of items as Record<string, unknown>[]) {
       expect(typeof item.groupBy).toBe('string');
-      expect(typeof item.bucket).toBe('string');
+      expect(typeof item.bucket).toBe('number');
       expect(item.bucketName === null || typeof item.bucketName === 'string').toBe(true);
       expect(typeof item.energyWh).toBe('number');
       expect(typeof item.co2Grams).toBe('number');

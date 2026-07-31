@@ -4,7 +4,7 @@ import { API } from '../../support/auth';
 import { CONFIG } from '../../constants/config';
 
 // @plan T13.2 — Standardized container image definition interface
-// @covers EOCP-E8-02 EOCP-E13-02
+// @covers EOCP-E13-02
 //
 // Description: This test verifies that containerized processors are defined using a standardized
 //   interface for image name, entry point, and environment variables.
@@ -27,7 +27,7 @@ async function withDbClient<T>(fn: (c: Client) => Promise<T>): Promise<T> {
 
 describe('T13.2 — Standardized container image definition interface', () => {
   // @plan T13.2
-  // @covers EOCP-E8-02 EOCP-E13-02
+  // @covers EOCP-E13-02
   it('Step 1 – processing scripts are accessible via the standard REST interface', async () => {
     const res = await request(API).get('/processing-script').expect(200);
     const list = Array.isArray(res.body.data) ? res.body.data : (res.body.data?.items ?? []);
@@ -41,7 +41,7 @@ describe('T13.2 — Standardized container image definition interface', () => {
   });
 
   // @plan T13.2
-  // @covers EOCP-E8-02 EOCP-E13-02
+  // @covers EOCP-E13-02
   it('Step 2 – processing_script_version carries runtime, imageUrl, and imageTag (standardized container definition)', async () => {
     await withDbClient(async (c) => {
       const r = await c.query<{

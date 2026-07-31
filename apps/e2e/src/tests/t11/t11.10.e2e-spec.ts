@@ -5,7 +5,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T11.10 — API backward compatibility across versions
-// @covers EOCP-E11-03
+// @covers EOCP-E11-01
 
 const CURRENT_PATHS = ['/task', '/project', '/host', '/processor-version'];
 
@@ -24,7 +24,7 @@ describe('T11.10 — API backward compatibility across versions', () => {
   });
 
   // @plan T11.10
-  // @covers EOCP-E11-03
+  // @covers EOCP-E11-01
   it('Step 1 – current canonical endpoints respond with 200', async () => {
     log.step('Step 1 — probe canonical endpoints');
     let okCount = 0;
@@ -38,7 +38,7 @@ describe('T11.10 — API backward compatibility across versions', () => {
   });
 
   // @plan T11.10
-  // @covers EOCP-E11-03
+  // @covers EOCP-E11-01
   it('Step 2 – versioned /v1/* paths return 404 or redirect, never 5xx', async () => {
     log.step('Step 2 — probe /v1/* paths');
     for (const path of CURRENT_PATHS) {
@@ -50,7 +50,7 @@ describe('T11.10 — API backward compatibility across versions', () => {
   });
 
   // @plan T11.10
-  // @covers EOCP-E11-03
+  // @covers EOCP-E11-01
   it('Step 3 – GET /task returns list where each item has an id field', async () => {
     log.step('Step 3 — GET /task (structure check)');
     const res = await request(API).get('/task').set('Cookie', cookie);

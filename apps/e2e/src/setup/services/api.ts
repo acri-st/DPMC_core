@@ -7,13 +7,18 @@ const PID_FILE = resolve(CONFIG.paths.logDir, 'api.pid');
 const LOG_FILE = resolve(CONFIG.paths.logDir, 'api.log');
 const API_DIST = resolve(CONFIG.paths.rootDir, 'apps/api/dist/main.js');
 
-function buildApiIfNeeded(env: NodeJS.ProcessEnv) {
-  if (existsSync(API_DIST)) return;
+// Always rebuild: skipping on `dist/main.js` exists silently tests a stale API,
+// so results stop reflecting the code under test. Turbo caches, so a no-op
+// rebuild costs a cache lookup.
+function buildApi(env: NodeJS.ProcessEnv) {
   execFileSync('pnpm', ['turbo', 'run', 'build', '--filter=@dpmc/api'], {
     cwd: CONFIG.paths.rootDir,
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
   });
+  if (!existsSync(API_DIST)) {
+    throw new Error(`API build produced no ${API_DIST}`);
+  }
 }
 
 function killPortIfBusy(port: number) {
@@ -33,7 +38,7 @@ export const api = {
   async start() {
     mkdirSync(CONFIG.paths.logDir, { recursive: true });
     const env = buildApiEnv();
-    buildApiIfNeeded(env);
+    buildApi(env);
 
     // Kill any stale process occupying the API port before spawning a fresh one
     const apiPort = Number(new URL(CONFIG.api.url).port || 3000);

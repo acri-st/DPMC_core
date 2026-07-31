@@ -11,6 +11,7 @@ function makePrisma(): { taskSchedule: AnyMock } {
       findMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+      count: jest.fn(),
     },
   };
 }
@@ -206,5 +207,22 @@ describe('TaskScheduleService.runDue', () => {
       (c: any[]) => c[0]?.data?.lastError,
     );
     expect(errUpdate).toBeDefined();
+  });
+});
+
+describe('TaskScheduleService.list', () => {
+  it('returns paginated { items, total } with skip/take + count', async () => {
+    const prisma = makePrisma();
+    prisma.taskSchedule.findMany.mockResolvedValue([{ id: 1 }]);
+    prisma.taskSchedule.count.mockResolvedValue(1);
+    const tasks = { create: jest.fn(), trigger: jest.fn() };
+    const service = new TaskScheduleService(prisma as never, tasks as never);
+
+    const res = await service.list(1, { page: 2, pageSize: 10 });
+
+    expect(prisma.taskSchedule.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 10, take: 10 }),
+    );
+    expect(res).toEqual({ items: [{ id: 1 }], total: 1 });
   });
 });

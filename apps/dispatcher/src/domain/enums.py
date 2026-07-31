@@ -45,7 +45,35 @@ class HostStatus(StrEnum):
 class ContainerRuntime(StrEnum):
     DOCKER = "docker"
     APPTAINER = "apptainer"
+    KUBERNETES = "kubernetes"
     NONE = "none"
+
+
+# What a host capability satisfies, keyed by the script's required runtime.
+# A Docker requirement (OCI image) is met by a native Docker daemon OR a
+# Kubernetes cluster; Apptainer (SIF) is met only by Apptainer.
+_RUNTIME_SATISFIED_BY: dict[ContainerRuntime, frozenset[ContainerRuntime]] = {
+    ContainerRuntime.DOCKER: frozenset(
+        {ContainerRuntime.DOCKER, ContainerRuntime.KUBERNETES}
+    ),
+    ContainerRuntime.APPTAINER: frozenset({ContainerRuntime.APPTAINER}),
+}
+
+
+def runtime_satisfies(host_runtime: str, need_runtime: str) -> bool:
+    """True when a host with *host_runtime* can run a job needing *need_runtime*.
+
+    ``NONE`` as a requirement accepts any host (the script imposes no runtime).
+    Otherwise the host capability must be in the requirement's satisfied-by set,
+    so a Kubernetes host transparently serves Docker (OCI) workloads.
+    """
+    if need_runtime == ContainerRuntime.NONE:
+        return True
+    try:
+        need = ContainerRuntime(need_runtime)
+    except ValueError:
+        return host_runtime == need_runtime
+    return host_runtime in _RUNTIME_SATISFIED_BY.get(need, frozenset({need}))
 
 
 class ProductionMode(StrEnum):

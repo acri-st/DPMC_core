@@ -30,6 +30,8 @@ import { ProjectCreatePage } from '@/features/project/pages/project-create-page'
 import { ProjectEditPage } from '@/features/project/pages/project-edit-page';
 import { ProductListPage } from '@/features/product/pages/product-list-page';
 import { ProductTypeListPage } from '@/features/product-type/pages/product-type-list-page';
+import { ProcessingScriptListPage } from '@/features/processing-script/pages/processing-script-list-page';
+import { ProcessingScriptDetailPage } from '@/features/processing-script/pages/processing-script-detail-page';
 import { DatasetListPage } from '@/features/dataset/pages/dataset-list-page';
 import { DatasetDetailPage } from '@/features/dataset/pages/dataset-detail-page';
 import { PoolListPage } from '@/features/pool/pages/pool-list-page';
@@ -197,6 +199,18 @@ const productTypesRoute = createRoute({
   component: ProductTypeListPage,
 });
 
+const processingScriptsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/processing-scripts',
+  component: ProcessingScriptListPage,
+});
+
+const processingScriptDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/processing-scripts/$id',
+  component: ProcessingScriptDetailPage,
+});
+
 const datasetListRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/datasets',
@@ -251,6 +265,8 @@ const routeTree = rootRoute.addChildren([
   scheduleEditRoute,
   productsRoute,
   productTypesRoute,
+  processingScriptsRoute,
+  processingScriptDetailRoute,
   datasetListRoute,
   datasetDetailRoute,
   usersRoute,

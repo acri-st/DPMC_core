@@ -18,9 +18,10 @@ enum DependencyMode {
 }
 
 enum ContainerRuntime {
-  Docker    @map("docker")
-  Apptainer @map("apptainer")
-  None      @map("none")
+  Docker     @map("docker")
+  Apptainer  @map("apptainer")
+  Kubernetes @map("kubernetes")
+  None       @map("none")
 
   @@map("container_runtime")
 }
@@ -227,7 +228,7 @@ model Product {
   productTypeId Int
   parentBatchId Int?
   name          String
-  version       String?
+  version       String    @default("")
   isDefault     Boolean   @default(false)
   generatedAt   DateTime? @db.Timestamptz
   parameters    Json?
@@ -559,6 +560,11 @@ model Job {
   outputDir                 String?
   avgPower                  Float?
   dataVolume                BigInt?
+  // No ingress/egress column on purpose: job_energy derives transfer Wh from
+  // the byte counters in `metrics`, so energyIntensity recalibrates history.
+  energyCpuWh               Float?
+  energyGpuWh               Float?
+  energyMeasuredAt          DateTime? @db.Timestamptz
   resolvedImage             String?
   attempt                   Int       @default(0)
   paused                    Boolean   @default(false)
@@ -772,6 +778,43 @@ model ProductIngestionHook {
   @@map("product_x_ingestion_hook")
 }
 
+enum AuditLogActorType {
+  User         @map("user")
+  System       @map("system")
+  Worker       @map("worker")
+  Orchestrator @map("orchestrator")
+
+  @@map("audit_log_actor_type")
+}
+
+enum AuditLogAction {
+  Create           @map("create")
+  Update           @map("update")
+  Delete           @map("delete")
+  StatusTransition @map("status_transition")
+  Replay           @map("replay")
+
+  @@map("audit_log_action")
+}
+
+// EOCP-E12-04 — security-relevant events must be recorded and readable.
+model AuditLog {
+  id            Int               @id @default(autoincrement())
+  actorId       String?
+  actorType     AuditLogActorType
+  action        AuditLogAction
+  aggregateType String
+  aggregateId   String
+  before        Json?
+  after         Json?
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @db.Timestamptz
+
+  @@index([aggregateType, aggregateId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
 model TaskTableImportPlan {
   id            Int       @id @default(autoincrement())
   adapter       String
@@ -780,6 +823,15 @@ model TaskTableImportPlan {
   rejectedCount Int       @default(0)
   committedAt   DateTime? @db.Timestamptz
   createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  // EOCP-E9-03 — a conversion is only traceable if the source document and the
+  // records it produced can both be recovered from the history entry. `content`
+  // holds the parsed IR, which is derived; `sourceContent` is what was actually
+  // submitted, so an ingestion can be replayed and compared.
+  sourceName         String?
+  sourceContent      String?
+  committedScriptId  Int?
+  committedVersionId Int?
 
   @@map("task_table_import_plan")
 }

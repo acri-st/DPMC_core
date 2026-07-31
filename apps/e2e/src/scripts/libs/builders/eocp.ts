@@ -21,16 +21,26 @@ export function buildEocpReport(tags: TestTag[]) {
       })),
     }));
 
+  const descoped = REQUIREMENTS.filter((r) => r.descoped).length;
+  const inScope = REQUIREMENTS.length - descoped;
   const covered = evolutions.reduce(
-    (n, e) => n + e.requirements.filter((r) => r.tests.length > 0).length,
+    (n, e) =>
+      n +
+      e.requirements.filter((r) => !r.requirement.descoped && r.tests.length > 0)
+        .length,
     0,
   );
 
   return {
     totals: {
       total: REQUIREMENTS.length,
+      // Coverage is measured against what the delivery commits to. Descoped
+      // requirements stay in `total` so the exclusion is visible rather than
+      // silently absorbed.
+      inScope,
+      descoped,
       covered,
-      notCovered: REQUIREMENTS.length - covered,
+      notCovered: inScope - covered,
     },
     evolutions,
   };
@@ -39,7 +49,10 @@ export function buildEocpReport(tags: TestTag[]) {
 function indexTagsByRequirement(tags: TestTag[]) {
   const index = new Map<string, TestTag[]>();
   for (const tag of tags) {
-    if (tag.isTodo) continue; // todo placeholders don't cover anything
+    // Neither todo placeholders nor skipped tests ever run, so neither covers
+    // anything — crediting them would report a requirement as verified by a
+    // test that never executed.
+    if (tag.isTodo || tag.isSkipped) continue;
     for (const id of tag.requirementIds) {
       const bucket = index.get(id) ?? [];
       bucket.push(tag);

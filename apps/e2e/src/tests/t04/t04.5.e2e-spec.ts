@@ -69,11 +69,11 @@ describe('T04.5 — Conditional execution of chains based on parameters', () => 
     log.step(`Step 1 — GET /production-chain/${chainId} (config check)`);
 
     const res = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
-    log.http('GET', `/production-chain/${chainId}`, res.status, { configuration: res.body.data?.latestVersion?.configuration });
+    log.http('GET', `/production-chain/${chainId}`, res.status, { configuration: res.body.data?.configuration });
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(chainId);
 
-    const config = res.body.data.latestVersion?.configuration;
+    const config = res.body.data.configuration;
     log.ok(`configuration: ${JSON.stringify(config)}`);
     expect(config).toBeDefined();
     expect(config).not.toBeNull();

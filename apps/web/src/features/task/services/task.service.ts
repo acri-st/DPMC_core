@@ -26,12 +26,16 @@ const GetResponseSchema = z.object({
   data: TaskSchema,
 });
 
+export type SortOrder = 'asc' | 'desc';
+
 export type ListTasksParams = {
   page: number;
   pageSize: number;
   q?: string;
-  status?: TaskStatus;
-  kind?: TaskKind;
+  status?: TaskStatus[];
+  kind?: TaskKind[];
+  sort?: string;
+  order?: SortOrder;
 };
 
 export type ListTasksResult = {
@@ -47,8 +51,12 @@ export async function listTasks(
     pageSize: String(params.pageSize),
   });
   if (params.q) search.set('q', params.q);
-  if (params.status) search.set('status', params.status);
-  if (params.kind) search.set('kind', params.kind);
+  for (const s of params.status ?? []) search.append('status', s);
+  for (const k of params.kind ?? []) search.append('kind', k);
+  if (params.sort) {
+    search.set('sort', params.sort);
+    search.set('order', params.order ?? 'desc');
+  }
   const { data, headers } = await apiFetchWithMeta<unknown>(
     `/task?${search.toString()}`,
   );
@@ -59,6 +67,23 @@ export async function listTasks(
     items: parsed.data.map(toTask),
     total: Number.isFinite(total) ? total : 0,
   };
+}
+
+const TaskStatusSummarySchema = z.object({
+  Edited: z.number(),
+  Queued: z.number(),
+  Running: z.number(),
+  Done: z.number(),
+  Error: z.number(),
+  Suspended: z.number(),
+});
+export type TaskStatusSummary = z.infer<typeof TaskStatusSummarySchema>;
+
+export async function getTaskStatusSummary(): Promise<TaskStatusSummary> {
+  const raw = await apiFetch<unknown>('/task/status-summary');
+  return TaskStatusSummarySchema.parse(
+    z.object({ data: TaskStatusSummarySchema }).parse(raw).data,
+  );
 }
 
 export async function getTask(id: number): Promise<Task> {

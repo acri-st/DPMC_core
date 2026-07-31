@@ -5,7 +5,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T14.5 — Reconstruction of product lineage across versions
-// @covers EOCP-E14-05
+// @covers EOCP-E14-02
 //
 // Description: This test verifies that the lineage of a product can be reconstructed across
 //   versions, via version ordering, parameters, and shared productTypeId.
@@ -67,7 +67,7 @@ describe('T14.5 — Reconstruction of product lineage across versions', () => {
   });
 
   // @plan T14.5
-  // @covers EOCP-E14-05
+  // @covers EOCP-E14-02
   it('Step 1 – GET /product/:id returns correct version and shared productTypeId for each entry in the lineage', async () => {
     log.step('Step 1 — GET all 3 versions');
 
@@ -85,7 +85,7 @@ describe('T14.5 — Reconstruction of product lineage across versions', () => {
   });
 
   // @plan T14.5
-  // @covers EOCP-E14-05
+  // @covers EOCP-E14-02
   it('Step 2 – list query returns all 3 versions ordered correctly (1.0, 2.0, 3.0)', async () => {
     log.step('Step 2 — GET /product?q=T14.5-lineage-product');
 
@@ -104,7 +104,7 @@ describe('T14.5 — Reconstruction of product lineage across versions', () => {
   });
 
   // @plan T14.5
-  // @covers EOCP-E14-05
+  // @covers EOCP-E14-02
   it('Step 3 – lineage differences are identifiable: each version has unique parameters.run and comment', async () => {
     log.step('Step 3 — verify parameters.run across versions');
 

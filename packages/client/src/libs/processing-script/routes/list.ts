@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { ApiResponseSchema, Error500Schema } from '@/schemas';
 import { METHODS, PATHS } from '@/constants';
-import { ProcessingScriptSchema } from '../schemas';
+import { ProcessingScriptListItemSchema } from '../schemas';
 
 export const ListProcessingScriptResponse200Schema = ApiResponseSchema.extend({
-  data: ProcessingScriptSchema.array(),
+  data: ProcessingScriptListItemSchema.array(),
 });
 
 export const ListProcessingScriptResponse500Schema = Error500Schema;

@@ -24,14 +24,15 @@ export function renderPlanConsole(report: PlanCoverageReport) {
     lines.push('');
   }
 
-  const { total, implemented, passed, failed, todo, blocked } = report.totals;
+  const { total, inScope, descoped, implemented, passed, failed, todo, blocked } =
+    report.totals;
   lines.push(SEPARATOR);
   lines.push(
-    `  Total: ${total} | Implemented: ${implemented} | Pass: ${passed} | Fail: ${failed}`,
+    `  Total: ${total} | In scope: ${inScope} | Implemented: ${implemented} | Pass: ${passed} | Fail: ${failed} | Not applicable: ${descoped}`,
   );
   lines.push(`  Todo: ${todo} (of which ${blocked} blocked)`);
   lines.push(
-    `  Coverage: ${pct(passed, total)}% pass · ${pct(implemented, total)}% implemented`,
+    `  Coverage: ${pct(passed, inScope)}% pass · ${pct(implemented, inScope)}% implemented (of in-scope cases)`,
   );
   lines.push(SEPARATOR);
 
@@ -39,8 +40,9 @@ export function renderPlanConsole(report: PlanCoverageReport) {
 }
 
 function renderSectionHeader(section: PlanSectionCoverage) {
-  const total = section.entries.length;
-  const passed = section.entries.filter((e) => e.status === 'passed').length;
+  const scoped = section.entries.filter((e) => !e.testCase.descoped);
+  const total = scoped.length;
+  const passed = scoped.filter((e) => e.status === 'passed').length;
   const percentage = pct(passed, total);
   const filled = Math.round((percentage / 100) * BAR_WIDTH);
   const bar = '█'.repeat(filled) + '░'.repeat(BAR_WIDTH - filled);

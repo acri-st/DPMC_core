@@ -10,8 +10,11 @@ mkdir -p "$OUTPUT_DIR"
 HOST=$(hostname)
 echo "[L2] START host=$HOST input=$INPUT_DIR output=$OUTPUT_DIR"
 
-# Find L1 file
-l1_files=("$INPUT_DIR"/DPMC_TST_L1__*.txt)
+# Find L1 file. The leading * tolerates the `<batchId>-out-` prefix the DPMC
+# platform prepends to batch-produced products (the L1 output is named
+# `<batchId>-out-DPMC_TST_L1___...`); field parsing below is unaffected because
+# the prefix contains no `_`.
+l1_files=("$INPUT_DIR"/*DPMC_TST_L1__*.txt)
 [[ -f "${l1_files[0]}" ]] || { echo "[L2] ERROR: no L1 file found in $INPUT_DIR"; exit 1; }
 L1_FILE="${l1_files[0]}"
 echo "[L2] L1 selected: $(basename "$L1_FILE")"

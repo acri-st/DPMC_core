@@ -7,7 +7,6 @@ import logging
 from collections.abc import Awaitable, Callable
 
 from config import DispatcherConfig
-from domain.retry import RetryPolicy
 from infrastructure.api_client import expand_task_via_api, wait_for_api_ready
 from infrastructure.db import Db
 from infrastructure.heartbeat import SchedulerHeartbeat
@@ -95,40 +94,31 @@ async def _metrics_loop(db, interval_s: float) -> None:
 
 
 async def run_all(cfg: DispatcherConfig) -> None:
-    await wait_for_api_ready(cfg.api_url)
+    await wait_for_api_ready(cfg.api_url, ssl_verify=cfg.api_ssl_verify)
 
     db = Db(cfg.database_url)
     await db.connect()
-
-    retry_policy = RetryPolicy(
-        max_attempts=cfg.max_attempts,
-        backoff_base_s=cfg.retry_backoff_base_s,
-        backoff_cap_s=cfg.retry_backoff_cap_s,
-        backoff_multiplier=cfg.retry_backoff_multiplier,
-    )
-
     try:
         if cfg.recovery_on_startup:
             try:
                 summary = await recovery_once(
                     db,
                     lost_host_threshold_s=cfg.monitor_lost_host_threshold_s,
-                    retry=retry_policy,
                 )
                 log.info("recovery_once: %s", summary)
             except Exception:
                 log.exception("recovery_once failed")
 
         async def _expand(task_id: int) -> None:
-            await expand_task_via_api(cfg.api_url, cfg.api_token, task_id)
+            await expand_task_via_api(cfg.api_url, cfg.api_token, task_id, ssl_verify=cfg.api_ssl_verify)
 
-        heartbeat = SchedulerHeartbeat(cfg.api_url, cfg.api_token)
+        heartbeat = SchedulerHeartbeat(cfg.api_url, cfg.api_token, ssl_verify=cfg.api_ssl_verify)
 
         await asyncio.gather(
             _ticker("task",       lambda: task_tick(db, _expand),                              cfg.task_loop_interval_s),
             _ticker("dependency", lambda: dep_tick(db),                                        cfg.dependency_loop_interval_s),
             _ticker("dispatch",   lambda: dispatch_tick(db),                                   cfg.dispatch_loop_interval_s),
-            _ticker("monitor",    lambda: monitor_tick(db, cfg.monitor_lost_host_threshold_s, retry_policy), cfg.monitor_loop_interval_s),
+            _ticker("monitor",    lambda: monitor_tick(db, cfg.monitor_lost_host_threshold_s), cfg.monitor_loop_interval_s),
             _ticker("aging",      lambda: aging_tick(db),                                      cfg.aging_loop_interval_s),
             _ticker("watcher",    lambda: watcher_tick(db),                                    cfg.watcher_loop_interval_s),
             _ticker("finalizer",  lambda: finalizer_tick(db),                                  cfg.finalizer_loop_interval_s),

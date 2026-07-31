@@ -11,7 +11,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T07.10 — Permission enforcement on manual triggering
-// @covers EOCP-E7-01
+// @covers EOCP-E7-02
 //
 // Description: This test verifies that only authorized users can manually trigger jobs.
 // Prerequisites: RBAC is enabled. At least two user roles exist.
@@ -58,7 +58,7 @@ describe('T07.10 — Permission enforcement on manual triggering', () => {
   });
 
   // @plan T07.10
-  // @covers EOCP-E7-01
+  // @covers EOCP-E7-02
   it('Step 1 – operator and admin can manually trigger jobs (authorized roles)', async () => {
     log.step('Step 1 — POST /task x2 (admin + operator)');
     const [adminRes, operatorRes] = await Promise.all([
@@ -101,7 +101,7 @@ describe('T07.10 — Permission enforcement on manual triggering', () => {
   });
 
   // @plan T07.10
-  // @covers EOCP-E7-01
+  // @covers EOCP-E7-02
   it('Step 2 – viewer roles are denied manual job triggering (unauthorized)', async () => {
     log.step('Step 2 — POST /task (internalViewer + externalViewer — expect 403)');
     const payload = {
@@ -127,7 +127,7 @@ describe('T07.10 — Permission enforcement on manual triggering', () => {
   });
 
   // @plan T07.10
-  // @covers EOCP-E7-01
+  // @covers EOCP-E7-02
   it('Step 3 – audit log records write activity (access attempt is logged)', async () => {
     log.step('Step 3 — GET /audit-log');
     const res = await request(API).get('/audit-log').set('Cookie', adminCookie);

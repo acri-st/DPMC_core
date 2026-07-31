@@ -73,7 +73,7 @@ describe('T15.2 — Association of footprint metrics with tasks, chains, and pro
     const projectRow = items.find((i) => i.bucket === PROJECT_ID);
     if (projectRow) {
       log.ok(`found row for seeded project: bucketName=${projectRow.bucketName}`);
-      expect(typeof projectRow.bucket).toBe('string');
+      expect(typeof projectRow.bucket).toBe('number');
       expect(projectRow.bucketName).toBeDefined();
     } else {
       log.ok(`seeded project not in results (no energy data for it) — ${items.length} other projects present`);
@@ -81,8 +81,8 @@ describe('T15.2 — Association of footprint metrics with tasks, chains, and pro
 
     for (const item of items) {
       expect(item.groupBy).toBe('project');
-      expect(typeof item.bucket).toBe('string');
-      expect(item.bucket.length).toBeGreaterThan(0);
+      expect(typeof item.bucket).toBe('number');
+      expect(item.bucket as number).toBeGreaterThan(0);
     }
     log.ok('all items have bucket association');
   });

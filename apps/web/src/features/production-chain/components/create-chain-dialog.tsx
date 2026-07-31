@@ -37,13 +37,20 @@ import {
 import { Textarea } from '@/shared/components/ui/textarea';
 import {
   createProductionChain,
+  importAcsProductionChain,
   importProductionChainFromTaskTable,
+  isAcsTaskTableContent,
+  previewAcsProductionChain,
   previewProductionChainFromTaskTable,
+  type AcsChainImportPreview,
+  type AcsTaskTableFile,
   type ChainImportPreview,
 } from '@/features/production-chain/services/production-chain.service';
 
 type Mode = 'scratch' | 'task-table';
 type WizardStep = 'upload' | 'preview';
+
+const DEFAULT_ACS_INSTALL_ROOT = '/dpmc/scripts/cryosat_ocean_baseline_d';
 
 export function CreateChainDialog() {
   const navigate = useNavigate();
@@ -60,6 +67,25 @@ export function CreateChainDialog() {
   const [content, setContent] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [preview, setPreview] = useState<ChainImportPreview | null>(null);
+  // Old-ACS (CryoSat) multi-file flow — several task tables → one chain.
+  const [files, setFiles] = useState<AcsTaskTableFile[]>([]);
+  const [installRoot, setInstallRoot] = useState(DEFAULT_ACS_INSTALL_ROOT);
+  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>(
+    {},
+  );
+  const [acsPreview, setAcsPreview] = useState<AcsChainImportPreview | null>(
+    null,
+  );
+
+  const acsFiles: AcsTaskTableFile[] =
+    files.length > 0
+      ? files
+      : content.trim()
+        ? [{ name: fileName ?? 'task-table.xml', content }]
+        : [];
+  const isAcs =
+    acsFiles.length > 1 ||
+    (acsFiles.length === 1 && isAcsTaskTableContent(acsFiles[0].content));
 
   const reset = () => {
     setMode('scratch');
@@ -69,7 +95,20 @@ export function CreateChainDialog() {
     setContent('');
     setFileName(null);
     setPreview(null);
+    setFiles([]);
+    setInstallRoot(DEFAULT_ACS_INSTALL_ROOT);
+    setImageOverrides({});
+    setAcsPreview(null);
   };
+
+  const acsOptions = () => ({
+    installRoot: installRoot.trim() || undefined,
+    images: Object.fromEntries(
+      Object.entries(imageOverrides)
+        .filter(([, url]) => url.trim())
+        .map(([acronym, url]) => [acronym, { imageUrl: url.trim() }]),
+    ),
+  });
 
   const onCreated = (chainId: number, msg: string) => {
     toast.success(msg);
@@ -115,11 +154,46 @@ export function CreateChainDialog() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const handleFile = async (file: File | null | undefined) => {
-    if (!file) return;
-    const text = await file.text();
-    setContent(text);
-    setFileName(file.name);
+  const acsPreviewMutation = useMutation({
+    mutationFn: () =>
+      previewAcsProductionChain({ files: acsFiles, options: acsOptions() }),
+    onSuccess: (plan) => {
+      setAcsPreview(plan);
+      setStep('preview');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const acsImportMutation = useMutation({
+    mutationFn: () =>
+      importAcsProductionChain({ files: acsFiles, options: acsOptions() }),
+    onSuccess: (res) =>
+      onCreated(
+        res.chainId,
+        `Imported chain (${res.nodeCount} node${
+          res.nodeCount === 1 ? '' : 's'
+        }, ${res.edgeCount} edge${res.edgeCount === 1 ? '' : 's'})`,
+      ),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const handleFiles = async (list: FileList | null | undefined) => {
+    if (!list || list.length === 0) return;
+    const loaded = await Promise.all(
+      Array.from(list).map(async (f) => ({
+        name: f.name,
+        content: await f.text(),
+      })),
+    );
+    setFiles(loaded);
+    // Keep the single-file states in sync so the Sentinel-style `ipf` flow
+    // is untouched when one non-ACS table is uploaded.
+    setContent(loaded.length === 1 ? loaded[0].content : '');
+    setFileName(
+      loaded.length === 1
+        ? loaded[0].name
+        : `${loaded.length} files (${loaded.map((f) => f.name).join(', ')})`,
+    );
   };
 
   const handleScratchSubmit = (e: React.FormEvent) => {
@@ -132,15 +206,27 @@ export function CreateChainDialog() {
   };
 
   const handlePreview = () => {
-    if (!content.trim()) {
+    if (acsFiles.length === 0) {
       toast.error('Paste or upload a Task Table');
       return;
     }
-    previewMutation.mutate();
+    if (isAcs) {
+      acsPreviewMutation.mutate();
+    } else if (acsFiles.length > 1) {
+      toast.error(
+        'Multi-file import is only supported for ACS <Task_Table> documents',
+      );
+    } else {
+      previewMutation.mutate();
+    }
   };
 
   const pending =
-    create.isPending || previewMutation.isPending || importMutation.isPending;
+    create.isPending ||
+    previewMutation.isPending ||
+    importMutation.isPending ||
+    acsPreviewMutation.isPending ||
+    acsImportMutation.isPending;
 
   return (
     <Dialog
@@ -172,6 +258,7 @@ export function CreateChainDialog() {
             setMode(v as Mode);
             setStep('upload');
             setPreview(null);
+            setAcsPreview(null);
           }}
         >
           <TabsList className="grid w-full grid-cols-2">
@@ -237,40 +324,64 @@ export function CreateChainDialog() {
               <div className="flex flex-col gap-3 pt-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="chain-tt-file">
-                    Upload an IPF Task Table
+                    Upload one or more Task Tables
                   </Label>
                   <Input
                     id="chain-tt-file"
                     type="file"
+                    multiple
                     accept=".xml,.tt,text/xml"
-                    onChange={(e) => void handleFile(e.target.files?.[0])}
+                    onChange={(e) => void handleFiles(e.target.files)}
                   />
                   {fileName ? (
                     <p className="text-muted-foreground text-xs">
-                      Loaded <span className="font-mono">{fileName}</span> (
-                      {content.length.toLocaleString()} bytes)
+                      Loaded <span className="font-mono">{fileName}</span>
                     </p>
                   ) : null}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="chain-tt-content">…or paste it</Label>
+                  <Label htmlFor="chain-tt-content">…or paste one</Label>
                   <Textarea
                     id="chain-tt-content"
                     value={content}
                     onChange={(e) => {
                       setContent(e.target.value);
                       setFileName(null);
+                      setFiles([]);
                     }}
                     rows={8}
-                    placeholder="<Ipf_Task_Table>…</Ipf_Task_Table>"
+                    placeholder="<Ipf_Task_Table>…</Ipf_Task_Table> or <Task_Table>…</Task_Table>"
                     className="font-mono text-xs"
                   />
                 </div>
-                <p className="text-muted-foreground text-xs">
-                  Each <code>&lt;Task&gt;</code> becomes a node; edges are
-                  inferred by matching <code>Output.Type</code> with downstream{' '}
-                  <code>Input.Alternative.File_Type</code>.
-                </p>
+                {isAcs ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="chain-acs-root">
+                      Install root (ACS deliveries)
+                    </Label>
+                    <Input
+                      id="chain-acs-root"
+                      value={installRoot}
+                      onChange={(e) => setInstallRoot(e.target.value)}
+                      className="font-mono text-xs"
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Old-ACS <code>&lt;Task_Table&gt;</code> detected: each
+                      table becomes one node with its pools as sequenced
+                      executables; binary paths are re-rooted onto this
+                      container path (everything before <code>/Binaries/</code>{' '}
+                      is replaced).
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-xs">
+                    Sentinel-style tables: each <code>&lt;Task&gt;</code>{' '}
+                    becomes a node; edges are inferred by matching{' '}
+                    <code>Output.Type</code> with downstream{' '}
+                    <code>Input.Alternative.File_Type</code>. Old-ACS (CryoSat)
+                    tables can be uploaded several at once to build one chain.
+                  </p>
+                )}
                 <DialogFooter className="pt-2">
                   <Button
                     type="button"
@@ -283,9 +394,10 @@ export function CreateChainDialog() {
                   <Button
                     type="button"
                     onClick={handlePreview}
-                    disabled={pending || !content.trim()}
+                    disabled={pending || acsFiles.length === 0}
                   >
-                    {previewMutation.isPending ? (
+                    {previewMutation.isPending ||
+                    acsPreviewMutation.isPending ? (
                       <Loader2Icon className="animate-spin" />
                     ) : (
                       <ArrowRightIcon />
@@ -294,6 +406,20 @@ export function CreateChainDialog() {
                   </Button>
                 </DialogFooter>
               </div>
+            ) : acsPreview ? (
+              <AcsPreviewStep
+                preview={acsPreview}
+                imageOverrides={imageOverrides}
+                onImageChange={(acronym, url) =>
+                  setImageOverrides((prev) => ({ ...prev, [acronym]: url }))
+                }
+                onBack={() => {
+                  setStep('upload');
+                  setAcsPreview(null);
+                }}
+                onConfirm={() => acsImportMutation.mutate()}
+                confirming={acsImportMutation.isPending}
+              />
             ) : preview ? (
               <PreviewStep
                 preview={preview}
@@ -469,6 +595,160 @@ function PreviewStep({
                 <span className="text-muted-foreground font-mono">
                   default: {p.default ?? '—'}
                 </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
+      <DialogFooter className="pt-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onBack}
+          disabled={confirming}
+        >
+          <ArrowLeftIcon />
+          Back
+        </Button>
+        <Button type="button" onClick={onConfirm} disabled={confirming}>
+          {confirming ? (
+            <Loader2Icon className="animate-spin" />
+          ) : (
+            <UploadCloudIcon />
+          )}
+          Create chain
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+}
+
+function AcsPreviewStep({
+  preview,
+  imageOverrides,
+  onImageChange,
+  onBack,
+  onConfirm,
+  confirming,
+}: {
+  preview: AcsChainImportPreview;
+  imageOverrides: Record<string, string>;
+  onImageChange: (acronym: string, url: string) => void;
+  onBack: () => void;
+  onConfirm: () => void;
+  confirming: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 pt-3">
+      <div className="rounded-md border p-3">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <WorkflowIcon className="size-4" />
+          {preview.name}
+        </div>
+        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-[11px]">
+          <Badge variant="outline">
+            {preview.nodes.length} node{preview.nodes.length === 1 ? '' : 's'}
+          </Badge>
+          <Badge variant="outline">
+            {preview.edges.length} edge{preview.edges.length === 1 ? '' : 's'}
+          </Badge>
+          {preview.detectedSourceRoot ? (
+            <span>
+              re-rooted from{' '}
+              <code className="font-mono">{preview.detectedSourceRoot}</code>
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {preview.warnings.map((w) => (
+        <div
+          key={w}
+          className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400 flex items-start gap-2 rounded-md border p-2 text-xs"
+        >
+          <CircleAlertIcon className="size-3.5 shrink-0" />
+          <span>{w}</span>
+        </div>
+      ))}
+
+      <Section
+        icon={<WorkflowIcon className="size-3.5" />}
+        title={`Nodes (${preview.nodes.length})`}
+      >
+        <ul className="flex flex-col divide-y">
+          {preview.nodes.map((n) => (
+            <li key={n.acronym} className="py-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="font-mono text-[10px]">
+                  {n.acronym}
+                </Badge>
+                <span className="text-muted-foreground text-xs">
+                  v{n.version} — {n.taskCount} task
+                  {n.taskCount === 1 ? '' : 's'} (
+                  {n.executables.map((e) => e.name).join(' → ')})
+                </span>
+              </div>
+              <div className="mt-1.5 grid grid-cols-1 gap-1 text-[11px]">
+                <TypeList label="Products" types={n.dbOutputTypes} tone="ok" />
+                <TypeList
+                  label="External aux"
+                  types={n.externalInputTypes}
+                  tone="info"
+                />
+              </div>
+              <div className="mt-1.5 flex items-center gap-2">
+                <Label
+                  htmlFor={`acs-image-${n.acronym}`}
+                  className="text-muted-foreground shrink-0 text-[11px]"
+                >
+                  Image
+                </Label>
+                <Input
+                  id={`acs-image-${n.acronym}`}
+                  value={imageOverrides[n.acronym] ?? n.suggestedImageUrl ?? ''}
+                  onChange={(e) => onImageChange(n.acronym, e.target.value)}
+                  placeholder="harbor…/cryosat-ocean-ipf1"
+                  className="h-7 font-mono text-[11px]"
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {preview.edges.length > 0 ? (
+        <Section
+          icon={<ArrowRightIcon className="size-3.5" />}
+          title={`Edges (${preview.edges.length})`}
+        >
+          <ul className="flex flex-col gap-1.5">
+            {preview.edges.map((e, i) => (
+              <li
+                key={`${e.parentAcronym}-${e.childAcronym}-${i}`}
+                className="flex flex-wrap items-center gap-1.5 text-xs"
+              >
+                <Badge variant="secondary" className="font-mono text-[10px]">
+                  {e.parentAcronym}
+                </Badge>
+                <ArrowRightIcon className="text-muted-foreground size-3" />
+                <Badge variant="secondary" className="font-mono text-[10px]">
+                  {e.childAcronym}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={
+                    e.dependencyMode === 'OnCompletion'
+                      ? 'text-amber-600 dark:text-amber-400 text-[10px]'
+                      : 'text-[10px]'
+                  }
+                >
+                  {e.dependencyMode}
+                </Badge>
+                <span className="text-muted-foreground">via</span>
+                <code className="font-mono text-[10px]">
+                  {e.viaTypes.join(', ')}
+                </code>
               </li>
             ))}
           </ul>

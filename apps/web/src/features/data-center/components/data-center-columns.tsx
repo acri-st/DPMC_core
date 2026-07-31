@@ -51,7 +51,7 @@ export function buildDataCenterColumns({
     },
     {
       accessorKey: 'energyIntensity',
-      header: 'Energy (kWh/u)',
+      header: 'Energy (kWh/Go)',
       cell: ({ row }) => row.original.energyIntensity.toString(),
     },
     {

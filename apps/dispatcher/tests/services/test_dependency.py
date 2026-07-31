@@ -15,30 +15,12 @@ def _child_chain(pcid: int = 100) -> list[dict]:
     return [{"pcid": pcid}]
 
 
-def _parents(*entries: tuple) -> list[dict]:
-    """Each entry: (mode, parent_id, parent_status[, condition])."""
-    rows = []
-    for e in entries:
-        mode, pid, status = e[0], e[1], e[2]
-        condition = e[3] if len(e) > 3 else None
-        rows.append(
-            {
-                "mode": mode,
-                "parent_id": pid,
-                "parent_status": status,
-                "condition": condition,
-            }
-        )
-    return rows
-
-
-def _data_available(product_type_id: int, timeout_ms: int = 60_000) -> dict:
-    """A dataAvailable edge condition (as psycopg returns the JSONB column)."""
-    return {
-        "kind": "dataAvailable",
-        "productTypeId": product_type_id,
-        "timeoutMs": timeout_ms,
-    }
+def _parents(*entries: tuple[str, int, str]) -> list[dict]:
+    """Each entry: (mode, parent_id, parent_status)."""
+    return [
+        {"mode": mode, "parent_id": pid, "parent_status": status}
+        for mode, pid, status in entries
+    ]
 
 
 @pytest.mark.asyncio
@@ -142,43 +124,14 @@ async def test_mixed_modes_grouped_by_dependency_mode() -> None:
 
 
 @pytest.mark.asyncio
-async def test_on_data_available_promotes_to_ready_when_product_present() -> None:
-    """The expected product type is in the catalog → child goes ready."""
+async def test_on_data_available_edge_is_skipped_with_warning() -> None:
+    """on_data_available is not yet wired; the edge is dropped from the
+    decision and the child is treated as if no edges were declared."""
     conn = ScriptedConn([
         _waiting(),
         _child_chain(),
-        _parents(("on_data_available", 12, "success", _data_available(5))),
-        [{"?column?": 1}],  # is_data_available(5) → True
+        _parents(("on_data_available", 12, "success")),
     ])
     db = FakeDb(conn)
     assert await dep_tick(db) == 1
     assert conn.updates[0][1] == ("ready", 2)
-
-
-@pytest.mark.asyncio
-async def test_on_data_available_stays_waiting_when_product_absent() -> None:
-    """No product of the expected type yet → child keeps waiting (no change)."""
-    conn = ScriptedConn([
-        _waiting(),
-        _child_chain(),
-        _parents(("on_data_available", 12, "success", _data_available(5))),
-        [],  # is_data_available(5) → False
-    ])
-    db = FakeDb(conn)
-    assert await dep_tick(db) == 0
-    assert conn.updates == []
-
-
-@pytest.mark.asyncio
-async def test_on_data_available_without_condition_stays_waiting() -> None:
-    """A malformed on_data_available edge (no dataAvailable condition) is
-    fail-safe: the child waits rather than running without its data."""
-    conn = ScriptedConn([
-        _waiting(),
-        _child_chain(),
-        _parents(("on_data_available", 12, "success")),  # condition is None
-        [],  # is_data_available(0 sentinel) → False
-    ])
-    db = FakeDb(conn)
-    assert await dep_tick(db) == 0
-    assert conn.updates == []

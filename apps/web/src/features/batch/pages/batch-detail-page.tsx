@@ -21,6 +21,7 @@ import {
 import { Separator } from '@/shared/components/ui/separator';
 import { BatchStatusBadge } from '@/features/batch/components/batch-status-badge';
 import { formatCo2 } from '@/features/batch/libs/format-co2';
+import { Co2Breakdown } from '@/shared/components/co2-breakdown';
 import {
   useBatch,
   useBatchInputs,
@@ -266,9 +267,19 @@ export function BatchDetailPage() {
             <Separator />
             <Field label="Duration">{duration ?? '—'}</Field>
             <Separator />
-            <Field label="CO₂">
-              {typeof b.co2Grams === 'number' ? formatCo2(b.co2Grams) : '—'}
-            </Field>
+            <div className="space-y-2">
+              <Field label="CO₂">
+                {typeof b.co2Grams === 'number' ? formatCo2(b.co2Grams) : '—'}
+              </Field>
+              {b.co2GramsByConcern ? (
+                <Co2Breakdown
+                  concerns={b.co2GramsByConcern}
+                  energyWh={b.energyWhByConcern}
+                  transferSource={b.transferSource}
+                  transferSourceMixed={b.transferSourceMixed}
+                />
+              ) : null}
+            </div>
             <Separator />
             <Field label="Created">
               {format(new Date(b.createdAt), 'PPpp')}

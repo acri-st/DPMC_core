@@ -18,7 +18,7 @@ describe('T05.11 — Detection of missing dependency references', () => {
   let cookie: string;
   let chainId: string;
   let stepAId: string;
-  const nonExistentId = '00000000-0000-0000-0000-000000000000';
+  const nonExistentId = 0;
 
   beforeAll(async () => {
     log.step('beforeAll — checking env reachability');
@@ -49,7 +49,7 @@ describe('T05.11 — Detection of missing dependency references', () => {
     log.action('GET chain to resolve stepA ID');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.11-step-A')?.id;
     log.ok(`stepA=${stepAId}`);
   });

@@ -17,7 +17,7 @@ type PrismaHost = {
   hasGpu: boolean;
   gpuCount: number;
   gpuModel: string | null;
-  containerRuntime: 'Docker' | 'Apptainer' | 'None';
+  containerRuntime: 'Docker' | 'Apptainer' | 'Kubernetes' | 'None';
   lastHeartbeatAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

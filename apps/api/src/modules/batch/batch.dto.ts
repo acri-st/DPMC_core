@@ -12,12 +12,16 @@ import {
   ListBatchProductsResponse200Schema,
   ListBatchResponse200Schema,
   ReplayBatchResponse201Schema,
+  BatchStatusSummaryResponse200Schema,
   UpdateBatchPriorityBodySchema,
   UpdateBatchPriorityResponse200Schema,
 } from '@dpmc/client';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { PaginationQuerySchema } from '@/common/utils/pagination';
+import {
+  PaginationQuerySchema,
+  enumArrayQueryParam,
+} from '@/common/utils/pagination';
 
 // GET /batch
 export const ListBatchResponseSchema = ListBatchResponse200Schema;
@@ -80,10 +84,17 @@ export class UpdateBatchPriorityResponse extends createZodDto(
   UpdateBatchPriorityResponseSchema,
 ) {}
 
+// GET /batch/status-summary
+export const BatchStatusSummaryResponseSchema =
+  BatchStatusSummaryResponse200Schema;
+export class BatchStatusSummaryResponse extends createZodDto(
+  BatchStatusSummaryResponseSchema,
+) {}
+
 // GET /batch (list with typed filters)
 export const BatchListQuerySchema = PaginationQuerySchema.extend({
-  status: BatchStatusSchema.optional(),
-  kind: BatchKindSchema.optional(),
+  status: enumArrayQueryParam(BatchStatusSchema),
+  kind: enumArrayQueryParam(BatchKindSchema),
 });
 export type BatchListQuery = z.infer<typeof BatchListQuerySchema>;
 export class BatchListQueryDto extends createZodDto(BatchListQuerySchema) {}

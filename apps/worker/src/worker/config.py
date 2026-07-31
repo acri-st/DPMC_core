@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -65,3 +65,37 @@ class WorkerConfig(BaseSettings):
 
     runner_enabled: bool = True
     runner_poll_interval_s: float = Field(default=2.0, gt=0)
+    # Concurrent jobs per worker (one runner thread per slot).
+    runner_slots: int = Field(default=1, ge=1, le=256)
+
+    # Kubernetes execution backend (see backends/kubernetes.py).
+    # "auto" keeps the historical probe (docker socket, then apptainer).
+    execution_backend: Literal["auto", "kubernetes"] = "auto"
+    k8s_namespace: str = ""  # empty = read the in-cluster ServiceAccount namespace
+    k8s_pvc_name: str = ""
+    # Comma-separated `hostPrefix=subPath` pairs mapping dispatch mount
+    # sources onto the shared PVC, e.g. "/repo/data/warhol/runs=runs".
+    k8s_mount_map: str = ""
+    k8s_image_pull_secret: str = ""  # empty = no pull secret on job pods
+    # JSON list of toleration objects copied onto job pods, e.g.
+    # '[{"key":"project","operator":"Equal","value":"shared","effect":"NoSchedule"}]'.
+    # Needed when cluster nodes are tainted (job pods don't inherit the
+    # worker Deployment's tolerations).
+    k8s_job_tolerations: str = ""
+    # UID used as runAsUser/runAsGroup/fsGroup on job pods. Required by
+    # PodSecurity "restricted" (runAsNonRoot) since processing images are
+    # typically root-built; must match the worker's own uid so both sides
+    # can write the shared PVC workdir.
+    k8s_job_run_as_uid: int = Field(default=1000, gt=0)
+    k8s_job_ttl_s: int = Field(default=3600, gt=0)
+    k8s_start_timeout_s: float = Field(default=300.0, gt=0)
+
+    @model_validator(mode="after")
+    def _require_k8s_settings(self) -> WorkerConfig:
+        if self.execution_backend == "kubernetes" and not (
+            self.k8s_pvc_name and self.k8s_mount_map
+        ):
+            raise ValueError(
+                "execution_backend=kubernetes requires DPMC_K8S_PVC_NAME and DPMC_K8S_MOUNT_MAP"
+            )
+        return self

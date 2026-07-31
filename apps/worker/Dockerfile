@@ -12,9 +12,9 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends docker.io \
  && rm -rf /var/lib/apt/lists/*
 
-COPY apps/worker/pyproject.toml apps/worker/uv.lock ./
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-COPY apps/worker/src ./src
+COPY src ./src
 
 CMD ["sh", "-c", "export DPMC_WORKER_TOKEN=\"${DPMC_WORKER_TOKEN:-${WORKER_REGISTRATION_TOKEN}}\"; exec python -m worker"]

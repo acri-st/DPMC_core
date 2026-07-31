@@ -35,6 +35,7 @@ export class EdgesService {
           parentChainId: dto.parentChainId,
           childChainId: dto.childChainId,
           dependencyMode: dto.dependencyMode,
+          isFanOut: dto.isFanOut,
         },
       });
       return this.toDto(created);
@@ -56,7 +57,10 @@ export class EdgesService {
     await this.assertEdgeBelongsToChain(chainId, edgeId);
     const updated = await this.prisma.productionChainEdge.update({
       where: { id: edgeId },
-      data: { dependencyMode: dto.dependencyMode },
+      data: {
+        dependencyMode: dto.dependencyMode,
+        isFanOut: dto.isFanOut,
+      },
     });
     return this.toDto(updated);
   }
@@ -66,14 +70,13 @@ export class EdgesService {
     await this.prisma.productionChainEdge.delete({ where: { id: edgeId } });
   }
 
-  // TODO: @dpmc/client ProductionChainEdge still uses productionChainVersionId —
-  // casting to any until the client type is updated in a subsequent task.
   private toDto(edge: {
     id: number;
     productionChainId: number;
     parentChainId: number;
     childChainId: number;
     dependencyMode: DependencyMode;
+    isFanOut: boolean;
   }): ProductionChainEdge {
     return {
       id: edge.id,
@@ -81,7 +84,8 @@ export class EdgesService {
       parentChainId: edge.parentChainId,
       childChainId: edge.childChainId,
       dependencyMode: edge.dependencyMode,
-    } as any;
+      isFanOut: edge.isFanOut,
+    };
   }
 
   private async assertChainsExistInChain(

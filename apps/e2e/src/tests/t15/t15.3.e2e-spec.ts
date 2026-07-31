@@ -43,7 +43,9 @@ describe('T15.3 — Export of environmental footprint metrics', () => {
 
     log.action('GET /metrics/co2');
     const res = await request(API).get('/metrics/co2');
-    log.http('GET', '/metrics/co2', res.status, { 'content-type': res.headers['content-type'] });
+    log.http('GET', '/metrics/co2', res.status, {
+      'content-type': res.headers['content-type'],
+    });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/json/);
     log.ok('content-type is application/json');
@@ -56,10 +58,13 @@ describe('T15.3 — Export of environmental footprint metrics', () => {
 
     log.action('GET /metrics');
     const res = await request(API).get('/metrics');
-    log.http('GET', '/metrics', res.status, { 'content-type': res.headers['content-type'], length: res.text?.length });
+    log.http('GET', '/metrics', res.status, {
+      'content-type': res.headers['content-type'],
+      length: res.text?.length,
+    });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/plain/);
-    expect(res.text).toContain('dpmc_co2_grams_total');
-    log.ok('Prometheus endpoint exposes dpmc_co2_grams_total metric');
+    expect(res.text).toContain('dpmc_co2_grams');
+    log.ok('Prometheus endpoint exposes dpmc_co2_grams metric');
   });
 });

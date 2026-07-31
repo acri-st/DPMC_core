@@ -89,7 +89,7 @@ describe('T04.6 — Failure propagation in embedded chains', () => {
   it('Step 2 – chain task referencing a non-existent productionChainId is rejected', async () => {
     log.step('Step 2 — POST /task (non-existent chain ref)');
 
-    const nonExistentId = '00000000-0000-0000-0000-000000000000';
+    const nonExistentId = 0;
     const payload = {
       projectId: PROJECT_ID,
       kind: 'Chain',
@@ -118,7 +118,7 @@ describe('T04.6 — Failure propagation in embedded chains', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     log.ok(`processingChains: ${pcs.map((p: { name: string }) => p.name).join(', ')}`);
     expect(pcs.length).toBeGreaterThanOrEqual(1);
     expect(pcs[0].name).toBe('T04.6-failing-step');

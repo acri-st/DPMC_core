@@ -15,6 +15,7 @@ class DispatcherConfig(BaseSettings):
     database_url: str
     api_url: str = "http://localhost:3000/api"
     api_token: str = ""
+    api_ssl_verify: bool = True
 
     task_loop_interval_s: float = 5.0
     dependency_loop_interval_s: float = 5.0
@@ -29,13 +30,5 @@ class DispatcherConfig(BaseSettings):
     monitor_lost_host_threshold_s: float = 120.0
 
     recovery_on_startup: bool = True
-
-    # Retry policy for infra-failed jobs (host lost). `max_attempts` is the
-    # total number of times a job may run before it is left terminally Failed.
-    # Backoff before retry #n is base * multiplier**(n-1), clamped to cap.
     max_attempts: int = 3
-    retry_backoff_base_s: float = 30.0
-    retry_backoff_cap_s: float = 3600.0
-    retry_backoff_multiplier: float = 2.0
-
     log_level: str = "INFO"

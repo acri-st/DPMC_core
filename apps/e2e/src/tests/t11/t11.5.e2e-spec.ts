@@ -69,7 +69,7 @@ describe('T11.5 — Metadata and catalogue operations through APIs', () => {
     const res = await request(API).post('/task').set('Cookie', cookie).send({
       projectId: PROJECT_ID,
       kind: 'Standalone',
-      processorVersionId: '00000000-0000-0000-0000-000000000000',
+      processorVersionId: 0,
       priority: 0,
       productionMode: 'Nominal',
       priorityClass: 'NRT',

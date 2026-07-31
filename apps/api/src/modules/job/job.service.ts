@@ -2,10 +2,26 @@ import { PrismaService } from '@/core/prisma';
 import {
   DEFAULT_PAGE_SIZE,
   PaginatedResult,
+  buildOrderBy,
   buildSearchWhere,
   paginationSkipTake,
 } from '@/common/utils/pagination';
 import type { JobListQuery } from './job.dto';
+
+// Columns the job list may be sorted by (real Job scalar fields only).
+const JOB_SORTABLE = [
+  'createdAt',
+  'startedAt',
+  'endedAt',
+  'status',
+  'executionTag',
+  'avgPower',
+  'hostId',
+  'batchId',
+  'processingScriptVersionId',
+  'updatedAt',
+  'id',
+] as const;
 import {
   EVENTS,
   type JobStatusChangedPayload,
@@ -37,8 +53,14 @@ export class JobService {
       ...(query?.status ? { status: query.status } : {}),
       ...(search ?? {}),
     };
+    // Default: newest-created first (the list previously had no orderBy → the
+    // rows came back in non-deterministic DB order). Overridable via ?sort=&order=.
+    const orderBy = buildOrderBy(JOB_SORTABLE, query?.sort, query?.order, [
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ]);
     const [items, total] = await Promise.all([
-      this.prisma.job.findMany({ where, skip, take }),
+      this.prisma.job.findMany({ where, skip, take, orderBy }),
       this.prisma.job.count({ where }),
     ]);
     return { items, total };

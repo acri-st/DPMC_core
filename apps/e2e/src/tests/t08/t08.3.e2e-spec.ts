@@ -29,7 +29,7 @@ describe('T08.3 — Versioning of processor executables and auxiliary files', ()
   });
 
   // @plan T08.3
-  // @covers EOCP-E8-02 EOCP-E8-03
+  // @covers EOCP-E8-03
   it('processing_script_executable rows are tied to a specific version', async () => {
     log.step('DB query — processing_script_executable');
     await withDbClient(async (c) => {

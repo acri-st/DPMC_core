@@ -1,40 +1,48 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import type { BatchKind, BatchStatus } from '@dpmc/client';
 import { AlertCircleIcon, LayersIcon, RefreshCwIcon } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { DataTable } from '@/shared/components/data-table';
+import { FacetedFilter } from '@/shared/components/faceted-filter';
+import { ListHeader } from '@/shared/components/list-header';
 import { ViewModeToggle } from '@/shared/components/view-mode-toggle';
 import { useViewMode } from '@/shared/hooks/use-view-mode';
-import { PageHeader } from '@/shared/components/page-header';
-import { PageToolbar } from '@/shared/components/page-toolbar';
+import { useListParams } from '@/shared/hooks/use-list-params';
 import { PagePagination } from '@/shared/components/page-pagination';
 import { BatchCard } from '@/features/batch/components/batch-card';
 import { buildBatchColumns } from '@/features/batch/components/batch-columns';
 import { useBatchList } from '@/features/batch/hooks/use-batch-list';
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { useProductionChainList } from '@/features/production-chain/hooks/use-production-chain-list';
 
 const DEFAULT_PAGE_SIZE = 25;
 
+const BATCH_STATUS_OPTIONS = (
+  ['Pending', 'Running', 'Success', 'Failed', 'Cancelled'] as BatchStatus[]
+).map((s) => ({ value: s, label: s }));
+
+const BATCH_KIND_OPTIONS = (['Chain', 'Standalone'] as BatchKind[]).map(
+  (k) => ({ value: k, label: k }),
+);
+
 export function BatchListPage() {
+  const lp = useListParams({
+    filterKeys: ['status', 'kind'],
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+  });
   const [viewMode, setViewMode] = useViewMode('batches', 'table');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
-  const trimmedQ = debouncedSearch.trim();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setPage(1);
-  }, [trimmedQ]);
-
   const batchesQuery = useBatchList({
-    page,
-    pageSize,
-    q: trimmedQ.length > 0 ? trimmedQ : undefined,
+    page: lp.page,
+    pageSize: lp.pageSize,
+    q: lp.trimmedQ || undefined,
+    status: lp.filters.status as BatchStatus[],
+    kind: lp.filters.kind as BatchKind[],
+    sort: lp.sort,
+    order: lp.order,
   });
   const { data: chainsResult } = useProductionChainList();
 
@@ -55,35 +63,51 @@ export function BatchListPage() {
   const total = batchesQuery.data?.total ?? 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
+    <div className="flex flex-1 flex-col gap-2">
+      <ListHeader
         icon={LayersIcon}
         title="Batches"
         subtitle="Runs of a production chain or standalone scripts."
         count={batchesQuery.data ? total : undefined}
         noun="batch"
         nounPlural="batches"
-      >
-        <ViewModeToggle value={viewMode} onChange={setViewMode} />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => batchesQuery.refetch()}
-          disabled={batchesQuery.isFetching}
-        >
-          <RefreshCwIcon
-            className={batchesQuery.isFetching ? 'animate-spin' : undefined}
-          />
-          Refresh
-        </Button>
-      </PageHeader>
-
-      <PageToolbar
         search={{
-          value: search,
-          onChange: setSearch,
+          value: lp.q,
+          onChange: lp.setQ,
           placeholder: 'Search by execution tag…',
         }}
+        filters={
+          <>
+            <FacetedFilter
+              label="Status"
+              options={BATCH_STATUS_OPTIONS}
+              selected={lp.filters.status}
+              onChange={(v) => lp.setFilter('status', v)}
+            />
+            <FacetedFilter
+              label="Kind"
+              options={BATCH_KIND_OPTIONS}
+              selected={lp.filters.kind}
+              onChange={(v) => lp.setFilter('kind', v)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => batchesQuery.refetch()}
+              disabled={batchesQuery.isFetching}
+            >
+              <RefreshCwIcon
+                className={batchesQuery.isFetching ? 'animate-spin' : undefined}
+              />
+              Refresh
+            </Button>
+          </>
+        }
       />
 
       {batchesQuery.isError ? (
@@ -118,6 +142,8 @@ export function BatchListPage() {
         <DataTable
           data={items}
           columns={columns}
+          sorting={lp.sorting}
+          onSortingChange={lp.setSorting}
           onRowClick={(row) =>
             navigate({ to: '/batches/$id', params: { id: String(row.id) } })
           }
@@ -127,14 +153,11 @@ export function BatchListPage() {
 
       {batchesQuery.data ? (
         <PagePagination
-          page={page}
-          pageSize={pageSize}
+          page={lp.page}
+          pageSize={lp.pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={lp.setPage}
+          onPageSizeChange={lp.setPageSize}
           noun="batch"
           nounPlural="batches"
           isFetching={batchesQuery.isFetching}

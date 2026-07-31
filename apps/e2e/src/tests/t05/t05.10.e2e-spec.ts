@@ -50,7 +50,7 @@ describe('T05.10 — Absence of unintended serialization', () => {
     log.action('GET chain to resolve IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.10-step-A');
     const pcC = pcs.find((pc: { name: string }) => pc.name === 'T05.10-step-C');
 
@@ -109,11 +109,11 @@ describe('T05.10 — Absence of unintended serialization', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.10-step-B');
     expect(pcB).toBeDefined();
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const incomingToB = edges.filter((e: { childChainId: string }) => e.childChainId === pcB.id);
     log.ok(`incoming edges to B: ${incomingToB.length}`);
     expect(incomingToB.length).toBe(0);
@@ -128,10 +128,10 @@ describe('T05.10 — Absence of unintended serialization', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.10-step-A');
     const pcC = pcs.find((pc: { name: string }) => pc.name === 'T05.10-step-C');
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
 
     const incomingToA = edges.filter((e: { childChainId: string }) => e.childChainId === pcA.id);
     const incomingToC = edges.filter((e: { childChainId: string }) => e.childChainId === pcC.id);

@@ -17,8 +17,8 @@ const USER_BY_ROLE: Record<TestRole, { username: string; password: string }> = {
 interface SessionContext {
   /** Cookie value to set on supertest requests via `.set('Cookie', cookie)`. */
   cookie: string;
-  /** App-side user.id (UUID) — handy for assertions. */
-  userId: string;
+  /** App-side user.id — handy for assertions. */
+  userId: number;
 }
 
 const sessionCache = new Map<TestRole, SessionContext>();
@@ -106,16 +106,16 @@ async function upsertUser(opts: {
   keycloakSub: string;
   email: string;
   displayName: string;
-}): Promise<string> {
+}): Promise<number> {
   return withDbClient(async (c) => {
-    const existing = await c.query<{ id: string }>(
+    const existing = await c.query<{ id: number }>(
       `SELECT id FROM "user" WHERE "keycloakSub" = $1`,
       [opts.keycloakSub],
     );
     if (existing.rows.length > 0) return existing.rows[0].id;
-    const inserted = await c.query<{ id: string }>(
-      `INSERT INTO "user" (id, "keycloakSub", email, "displayName", "updatedAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, NOW())
+    const inserted = await c.query<{ id: number }>(
+      `INSERT INTO "user" ("keycloakSub", email, "displayName", "updatedAt")
+       VALUES ($1, $2, $3, NOW())
        RETURNING id`,
       [opts.keycloakSub, opts.email, opts.displayName],
     );
@@ -124,18 +124,18 @@ async function upsertUser(opts: {
 }
 
 async function insertSession(opts: {
-  userId: string;
+  userId: number;
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresAt: Date;
   refreshTokenExpiresAt: Date;
-}): Promise<string> {
+}): Promise<number> {
   return withDbClient(async (c) => {
-    const r = await c.query<{ id: string }>(
+    const r = await c.query<{ id: number }>(
       `INSERT INTO "session"
-         (id, "userId", "accessToken", "refreshToken",
+         ("userId", "accessToken", "refreshToken",
           "accessTokenExpiresAt", "refreshTokenExpiresAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
       [
         opts.userId,

@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T07.9 — Concurrent triggering and conflict resolution
-// @covers EOCP-E7-06
+// @covers EOCP-E7-01
 //
 // Description: This test verifies the system behavior when multiple triggers occur simultaneously.
 // Prerequisites: Multiple trigger types are active. Concurrency handling is implemented.
@@ -43,7 +43,7 @@ describe('T07.9 — Concurrent triggering and conflict resolution', () => {
   });
 
   // @plan T07.9
-  // @covers EOCP-E7-06
+  // @covers EOCP-E7-01
   it('Step 1 – concurrent POST /task requests from different sessions are all accepted', async () => {
     log.step('Step 1 — POST /task x4 (concurrent, 2 admin + 2 operator)');
     const taskPayload = (comment: string) => ({
@@ -73,7 +73,7 @@ describe('T07.9 — Concurrent triggering and conflict resolution', () => {
   });
 
   // @plan T07.9
-  // @covers EOCP-E7-06
+  // @covers EOCP-E7-01
   it('Step 2 – all concurrently created jobs have distinct IDs', async () => {
     log.step('Step 2 — verify distinct IDs');
     expect(createdTaskIds.length).toBe(4);
@@ -82,7 +82,7 @@ describe('T07.9 — Concurrent triggering and conflict resolution', () => {
   });
 
   // @plan T07.9
-  // @covers EOCP-E7-06
+  // @covers EOCP-E7-01
   it('Step 3 – all jobs are independently accessible and system is stable', async () => {
     log.step('Step 3 — GET /task/:id x4 + health checks');
     const fetches = await Promise.all(

@@ -64,7 +64,7 @@ describe('T06.1 — Endtoend scheduling based on inputs, dependencies, and produ
       .get(`/production-chain/${chainId}`)
       .set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T06.1-step-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T06.1-step-B');
     expect(pcA).toBeDefined();
@@ -123,7 +123,7 @@ describe('T06.1 — Endtoend scheduling based on inputs, dependencies, and produ
       .set('Cookie', cookie);
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     expect(edges.length).toBeGreaterThanOrEqual(1);
     const onSuccessEdge = edges.find(
       (e: { dependencyMode: string }) => e.dependencyMode === 'OnSuccess',

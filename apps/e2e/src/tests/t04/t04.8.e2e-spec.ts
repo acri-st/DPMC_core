@@ -70,7 +70,7 @@ describe('T04.8 — Failure handling in linear chains', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     log.ok(`processingChains: ${pcs.map((p: { name: string }) => p.name).join(', ')}`);
     expect(pcs.length).toBeGreaterThanOrEqual(2);
     expect(pcs.some((pc: { name: string }) => pc.name === 'T04.8-task-A')).toBe(true);

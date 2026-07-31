@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T03.8 — Rejection of impossible resource declarations
-// @covers EOCP-E3-02
+// @covers EOCP-E3-01
 //
 // Description: Verifies that tasks declaring impossible resource requirements are either rejected
 //   at submission or remain pending without crashing the system. The API uses lazy scheduling so
@@ -38,7 +38,7 @@ describe('T03.8 — Rejection of impossible resource declarations', () => {
   });
 
   // @plan T03.8
-  // @covers EOCP-E3-02
+  // @covers EOCP-E3-01
   it('Step 1 – task with extreme resource requirements is handled without server error', async () => {
     log.step('Step 1 — POST /task with impossible resources (99TB RAM, 9999 cores, GPU)');
 
@@ -59,7 +59,7 @@ describe('T03.8 — Rejection of impossible resource declarations', () => {
   });
 
   // @plan T03.8
-  // @covers EOCP-E3-02
+  // @covers EOCP-E3-01
   it('Step 2 – system remains stable: task list is still accessible', async () => {
     log.step('Step 2 — GET /task (stability check after extreme submission)');
 
@@ -72,7 +72,7 @@ describe('T03.8 — Rejection of impossible resource declarations', () => {
   });
 
   // @plan T03.8
-  // @covers EOCP-E3-02
+  // @covers EOCP-E3-01
   it('Step 3 – if task was accepted, it can be retrieved and deleted cleanly', async () => {
     log.step('Step 3 — cleanup: retrieve and delete task if accepted');
 

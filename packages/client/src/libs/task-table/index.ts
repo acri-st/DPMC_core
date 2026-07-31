@@ -8,4 +8,6 @@ const c = initContract();
 export const taskTable = c.router({
   import: $.ImportTaskTableRoute,
   commit: $.CommitTaskTableRoute,
+  history: $.ListTaskTableImportRoute,
+  historyGet: $.GetTaskTableImportRoute,
 });

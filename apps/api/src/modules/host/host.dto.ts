@@ -21,15 +21,19 @@ import {
 import { createZodDto } from 'nestjs-zod';
 import type { z } from 'zod';
 import { z as zod } from 'zod';
-import { HostStatusSchema } from '@dpmc/client';
-import { PaginationQuerySchema } from '@/common/utils/pagination';
+import { HostContainerRuntimeSchema, HostStatusSchema } from '@dpmc/client';
+import {
+  PaginationQuerySchema,
+  enumArrayQueryParam,
+} from '@/common/utils/pagination';
 
 // GET /host
 export const ListHostResponseSchema = ListHostResponse200Schema;
 export class ListHostResponse extends createZodDto(ListHostResponseSchema) {}
 
 export const HostListQuerySchema = PaginationQuerySchema.extend({
-  status: HostStatusSchema.optional(),
+  status: enumArrayQueryParam(HostStatusSchema),
+  containerRuntime: enumArrayQueryParam(HostContainerRuntimeSchema),
 });
 export type HostListQuery = zod.infer<typeof HostListQuerySchema>;
 export class HostListQueryDto extends createZodDto(HostListQuerySchema) {}

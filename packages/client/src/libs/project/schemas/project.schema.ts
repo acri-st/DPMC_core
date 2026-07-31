@@ -7,6 +7,10 @@ export const ProjectSchema = z.object({
   name: z.string(),
   comment: z.string().nullable(),
   isActive: z.boolean(),
+  // Multiplies every job's effective priority in the dispatcher
+  // (apps/dispatcher domain/dispatch.effective_priority), so fair-share
+  // between projects is tuned from here.
+  priorityWeight: z.number(),
   allowedProductionModes: ProductionModeSchema.array(),
   isDefault: z.boolean(),
   createdAt: z.coerce.date(),
@@ -23,6 +27,7 @@ export const CreateProjectBodySchema = z.object({
   name: z.string().min(1).max(255),
   comment: z.string().max(2000).nullable().optional(),
   isActive: z.boolean().optional(),
+  priorityWeight: z.number().positive().optional(),
   allowedProductionModes: ProductionModeSchema.array().optional(),
   isDefault: z.boolean().optional(),
 });
@@ -34,6 +39,7 @@ export const UpdateProjectBodySchema = z.object({
   name: z.string().min(1).max(255).optional(),
   comment: z.string().max(2000).nullable().optional(),
   isActive: z.boolean().optional(),
+  priorityWeight: z.number().positive().optional(),
   allowedProductionModes: ProductionModeSchema.array().optional(),
   isDefault: z.boolean().optional(),
 });

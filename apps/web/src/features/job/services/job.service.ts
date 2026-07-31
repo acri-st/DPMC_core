@@ -16,11 +16,15 @@ const GetResponseSchema = z.object({
   data: JobSchema,
 });
 
+export type SortOrder = 'asc' | 'desc';
+
 export type ListJobsParams = {
   page: number;
   pageSize: number;
   q?: string;
   status?: JobStatus;
+  sort?: string;
+  order?: SortOrder;
 };
 
 export type ListJobsResult = {
@@ -37,6 +41,10 @@ export async function listJobs(
   });
   if (params.q) search.set('q', params.q);
   if (params.status) search.set('status', params.status);
+  if (params.sort) {
+    search.set('sort', params.sort);
+    search.set('order', params.order ?? 'desc');
+  }
   const { data, headers } = await apiFetchWithMeta<unknown>(
     `/job?${search.toString()}`,
   );

@@ -1,5 +1,6 @@
 /**
- * Format a byte value into a human-readable string (KB, MB, GB, TB).
+ * Format a byte value into a human-readable string using binary (1024-based)
+ * units (KiB, MiB, GiB, TiB).
  * Accepts number or numeric string. Falls back to "—" for non-finite input.
  */
 export function formatBytes(
@@ -14,7 +15,7 @@ export function formatBytes(
         : Number(value);
   if (!Number.isFinite(num) || num <= 0) return '0 B';
 
-  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
   let i = 0;
   let n = num;
   while (n >= 1024 && i < units.length - 1) {

@@ -11,8 +11,18 @@ import { FailuresFeed } from '@/features/overview/components/failures-feed';
 import { ThroughputChart } from '@/features/overview/components/throughput-chart';
 
 export function OverviewPage() {
-  const { stats, isLoading, isError, batches, tasks, hosts } =
-    useOverviewData();
+  const {
+    stats,
+    isLoading,
+    isError,
+    batches,
+    tasks,
+    hosts,
+    throughputTasks,
+    throughputLoading,
+    taskSummary,
+    batchSummary,
+  } = useOverviewData();
   const { data: chainsResult } = useProductionChainList();
 
   const chainNameById = useMemo<Record<string, string>>(() => {
@@ -42,12 +52,13 @@ export function OverviewPage() {
         </div>
       ) : null}
 
-      <KpiCards stats={stats} />
-
-      <ThroughputChart
-        tasks={tasks.data?.items ?? []}
-        isLoading={tasks.isLoading}
+      <KpiCards
+        stats={stats}
+        taskSummary={taskSummary}
+        batchSummary={batchSummary}
       />
+
+      <ThroughputChart tasks={throughputTasks} isLoading={throughputLoading} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <RecentBatches

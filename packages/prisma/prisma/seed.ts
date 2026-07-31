@@ -27,7 +27,7 @@ const SEED_HISTORICAL_PRODUCTS = process.env.SEED_HISTORICAL_PRODUCTS === 'true'
     await runStep('ProcessingScripts', () => seedProcessingScripts(prisma));
     await runStep('Project', () => seedDefaultProject(prisma));
     await runStep('ProductionChains', () => seedProductionChains(prisma));
-    await runStep('Sources', () => seedSources(prisma));
+    await runStep('Sources', (progress) => seedSources(prisma, progress));
 
     if (SEED_HISTORICAL_PRODUCTS) {
       await runStep('Products', (progress) => seedProducts(prisma, progress));

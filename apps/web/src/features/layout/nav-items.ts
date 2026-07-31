@@ -3,6 +3,7 @@ import {
   BoxesIcon,
   CalendarClockIcon,
   DatabaseIcon,
+  FileCode2Icon,
   FolderIcon,
   LayersIcon,
   LayoutDashboardIcon,
@@ -65,6 +66,13 @@ export const NAV_ITEMS: DashboardNavItem[] = [
     icon: PackageIcon,
     matchPath: (p) =>
       p === '/processor-versions' || p.startsWith('/processor-versions/'),
+  },
+  {
+    to: '/processing-scripts',
+    label: 'Processing Scripts',
+    icon: FileCode2Icon,
+    matchPath: (p) =>
+      p === '/processing-scripts' || p.startsWith('/processing-scripts/'),
   },
   {
     to: '/products',
