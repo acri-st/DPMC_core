@@ -1,39 +1,46 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import type { HostContainerRuntime, HostStatus } from '@dpmc/client';
 import { AlertCircleIcon, RefreshCwIcon, ServerIcon } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { DataTable } from '@/shared/components/data-table';
+import { FacetedFilter } from '@/shared/components/faceted-filter';
+import { ListHeader } from '@/shared/components/list-header';
 import { ViewModeToggle } from '@/shared/components/view-mode-toggle';
 import { useViewMode } from '@/shared/hooks/use-view-mode';
-import { PageHeader } from '@/shared/components/page-header';
+import { useListParams } from '@/shared/hooks/use-list-params';
 import { PagePagination } from '@/shared/components/page-pagination';
-import { PageToolbar } from '@/shared/components/page-toolbar';
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { HostCard } from '@/features/host/components/host-card';
 import { buildHostColumns } from '@/features/host/components/host-columns';
 import { useHostList } from '@/features/host/hooks/use-host-list';
 
 const DEFAULT_PAGE_SIZE = 50;
 
+const HOST_STATUS_OPTIONS = (
+  ['Up', 'Busy', 'Off', 'Maintenance'] as HostStatus[]
+).map((s) => ({ value: s, label: s }));
+
+const HOST_RUNTIME_OPTIONS = (
+  ['Docker', 'Apptainer', 'Kubernetes', 'None'] as HostContainerRuntime[]
+).map((r) => ({ value: r, label: r }));
+
 export function HostListPage() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const lp = useListParams({
+    filterKeys: ['status', 'containerRuntime'],
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+  });
   const [viewMode, setViewMode] = useViewMode('hosts', 'list');
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
-  const trimmedQ = debouncedSearch.trim();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setPage(1);
-  }, [trimmedQ]);
-
   const { data, isLoading, isError, error, refetch, isFetching } = useHostList({
-    page,
-    pageSize,
-    q: trimmedQ.length > 0 ? trimmedQ : undefined,
+    page: lp.page,
+    pageSize: lp.pageSize,
+    q: lp.trimmedQ || undefined,
+    status: lp.filters.status as HostStatus[],
+    containerRuntime: lp.filters.containerRuntime as HostContainerRuntime[],
+    sort: lp.sort,
+    order: lp.order,
   });
 
   const total = data?.total ?? 0;
@@ -45,32 +52,50 @@ export function HostListPage() {
   const columns = buildHostColumns({ onView: goToHost });
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
+    <div className="flex flex-1 flex-col gap-2">
+      <ListHeader
         icon={ServerIcon}
         title="Hosts"
         subtitle="Worker hosts registered across data centers."
         count={data ? total : undefined}
         noun="host"
-      >
-        <ViewModeToggle value={viewMode} onChange={setViewMode} />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
-          <RefreshCwIcon className={isFetching ? 'animate-spin' : undefined} />
-          Refresh
-        </Button>
-      </PageHeader>
-
-      <PageToolbar
         search={{
-          value: search,
-          onChange: setSearch,
+          value: lp.q,
+          onChange: lp.setQ,
           placeholder: 'Search by hostname or IP address…',
         }}
+        filters={
+          <>
+            <FacetedFilter
+              label="Status"
+              options={HOST_STATUS_OPTIONS}
+              selected={lp.filters.status}
+              onChange={(v) => lp.setFilter('status', v)}
+            />
+            <FacetedFilter
+              label="Runtime"
+              options={HOST_RUNTIME_OPTIONS}
+              selected={lp.filters.containerRuntime}
+              onChange={(v) => lp.setFilter('containerRuntime', v)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCwIcon
+                className={isFetching ? 'animate-spin' : undefined}
+              />
+              Refresh
+            </Button>
+          </>
+        }
       />
 
       {isError ? (
@@ -104,6 +129,8 @@ export function HostListPage() {
         <DataTable
           data={items}
           columns={columns}
+          sorting={lp.sorting}
+          onSortingChange={lp.setSorting}
           onRowClick={(row) => goToHost(row.id)}
           emptyMessage="No hosts found."
         />
@@ -111,14 +138,11 @@ export function HostListPage() {
 
       {data ? (
         <PagePagination
-          page={page}
-          pageSize={pageSize}
+          page={lp.page}
+          pageSize={lp.pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={lp.setPage}
+          onPageSizeChange={lp.setPageSize}
           noun="host"
           isFetching={isFetching}
         />

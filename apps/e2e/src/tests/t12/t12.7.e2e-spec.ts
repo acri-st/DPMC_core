@@ -7,7 +7,7 @@ import { CONFIG } from '../../constants/config';
 import { keycloak } from '../../setup/services/keycloak';
 
 // @plan T12.7 — Integration with external IAM system
-// @covers EOCP-E12-07
+// @covers EOCP-E12-05
 //
 // Description: This test verifies that authentication is delegated to an external IAM (Keycloak).
 //   Full revoke/restore of a Keycloak user is not available in e2e; steps 2–3 are verified via
@@ -32,28 +32,28 @@ function encrypt(plaintext: string): Buffer {
   return Buffer.concat([iv, tag, enc]);
 }
 
-async function createDisposableAdminSession(): Promise<string> {
+async function createDisposableAdminSession(): Promise<number> {
   const tokens = await keycloak.requestTokens('admin', 'admin');
   const c = new Client({ connectionString: CONFIG.database.url });
   await c.connect();
   try {
     // Fetch the admin user's id
-    const userRes = await c.query<{ id: string }>(
+    const userRes = await c.query<{ id: number }>(
       `SELECT u.id FROM "user" u
        JOIN "session" s ON s."userId" = u.id
        LIMIT 1`,
     );
     if (userRes.rows.length === 0) {
       // Fallback: look up by email
-      const byEmail = await c.query<{ id: string }>(
+      const byEmail = await c.query<{ id: number }>(
         `SELECT id FROM "user" WHERE email LIKE 'admin%' LIMIT 1`,
       );
       if (byEmail.rows.length === 0) throw new Error('No admin user found in DB');
       const userId = byEmail.rows[0].id;
-      const r = await c.query<{ id: string }>(
-        `INSERT INTO "session" (id, "userId", "accessToken", "refreshToken",
+      const r = await c.query<{ id: number }>(
+        `INSERT INTO "session" ("userId", "accessToken", "refreshToken",
            "accessTokenExpiresAt", "refreshTokenExpiresAt")
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
         [
           userId,
           encrypt(tokens.access_token),
@@ -65,10 +65,10 @@ async function createDisposableAdminSession(): Promise<string> {
       return r.rows[0].id;
     }
     const userId = userRes.rows[0].id;
-    const r = await c.query<{ id: string }>(
-      `INSERT INTO "session" (id, "userId", "accessToken", "refreshToken",
+    const r = await c.query<{ id: number }>(
+      `INSERT INTO "session" ("userId", "accessToken", "refreshToken",
          "accessTokenExpiresAt", "refreshTokenExpiresAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5) RETURNING id`,
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
       [
         userId,
         encrypt(tokens.access_token),
@@ -85,7 +85,7 @@ async function createDisposableAdminSession(): Promise<string> {
 
 describe('T12.7 — Integration with external IAM system', () => {
   // @plan T12.7
-  // @covers EOCP-E12-07
+  // @covers EOCP-E12-05
   it('Step 1 – Keycloak issues tokens for valid credentials', async () => {
     const tokens = await keycloak.requestTokens('admin', 'admin');
     expect(typeof tokens.access_token).toBe('string');
@@ -94,7 +94,7 @@ describe('T12.7 — Integration with external IAM system', () => {
   });
 
   // @plan T12.7
-  // @covers EOCP-E12-07
+  // @covers EOCP-E12-05
   it('Step 2 – a Keycloak-backed session grants API access; logout revokes it', async () => {
     const sessionId = await createDisposableAdminSession();
     const cookie = `${CONFIG.session.cookieName}=${sessionId}`;
@@ -109,7 +109,7 @@ describe('T12.7 — Integration with external IAM system', () => {
   });
 
   // @plan T12.7
-  // @covers EOCP-E12-07
+  // @covers EOCP-E12-05
   it('Step 3 – a fresh session (IAM access restored) grants access again', async () => {
     // The shared admin session (cached) is independent of the disposed one above
     const { cookie } = await asAdminSession();

@@ -9,7 +9,6 @@ import {
   ScrollTextIcon,
   WorkflowIcon,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -17,21 +16,28 @@ import { ProductionChainGraph } from '@/features/production-chain/components/pro
 import { ChainParametersDrawer } from '@/features/production-chain/components/chain-parameters-drawer';
 import { ChainMetadataDrawer } from '@/features/production-chain/components/chain-metadata-drawer';
 import { NodeDrawer } from '@/features/production-chain/components/node-drawer';
+import { EdgeDrawer } from '@/features/production-chain/components/edge-drawer';
+import { ScriptPalette } from '@/features/production-chain/components/script-palette';
+import { EditorHelpDialog } from '@/features/production-chain/components/editor-help-dialog';
 import { useProductionChainGraph } from '@/features/production-chain/hooks/use-production-chain-graph';
+import { useChainEditor } from '@/features/production-chain/hooks/use-chain-editor';
+import { useCanEditProductionChain } from '@/features/production-chain/hooks/use-can-edit-production-chain';
 
 export function ProductionChainDetailPage() {
   const { id } = useParams({ from: '/production-chain/$id' });
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [paramsOpen, setParamsOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const { data, isLoading, isError, error } = useProductionChainGraph(id);
+  const canEdit = useCanEditProductionChain();
+  const editor = useChainEditor(id);
 
   const selectedNode =
     data?.scripts.find((s) => s.id === selectedNodeId) ?? null;
+  const selectedEdge = data?.edges.find((e) => e.id === selectedEdgeId) ?? null;
   const paramCount = countParams(data?.configuration ?? null);
-
-  const onComingSoon = (label: string) =>
-    toast.info(`${label}: editor coming soon`);
 
   return (
     <div className="flex flex-1 flex-col gap-3">
@@ -86,52 +92,61 @@ export function ProductionChainDetailPage() {
 
       {data ? (
         <>
-          <div className="bg-muted/20 relative h-[calc(100vh-160px)] min-h-[520px] overflow-hidden rounded-md border">
-            <ProductionChainGraph
-              graph={data}
-              onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
-            />
-            <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-card/80 backdrop-blur"
-                onClick={() => setMetadataOpen(true)}
-              >
-                <InfoIcon />
-                Metadata
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-card/80 backdrop-blur"
-                onClick={() => setParamsOpen(true)}
-              >
-                <ScrollTextIcon />
-                Parameters
-                {paramCount > 0 ? (
-                  <Badge variant="secondary" className="ml-1 text-[10px]">
-                    {paramCount}
-                  </Badge>
+          {/* 160px ≈ top nav + page header */}
+          <div className="bg-muted/20 relative flex h-[calc(100vh-160px)] min-h-[520px] overflow-hidden rounded-md border">
+            <div className="relative flex-1">
+              <ProductionChainGraph
+                graph={data}
+                editable={canEdit && !editor.isMutating}
+                onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
+                onEdgeClick={(edgeId) => setSelectedEdgeId(edgeId)}
+                onConnect={(p) => editor.createEdge.mutate(p)}
+              />
+              <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-2">
+                {canEdit ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-card/80 backdrop-blur"
+                    onClick={() => setPaletteOpen((v) => !v)}
+                  >
+                    <PlusIcon /> Node
+                  </Button>
                 ) : null}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-card/80 backdrop-blur"
-                onClick={() => onComingSoon('Add ProcessingChain')}
-              >
-                <PlusIcon /> Chain
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-card/80 backdrop-blur"
-                onClick={() => onComingSoon('Add Edge')}
-              >
-                <PlusIcon /> Edge
-              </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-card/80 backdrop-blur"
+                  onClick={() => setMetadataOpen(true)}
+                >
+                  <InfoIcon />
+                  Metadata
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-card/80 backdrop-blur"
+                  onClick={() => setParamsOpen(true)}
+                >
+                  <ScrollTextIcon />
+                  Parameters
+                  {paramCount > 0 ? (
+                    <Badge variant="secondary" className="ml-1 text-[10px]">
+                      {paramCount}
+                    </Badge>
+                  ) : null}
+                </Button>
+                <EditorHelpDialog canEdit={canEdit} />
+              </div>
             </div>
+            {canEdit && paletteOpen ? (
+              <ScriptPalette
+                existingNames={data.scripts.map((s) => s.acronym)}
+                disabled={editor.isMutating}
+                onAdd={(input) => editor.addNode.mutate(input)}
+                onClose={() => setPaletteOpen(false)}
+              />
+            ) : null}
           </div>
 
           <ChainMetadataDrawer
@@ -143,11 +158,52 @@ export function ProductionChainDetailPage() {
             open={paramsOpen}
             onOpenChange={setParamsOpen}
             configuration={data.configuration}
+            canEdit={canEdit}
+            disabled={editor.isMutating}
+            onSave={(configuration) =>
+              editor.saveParameters.mutate(configuration)
+            }
           />
           <NodeDrawer
             node={selectedNode}
+            editable={canEdit}
+            disabled={editor.isMutating}
             onOpenChange={(open) => {
               if (!open) setSelectedNodeId(null);
+            }}
+            onRename={(name) => {
+              if (selectedNode)
+                editor.renameNode.mutate({ pcId: selectedNode.id, name });
+            }}
+            onDelete={() => {
+              if (selectedNode) {
+                editor.removeNode.mutate(selectedNode.id);
+                setSelectedNodeId(null);
+              }
+            }}
+          />
+          <EdgeDrawer
+            edge={canEdit ? selectedEdge : null}
+            disabled={editor.isMutating}
+            onOpenChange={(open) => {
+              if (!open) setSelectedEdgeId(null);
+            }}
+            onChangeMode={(dependencyMode) => {
+              if (selectedEdge)
+                editor.editEdge.mutate({
+                  edgeId: selectedEdge.id,
+                  dependencyMode,
+                });
+            }}
+            onToggleFanOut={(isFanOut) => {
+              if (selectedEdge)
+                editor.editEdge.mutate({ edgeId: selectedEdge.id, isFanOut });
+            }}
+            onDelete={() => {
+              if (selectedEdge) {
+                editor.removeEdge.mutate(selectedEdge.id);
+                setSelectedEdgeId(null);
+              }
             }}
           />
         </>

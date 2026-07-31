@@ -30,7 +30,7 @@ describe('T08.2 — Processor version traceability in logs and outputs', () => {
   });
 
   // @plan T08.2
-  // @covers EOCP-E8-01 EOCP-E8-02
+  // @covers EOCP-E8-02
   it('processing_script_version carries imageUrl, imageTag and runtime', async () => {
     log.step('DB query — processing_script_version');
     await withDbClient(async (c) => {

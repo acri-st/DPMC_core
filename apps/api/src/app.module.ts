@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { AuditInterceptor } from '@/common/interceptors/audit.interceptor';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { AuthModule } from '@/auth';
@@ -21,10 +22,12 @@ import {
   StatusModule,
 } from '@/core';
 import {
+  AuditLogModule,
   AuxiliaryConfigurationModule,
   BatchModule,
   DataCenterModule,
   DatasetModule,
+  EnergyModule,
   HostModule,
   JobModule,
   MetricsCo2Module,
@@ -66,6 +69,7 @@ import {
     ProcessingScriptModule,
     DataCenterModule,
     DatasetModule,
+    EnergyModule,
     HostModule,
     ProjectModule,
     ProductModule,
@@ -81,10 +85,13 @@ import {
     SchedulerModule,
     MetricsCo2Module,
     TaskTableModule,
+    AuditLogModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    // Registered here rather than in main.ts so it resolves AuditLogService.
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
   ],
 })

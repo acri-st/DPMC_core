@@ -11,7 +11,11 @@ async function buildScriptIndex(
   return new Map(scripts.map((s) => [s.acronym, s.id]));
 }
 
-export async function seedProductionChains(prisma: PrismaClient) {
+export async function seedProductionChains(
+  prisma: PrismaClient,
+  /** Restrict to these chain names (e.g. to seed one chain into a live DB). */
+  only?: string[],
+) {
   const project = await prisma.project.findUniqueOrThrow({
     where: { identifier: SEED_PROJECT_IDENTIFIER },
   });
@@ -19,7 +23,10 @@ export async function seedProductionChains(prisma: PrismaClient) {
   const scriptByAcronym = await buildScriptIndex(prisma);
   const items: string[] = [];
 
-  for (const { edges, configuration, nodes, ...chainData } of productionChains) {
+  const selected = only
+    ? productionChains.filter((c) => only.includes(c.name))
+    : productionChains;
+  for (const { edges, configuration, nodes, ...chainData } of selected) {
     const pc = await prisma.productionChain.upsert({
       where: { projectId_name: { projectId, name: chainData.name } },
       update: { ...chainData, configuration: configuration ?? null },
@@ -30,6 +37,10 @@ export async function seedProductionChains(prisma: PrismaClient) {
     for (const e of edges) {
       usedAcronyms.add(e.parent);
       usedAcronyms.add(e.child);
+    }
+    
+    for (const n of nodes ?? []) {
+      usedAcronyms.add(n.name);
     }
 
     type NodeSpec = {

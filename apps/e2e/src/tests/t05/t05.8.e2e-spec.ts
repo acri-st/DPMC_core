@@ -49,7 +49,7 @@ describe('T05.8 — Identification of conflicting nodes in dependency errors', (
     log.action('GET chain to resolve IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-A')?.id;
     const stepBId = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-B')?.id;
     expect(stepAId).toBeDefined();
@@ -80,7 +80,7 @@ describe('T05.8 — Identification of conflicting nodes in dependency errors', (
 
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-B');
     expect(pcA).toBeDefined();
@@ -96,7 +96,7 @@ describe('T05.8 — Identification of conflicting nodes in dependency errors', (
     expect(res.status).toBeLessThan(500);
 
     const body = res.body as Record<string, unknown>;
-    const message = (body.message ?? body.error ?? '') as string;
+    const message = ((body.error as { message?: string } | undefined)?.message ?? (body.message as string | undefined) ?? '');
     log.ok(`cycle rejected (${res.status}): "${message}"`);
     expect(typeof message).toBe('string');
     expect(message.length).toBeGreaterThan(0);
@@ -111,7 +111,7 @@ describe('T05.8 — Identification of conflicting nodes in dependency errors', (
 
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-B');
 
@@ -121,14 +121,13 @@ describe('T05.8 — Identification of conflicting nodes in dependency errors', (
       .send({ parentChainId: pcB.id, childChainId: pcA.id, dependencyMode: 'OnSuccess' });
     log.http('POST', 'edges (cycle, body)', res.status, res.body);
 
-    const body = res.body as Record<string, unknown>;
-    log.ok(`body keys: ${Object.keys(body).join(', ')}`);
+    const body = res.body as { error?: { message?: unknown } };
+    log.ok(`body keys: ${Object.keys(res.body as object).join(', ')}`);
 
-    // NestJS standard error shape: { statusCode, message, error }
-    expect(body.statusCode).toBeDefined();
-    expect(typeof body.statusCode).toBe('number');
-    expect(body.message).toBeDefined();
-    expect(typeof body.message).toBe('string');
+    // Structured error shape: { error: { code | statusCode, message } }
+    expect(body.error).toBeDefined();
+    expect(body.error?.message).toBeDefined();
+    expect(typeof body.error?.message).toBe('string');
 
     // No raw stack trace must leak into the response
     expect(JSON.stringify(body)).not.toMatch(/at .+\(.+:\d+:\d+\)/);
@@ -151,7 +150,7 @@ describe('T05.8 — Identification of conflicting nodes in dependency errors', (
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     log.http('GET', `/production-chain/${chainId}`, chainRes.status);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-B');
     const pcC = pcs.find((pc: { name: string }) => pc.name === 'T05.8-node-C');
     expect(pcB).toBeDefined();

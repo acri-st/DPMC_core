@@ -5,7 +5,7 @@ import { asAdminSession } from '../../support/session';
 import { keycloak } from '../../setup/services/keycloak';
 
 // @plan T12.13 — Fallback behavior when IAM is unavailable
-// @covers EOCP-E12-13
+// @covers EOCP-E12-05
 //
 // Description: This test verifies correct system behavior when the external IAM system is
 //   temporarily unavailable. Disabling Keycloak in a live e2e environment is destructive; this
@@ -21,7 +21,7 @@ import { keycloak } from '../../setup/services/keycloak';
 
 describe('T12.13 — Fallback behavior when IAM is unavailable', () => {
   // @plan T12.13
-  // @covers EOCP-E12-13
+  // @covers EOCP-E12-05
   it('Step 1 – Keycloak token request with invalid credentials is handled gracefully', async () => {
     // Simulate "IAM rejects" by sending wrong password
     await expect(
@@ -34,7 +34,7 @@ describe('T12.13 — Fallback behavior when IAM is unavailable', () => {
   });
 
   // @plan T12.13
-  // @covers EOCP-E12-13
+  // @covers EOCP-E12-05
   it('Step 2 – existing valid sessions continue to work while IAM is unreachable for new logins', async () => {
     // Session was established before the IAM failure simulation
     const { cookie } = await asAdminSession();
@@ -52,7 +52,7 @@ describe('T12.13 — Fallback behavior when IAM is unavailable', () => {
   });
 
   // @plan T12.13
-  // @covers EOCP-E12-13
+  // @covers EOCP-E12-05
   it('Step 3 – valid IAM credentials restore authentication (IAM available again)', async () => {
     // "Restore" = use correct credentials
     const tokens = await keycloak.requestTokens('admin', 'admin');

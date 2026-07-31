@@ -5,13 +5,35 @@ import {
 } from '@nestjs/common';
 import type { CreateDatasetBody, UpdateDatasetBody } from '@dpmc/client';
 import { PrismaService } from '@/core/prisma/prisma.service';
+import {
+  buildOrderBy,
+  buildSearchWhere,
+  type SortOrder,
+} from '@/common/utils/pagination';
+
+// Columns the dataset list may be sorted by (real Dataset scalar fields only).
+const DATASET_SORTABLE = [
+  'name',
+  'producedByBatchId',
+  'createdAt',
+  'id',
+] as const;
 
 interface ListOpts {
   skip: number;
   take: number;
   producedByBatchId?: number;
   name?: string;
+  origin?: 'batch' | 'manual' | 'user' | 'system' | 'all';
+  q?: string;
+  sort?: string;
+  order?: SortOrder;
 }
+
+// Runtime ("system") datasets are the per-batch outputs (`batch:<id>:out`,
+// producedByBatchId set) and the task-planning datasets (`task:<id>:aux`,
+// `task:<id>:input…` — producedByBatchId null but machine-named).
+const SYSTEM_NAME_PREFIXES = ['task:', 'batch:'];
 
 @Injectable()
 export class DatasetService {
@@ -22,12 +44,39 @@ export class DatasetService {
     if (opts.producedByBatchId)
       where.producedByBatchId = opts.producedByBatchId;
     if (opts.name) where.name = { contains: opts.name, mode: 'insensitive' };
+    // Default to user datasets so every chain run's internal artifacts don't
+    // swamp the list; lookups scoped to a batch (producedByBatchId) see all.
+    const origin = opts.origin ?? (opts.producedByBatchId ? 'all' : 'user');
+    if (origin === 'batch') where.producedByBatchId = { not: null };
+    else if (origin === 'manual') where.producedByBatchId = null;
+    else if (origin === 'user') {
+      where.producedByBatchId = null;
+      where.NOT = SYSTEM_NAME_PREFIXES.map((p) => ({
+        name: { startsWith: p },
+      }));
+    } else if (origin === 'system') {
+      where.AND = [
+        {
+          OR: [
+            { producedByBatchId: { not: null } },
+            ...SYSTEM_NAME_PREFIXES.map((p) => ({ name: { startsWith: p } })),
+          ],
+        },
+      ];
+    }
+    const searchWhere = buildSearchWhere(['name'], opts.q);
+    if (searchWhere) Object.assign(where, searchWhere);
+    // Default: newest-created first (id desc breaks ties for stable pagination);
+    // overridable via ?sort=&order= against the DATASET_SORTABLE allowlist.
+    const orderBy = buildOrderBy(DATASET_SORTABLE, opts.sort, opts.order, [
+      { createdAt: 'desc' },
+    ]);
     const [data, total] = await Promise.all([
       this.prisma.dataset.findMany({
         where,
         skip: opts.skip,
         take: opts.take,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
       this.prisma.dataset.count({ where }),
     ]);

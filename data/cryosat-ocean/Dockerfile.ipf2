@@ -1,0 +1,31 @@
+# cryosat-ocean-ipf2 — COP IPF2 (L2) delivery on top of the shared runtime.
+# Used by the IPF2_GOPN / IPF2_GOPR / IPF2_GOPM / P2P_GOP ProcessingScripts
+# (baked mode).
+#
+# Build (after Dockerfile.runtime):
+#   docker build --platform linux/386 -f data/cryosat-ocean/Dockerfile.ipf2 \
+#     --build-arg IPF2_VERSION=4.27 \
+#     -t harbor.shared.acrist-services.com/dsy/damps/dpmc/cryosat-ocean-ipf2:development .
+#   (build context = repo root, matching the CI template)
+#
+# Context layout: <IPF2_VERSION>/ = the delivery (bin/, config_files/,
+# task_tables/). 4.26 is also delivered — building with IPF2_VERSION=4.26
+# gives a rollback image, but the seeded chain paths pin COP_IPF2V4.27.
+
+FROM harbor.shared.acrist-services.com/dsy/damps/dpmc/cryosat-ocean-runtime:development
+
+ARG IPF2_VERSION=4.27
+ARG PKG=/dpmc/scripts/cryosat_ocean_baseline_d/Binaries/COP_IPF2V4.27/processors
+
+COPY data/cryosat-ocean/${IPF2_VERSION}/bin          ${PKG}/bin
+COPY data/cryosat-ocean/${IPF2_VERSION}/config_files ${PKG}/config_files
+COPY data/cryosat-ocean/${IPF2_VERSION}/task_tables  ${PKG}/task_tables
+# Product header templates — the PCONF references them by ABSOLUTE path
+# under the original install root (resolved via the runtime image symlinks).
+COPY data/cryosat-ocean/${IPF2_VERSION}/ProdHeaderTemplate ${PKG}/ProdHeaderTemplate
+# Delivery vendor libs (HDF5/NetCDF/Xerces…, i386) onto the runtime's
+# LD_LIBRARY_PATH dir.
+COPY data/cryosat-ocean/${IPF2_VERSION}/so /dpmc/scripts/cryosat_ocean_baseline_d/so
+
+# Deliveries ship the binaries non-executable (rw-r--r--).
+RUN chmod +x ${PKG}/bin/*

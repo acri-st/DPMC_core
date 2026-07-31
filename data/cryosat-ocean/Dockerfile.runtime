@@ -1,0 +1,70 @@
+# cryosat-ocean-runtime — shared 32-bit userland for the CryoSat Ocean
+# Baseline-D IPF binaries (i386 ELF, glibc 2.6.x era). The per-package images
+# (Dockerfile.ipf1 / Dockerfile.ipf2) extend this with their delivery.
+#
+# Build FIRST (build context = repo root, matching the CI template):
+#   docker build --platform linux/386 -f data/cryosat-ocean/Dockerfile.runtime \
+#     -t harbor.shared.acrist-services.com/dsy/damps/dpmc/cryosat-ocean-runtime:development .
+#
+# REQUIRED content under data/cryosat-ocean/:
+#   compat-libs/  libgfortran.so.1 (gcc 4.1 era), libjasper.so.1 (dropped
+#                 after jessie) and libxml2.so.2 (2.6.32), all extracted from
+#                 archive.debian.org debs — not available in any live distro.
+#
+# The vendor shared libraries (libhdf5*.so.7, libnetcdf.so.7, libxerces-c.so.21…)
+# are delivery-specific and copied by the per-package images from
+# <version>/so — every binary links against them and no distro ships those
+# sonames.
+
+# Debian squeeze (glibc 2.11): old enough for the binaries' statically-linked
+# libxml2 (its per-thread global-state code corrupts registers under modern
+# glibc TSD — SIGSEGV in xmlNewInputFromFile), new enough to load the
+# GNU-OSABI vendor so/ libs (lenny's 2.7 loader rejects them).
+FROM --platform=linux/386 debian/eol:squeeze
+
+# squeeze is EOL — packages come from archive.debian.org.
+RUN printf 'deb http://archive.debian.org/debian squeeze main\n' \
+      > /etc/apt/sources.list \
+ && apt-get -o Acquire::Check-Valid-Until=false update \
+ && apt-get install -y --force-yes \
+      gawk \
+      libcurl3 \
+      libjasper1 \
+      libjpeg62 \
+      libudunits2-0 \
+      libxml2 \
+      zlib1g \
+ && rm -rf /var/lib/apt/lists/*
+
+# Era shared libraries (see header note); the per-package images add the
+# delivery's vendor so/ next to them.
+COPY data/cryosat-ocean/compat-libs /dpmc/scripts/cryosat_ocean_baseline_d/so
+
+# The delivered PCONF files reference their ORIGINAL install roots by
+# absolute path (IPF1: /exports/dpmc/scripts/specific-package/…, IPF2:
+# /mount/psi/data/exports2/…/dev/…). Symlink both onto the baked layout so
+# those references — ProdHeaderTemplate, config files, sad/ — resolve.
+RUN mkdir -p /exports/dpmc/scripts/specific-package \
+             /mount/psi/data/exports2/dpmc/CRYOSAT_OCEAN_BASELINE_D \
+ && ln -s /dpmc/scripts/cryosat_ocean_baseline_d \
+      /exports/dpmc/scripts/specific-package/cryosat_ocean_baseline_d \
+ && ln -s /dpmc/scripts/cryosat_ocean_baseline_d \
+      /mount/psi/data/exports2/dpmc/CRYOSAT_OCEAN_BASELINE_D/dev
+
+# Mount point for the ~20GB static aux data (sad/) — too large to bake, the
+# worker bind-mounts it here at dispatch time (CRYOSAT_SAD_ROOT).
+RUN mkdir -p /dpmc/scripts/cryosat_ocean_baseline_d/Binaries \
+ && for pkg in COP_IPF1V4.24 COP_IPF2V4.26 COP_IPF2V4.27; do \
+      mkdir -p "/dpmc/scripts/cryosat_ocean_baseline_d/Binaries/$pkg/processors" \
+   && ln -s /data/cryosat-sad "/dpmc/scripts/cryosat_ocean_baseline_d/Binaries/$pkg/processors/sad"; \
+    done
+
+# GRIB definitions for the statically-linked grib_api inside the science
+# processors (era 1.9.x, extracted from the Debian archive — the operational
+# system pointed GRIB_DEFINITION_PATH at a COTS share serving the same).
+COPY data/cryosat-ocean/grib-definitions /dpmc/scripts/cryosat_ocean_baseline_d/grib_api/definitions
+ENV GRIB_DEFINITION_PATH=/dpmc/scripts/cryosat_ocean_baseline_d/grib_api/definitions
+
+ENV LD_LIBRARY_PATH=/dpmc/scripts/cryosat_ocean_baseline_d/so
+
+WORKDIR /work

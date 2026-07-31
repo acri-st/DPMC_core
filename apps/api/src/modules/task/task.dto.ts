@@ -19,7 +19,10 @@ import {
 } from '@dpmc/client';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { PaginationQuerySchema } from '@/common/utils/pagination';
+import {
+  PaginationQuerySchema,
+  enumArrayQueryParam,
+} from '@/common/utils/pagination';
 
 export const ListTaskResponseSchema = ListTaskResponse200Schema;
 export class ListTaskResponse extends createZodDto(ListTaskResponseSchema) {}
@@ -90,8 +93,8 @@ export class TaskStatusSummaryResponse extends createZodDto(
 
 // GET /task (list with typed filters)
 export const TaskListQuerySchema = PaginationQuerySchema.extend({
-  status: TaskStatusSchema.optional(),
-  kind: TaskKindSchema.optional(),
+  status: enumArrayQueryParam(TaskStatusSchema),
+  kind: enumArrayQueryParam(TaskKindSchema),
 });
 export type TaskListQuery = z.infer<typeof TaskListQuerySchema>;
 export class TaskListQueryDto extends createZodDto(TaskListQuerySchema) {}

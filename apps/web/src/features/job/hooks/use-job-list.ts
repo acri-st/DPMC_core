@@ -16,6 +16,8 @@ export const jobListKey = (params: ListJobsParams, projectId: number | null) =>
     params.pageSize,
     params.q ?? '',
     params.status ?? '',
+    params.sort ?? '',
+    params.order ?? '',
   ] as const;
 
 export function useJobList(params: ListJobsParams) {

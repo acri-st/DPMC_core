@@ -38,7 +38,11 @@ export function buildPlanReport(
       entries,
     }));
 
-  const flat = sections.flatMap((s) => s.entries);
+  const all = sections.flatMap((s) => s.entries);
+  // Descoped cases stay in `total` so the exclusion is visible, but the
+  // implementation ratio is measured against what the delivery commits to.
+  const descoped = all.filter((e) => e.testCase.descoped).length;
+  const flat = all.filter((e) => !e.testCase.descoped);
   const passed = flat.filter((e) => e.status === 'passed').length;
   const failed = flat.filter((e) => e.status === 'failed').length;
   const skipped = flat.filter((e) => e.status === 'skipped').length;
@@ -50,7 +54,9 @@ export function buildPlanReport(
 
   return {
     totals: {
-      total: flat.length,
+      total: all.length,
+      inScope: flat.length,
+      descoped,
       implemented,
       passed,
       failed,

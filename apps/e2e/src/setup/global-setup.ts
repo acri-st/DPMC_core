@@ -10,6 +10,15 @@ import { workerProcess } from './services/worker-process';
 export default async function globalSetup() {
   if (CONFIG.flags.useExternalStack) return;
 
+  // Before anything touches the schema: a dispatcher or worker left over by a
+  // previous E2E_KEEP_STACK run is still querying the database, and
+  // database.reset() drops the schema under it — the log fills with
+  // "relation job does not exist" and the survivor keeps heart-beating, which
+  // makes any test that stops a service see it stay healthy.
+  console.log('[e2e] stopping leftover dispatcher/worker...');
+  dispatcher.stop();
+  workerProcess.stopAll();
+
   console.log('[e2e] starting docker compose stack...');
   docker.up();
 

@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSING_SCRIPT_ID } from './_shared';
 
 // @plan T05.13 — Mixed dependency scenarios within a single chain
-// @covers EOCP-E5-01 EOCP-E5-04
+// @covers EOCP-E5-01, EOCP-E5-04
 //
 // Description: Verifies correct behavior when OnSuccess and OnFailure deps coexist in one chain,
 //   and that a step with no incoming edges runs in parallel.
@@ -51,7 +51,7 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
     log.action('GET chain to resolve IDs');
     let chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    let pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    let pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.13-step-A');
     const pcC = pcs.find((pc: { name: string }) => pc.name === 'T05.13-step-C');
 
@@ -67,7 +67,7 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
     log.action('GET chain (re-fetch for B→C)');
     chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    pcs = chainRes.body.data.processingChains ?? [];
     const pcB2 = pcs.find((pc: { name: string }) => pc.name === 'T05.13-step-B');
     const pcC2 = pcs.find((pc: { name: string }) => pc.name === 'T05.13-step-C');
 
@@ -93,7 +93,7 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
   });
 
   // @plan T05.13
-  // @covers EOCP-E5-01 EOCP-E5-04
+  // @covers EOCP-E5-01, EOCP-E5-04
   it('Step 1 – mixed dependency configuration is stored (OnSuccess and OnFailure coexist)', async () => {
     log.step(`Step 1 — GET /production-chain/${chainId} (modes check)`);
 
@@ -101,7 +101,7 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const modes = edges.map((e: { dependencyMode: string }) => e.dependencyMode);
     log.ok(`edge modes: ${modes.join(', ')}`);
     expect(modes).toContain('OnSuccess');
@@ -109,7 +109,7 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
   });
 
   // @plan T05.13
-  // @covers EOCP-E5-04
+  // @covers EOCP-E5-01, EOCP-E5-04
   it('Step 2 – chain task executes with mixed dependency graph (accepted by API)', async () => {
     log.step('Step 2 — POST /task (mixed dep chain)');
 
@@ -134,7 +134,7 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
   });
 
   // @plan T05.13
-  // @covers EOCP-E5-01
+  // @covers EOCP-E5-01, EOCP-E5-04
   it('Step 3 – step D has no incoming edges (unblocked, runs in parallel with A and B)', async () => {
     log.step(`Step 3 — GET /production-chain/${chainId} (D has no incoming edges)`);
 
@@ -142,11 +142,11 @@ describe('T05.13 — Mixed dependency scenarios within a single chain', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     const pcD = pcs.find((pc: { name: string }) => pc.name === 'T05.13-step-D');
     expect(pcD).toBeDefined();
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const incomingToD = edges.filter((e: { childChainId: string }) => e.childChainId === pcD.id);
     log.ok(`incoming edges to D: ${incomingToD.length}`);
     expect(incomingToD.length).toBe(0);

@@ -1,0 +1,13 @@
+# Non-sensitive dispatcher config (DPMC_DISPATCHER_* — see
+# apps/dispatcher/src/config.py; loop intervals & retry policy keep their code
+# defaults unless overridden here).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dispatcher
+data:
+  # In-cluster API Service (port 80 -> 3000), global /api prefix. Plain HTTP
+  # inside the cluster — deliberately NOT the public https host, which would
+  # drag in the *.operation cert mismatch for no benefit.
+  DPMC_DISPATCHER_API_URL: http://api/api
+  DPMC_DISPATCHER_LOG_LEVEL: INFO

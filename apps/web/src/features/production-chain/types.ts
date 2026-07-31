@@ -1,6 +1,6 @@
-import type { DependencyMode } from '@dpmc/client';
+import type { DependencyMode, ProductionChainKind } from '@dpmc/client';
 
-export type { DependencyMode };
+export type { DependencyMode, ProductionChainKind };
 
 export type ScriptType =
   | 'Bash'
@@ -28,6 +28,7 @@ export type ProductionChainSummary = {
   name: string;
   comment: string | null;
   isActive: boolean;
+  kind: ProductionChainKind;
   createdAt: string;
   updatedAt: string;
 };

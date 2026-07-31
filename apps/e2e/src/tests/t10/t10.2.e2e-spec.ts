@@ -3,7 +3,7 @@ import { API } from '../../support/auth';
 import { asAdminSession } from '../../support/session';
 
 // @plan T10.2 — Definition of priorities at task, chain, and request level
-// @covers EOCP-E10-02
+// @covers EOCP-E10-01
 //
 // Description: This test verifies that priorities can be defined at different levels and are
 //   correctly interpreted by the scheduler.
@@ -48,7 +48,7 @@ describe('T10.2 — Definition of priorities at task, chain, and request level',
   });
 
   // @plan T10.2
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 1 – task-level priority is stored correctly on a Standalone task', async () => {
     const res = await request(API)
       .post('/task')
@@ -70,7 +70,7 @@ describe('T10.2 — Definition of priorities at task, chain, and request level',
   });
 
   // @plan T10.2
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 2 – chain-level priority is stored correctly on a Chain task', async () => {
     const res = await request(API)
       .post('/task')
@@ -92,7 +92,7 @@ describe('T10.2 — Definition of priorities at task, chain, and request level',
   });
 
   // @plan T10.2
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 3 – priority can be updated via PATCH /task/:id/priority (request-level override)', async () => {
     const createRes = await request(API)
       .post('/task')
@@ -121,7 +121,7 @@ describe('T10.2 — Definition of priorities at task, chain, and request level',
   });
 
   // @plan T10.2
-  // @covers EOCP-E10-02
+  // @covers EOCP-E10-01
   it('Step 4 – updated priority is persisted and readable via GET /task/:id', async () => {
     const taskId = createdTaskIds.at(-1)!;
     const res = await request(API)

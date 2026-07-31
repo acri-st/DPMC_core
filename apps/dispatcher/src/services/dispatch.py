@@ -1,4 +1,4 @@
-"""Allocate Ready jobs onto Up hosts via Best-Fit-Decreasing."""
+"""Allocate Ready jobs onto Up hosts, least-loaded first (spread across the fleet)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import time
 from collections.abc import Mapping
 
 from domain.dispatch import find_best_host, sort_ready_jobs
-from domain.enums import ContainerRuntime, HostStatus, JobStatus
+from domain.enums import HostStatus, JobStatus, runtime_satisfies
 from repositories.tables import T
 
 log = logging.getLogger("dispatcher.dispatch")
@@ -23,7 +23,7 @@ def _fit_reason(host: Mapping, need: Mapping) -> str | None:
     """Return a one-token reason this host can't take this job, or None."""
     if host["status"] != HostStatus.UP:
         return f"status={host['status']}"
-    if need["runtime"] != ContainerRuntime.NONE and host["container_runtime"] != need["runtime"]:
+    if not runtime_satisfies(host["container_runtime"], need["runtime"]):
         return f"runtime={host['container_runtime']}≠{need['runtime']}"
     free_cores = host["cores"] - host["alloc_cores"]
     if free_cores < need["cores"]:
@@ -76,7 +76,6 @@ async def dispatch_tick(db) -> int:
             JOIN {T.PROCESSING_SCRIPT_VERSION} psv ON psv.id = j."processingScriptVersionId"
             LEFT JOIN {T.JOB_ALLOCATION} a ON a."jobId" = j.id
             WHERE j.status = %s AND a.id IS NULL AND j.paused = FALSE
-              AND (j."expectedStartTime" IS NULL OR j."expectedStartTime" <= NOW())
             FOR UPDATE OF j SKIP LOCKED
             """,
             (JobStatus.READY.value,),

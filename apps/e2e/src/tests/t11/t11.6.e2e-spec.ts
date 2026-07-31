@@ -78,8 +78,8 @@ describe('T11.6 — Modification of production configuration through APIs', () =
   it('Step 4 – POST /task with invalid configuration is rejected with 4xx', async () => {
     log.step('Step 4 — POST /task (invalid config)');
     const res = await request(API).post('/task').set('Cookie', cookie).send({
-      projectId: '00000000-0000-0000-0000-000000000000',
-      processorVersionId: '00000000-0000-0000-0000-000000000000',
+      projectId: 0,
+      processorVersionId: 0,
       kind: 'INVALID',
       productionMode: 'INVALID',
       priorityClass: 'INVALID',

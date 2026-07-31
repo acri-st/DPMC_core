@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from worker.api import ApiError
 from worker.config import WorkerConfig
-from worker.main import Worker, collect_facts
+from worker.main import Worker, _detect_container_runtime, collect_facts
 
 REQUIRED_FACTS = {
     "dataCenterCode",
@@ -163,3 +163,34 @@ def test_main_returns_2_when_config_is_invalid(
     from worker.main import main
 
     assert main() == 2
+
+
+_K8S_KW = dict(
+    api_url="http://api/api",
+    worker_token="x" * 20,
+    data_center_code="ACR",
+    processing_dir="/var/lib/dpmc/processing",
+    cache_dir="/var/cache/dpmc",
+    execution_backend="kubernetes",
+    k8s_pvc_name="worker-data",
+    k8s_mount_map="/repo/data/warhol/runs=runs",
+)
+
+
+def test_detect_runtime_kubernetes_mode_reports_kubernetes_when_api_reachable() -> None:
+    cfg = WorkerConfig(**_K8S_KW, _env_file=None)
+    with patch("worker.main._k8s_api_reachable", return_value=True):
+        assert _detect_container_runtime(cfg) == "Kubernetes"
+
+
+def test_detect_runtime_kubernetes_mode_reports_none_when_unreachable() -> None:
+    cfg = WorkerConfig(**_K8S_KW, _env_file=None)
+    with patch("worker.main._k8s_api_reachable", return_value=False):
+        assert _detect_container_runtime(cfg) == "None"
+
+
+def test_collect_facts_passes_config_to_runtime_detection() -> None:
+    cfg = WorkerConfig(**_K8S_KW, _env_file=None)
+    with patch("worker.main._k8s_api_reachable", return_value=True):
+        facts = collect_facts(cfg)
+    assert facts["containerRuntime"] == "Kubernetes"

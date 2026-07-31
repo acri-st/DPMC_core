@@ -22,10 +22,12 @@ export const AddEdgeRequestSchema = z.object({
   parentChainId: IdSchema,
   childChainId: IdSchema,
   dependencyMode: DependencyModeSchema.default('OnSuccess'),
+  isFanOut: z.boolean().default(false),
 });
 
 export const UpdateEdgeRequestSchema = z.object({
-  dependencyMode: DependencyModeSchema,
+  dependencyMode: DependencyModeSchema.optional(),
+  isFanOut: z.boolean().optional(),
 });
 
 export type CreateProductionChainRequest = z.infer<

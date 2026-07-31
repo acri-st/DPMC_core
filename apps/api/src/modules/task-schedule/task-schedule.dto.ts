@@ -3,11 +3,26 @@ import {
   CreateTaskScheduleResponse201Schema,
   GetTaskScheduleResponse200Schema,
   ListTaskScheduleResponse200Schema,
+  TaskKindSchema,
   UpdateTaskScheduleBodySchema,
   UpdateTaskScheduleResponse200Schema,
 } from '@dpmc/client';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import {
+  PaginationQuerySchema,
+  enumArrayQueryParam,
+  optionalBoolean,
+} from '@/common/utils/pagination';
+
+export const TaskScheduleListQuerySchema = PaginationQuerySchema.extend({
+  kind: enumArrayQueryParam(TaskKindSchema),
+  enabled: optionalBoolean(),
+});
+export type TaskScheduleListQuery = z.infer<typeof TaskScheduleListQuerySchema>;
+export class TaskScheduleListQueryDto extends createZodDto(
+  TaskScheduleListQuerySchema,
+) {}
 
 export const ListTaskScheduleResponseSchema = ListTaskScheduleResponse200Schema;
 export class ListTaskScheduleResponse extends createZodDto(

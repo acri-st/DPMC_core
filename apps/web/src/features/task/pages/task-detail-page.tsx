@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -8,10 +8,12 @@ import {
   CalendarIcon,
   ClipboardListIcon,
   LayersIcon,
+  ListIcon,
   Loader2Icon,
   PlayIcon,
   ServerIcon,
   Trash2Icon,
+  WorkflowIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +27,7 @@ import {
 } from '@/shared/components/ui/card';
 import { Separator } from '@/shared/components/ui/separator';
 import { BatchStatusBadge } from '@/features/batch/components/batch-status-badge';
+import { TaskBatchGraph } from '@/features/task/components/task-batch-graph';
 import { TaskStatusBadge } from '@/features/task/components/task-status-badge';
 import { TaskKindBadge } from '@/features/task/components/task-kind-badge';
 import { useTask } from '@/features/task/hooks/use-task';
@@ -42,6 +45,7 @@ export function TaskDetailPage() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useTask(id);
   const batches = useTaskBatches(id);
+  const [batchView, setBatchView] = useState<'list' | 'graph'>('list');
 
   const trigger = useMutation({
     mutationFn: () => triggerTask(id),
@@ -152,18 +156,54 @@ export function TaskDetailPage() {
                     </span>
                   ) : null}
                 </CardTitle>
-                {batches.isFetching && !batches.isLoading ? (
-                  <Loader2Icon className="text-muted-foreground size-3 animate-spin" />
-                ) : null}
+                <div className="flex items-center gap-2">
+                  {batches.isFetching && !batches.isLoading ? (
+                    <Loader2Icon className="text-muted-foreground size-3 animate-spin" />
+                  ) : null}
+                  {data.productionChainId &&
+                  batches.data &&
+                  batches.data.length > 0 ? (
+                    <div className="flex items-center rounded-md border p-0.5">
+                      <Button
+                        size="sm"
+                        variant={batchView === 'list' ? 'secondary' : 'ghost'}
+                        className="h-6 px-2"
+                        onClick={() => setBatchView('list')}
+                      >
+                        <ListIcon className="size-3.5" />
+                        List
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={batchView === 'graph' ? 'secondary' : 'ghost'}
+                        className="h-6 px-2"
+                        onClick={() => setBatchView('graph')}
+                      >
+                        <WorkflowIcon className="size-3.5" />
+                        Graph
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              <BatchesSection
-                isLoading={batches.isLoading}
-                isError={batches.isError}
-                error={batches.error}
-                batches={batches.data}
-              />
+              {batchView === 'graph' &&
+              data.productionChainId &&
+              batches.data &&
+              batches.data.length > 0 ? (
+                <TaskBatchGraph
+                  productionChainId={data.productionChainId}
+                  batches={batches.data}
+                />
+              ) : (
+                <BatchesSection
+                  isLoading={batches.isLoading}
+                  isError={batches.isError}
+                  error={batches.error}
+                  batches={batches.data}
+                />
+              )}
             </CardContent>
           </Card>
 

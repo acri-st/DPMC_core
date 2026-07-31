@@ -7,6 +7,9 @@ export interface TestTag {
   requirementIds: string[];
   planIds: string[];
   isTodo: boolean;
+  // `it.skip`, or any `it` nested under a `describe.skip`. Never executes, so
+  // it must not be credited as covering its requirement.
+  isSkipped: boolean;
 }
 
 export type TestStatus = 'passed' | 'failed' | 'skipped';

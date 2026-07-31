@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import threading
 import time
 from typing import Any
@@ -36,6 +37,12 @@ log = logging.getLogger("worker.runner")
 # the worker writes here are visible to job containers via the host path the
 # API embeds in dispatch.mounts.
 WORKDIR_BASE = "/repo/data/warhol/runs"
+
+# Staged workdirs are transient: inputs come from S3, outputs go back to S3,
+# logs are shipped to host_log — so they are deleted once the job reaches a
+# terminal state (a campaign leaves thousands of ~35MB dirs otherwise, until
+# stage-in dies on "No space left on device"). Set to keep them for debugging.
+KEEP_WORKDIR = os.environ.get("DPMC_KEEP_WORKDIR") == "1"
 
 
 class Runner:
@@ -135,6 +142,12 @@ class Runner:
             if workdir:
                 os.makedirs(os.path.join(workdir, "out"), exist_ok=True)
 
+            # Bytes pulled in for this job — DPMC's `ingress` concern. Stays 0
+            # when the script fetches its own inputs (the dpmc_io contract),
+            # which is why cAdvisor's pod counters take precedence over this
+            # when they are available.
+            stage_in_bytes = 0
+
             if stage_in_decls and workdir:
                 try:
                     entries = [
@@ -146,7 +159,7 @@ class Runner:
                         )
                         for e in stage_in_decls
                     ]
-                    stage_in(self._s3, entries, workdir)
+                    stage_in_bytes = stage_in(self._s3, entries, workdir)
                 except Exception as exc:
                     log.exception("stage-in failed for job %s", job_id)
                     self._report_failure(payload, f"stage-in failed: {exc}")
@@ -175,9 +188,14 @@ class Runner:
                 workdir=workdir,
                 result=result,
                 avg_power=avg_power,
+                stage_in_bytes=stage_in_bytes,
             )
         finally:
             current_job_id.reset(token)
+            # Only staged flows are self-contained (inputs/outputs in S3);
+            # legacy bind-mount flows share the dir with downstream batches.
+            if workdir and stage_in_decls and not KEEP_WORKDIR:
+                shutil.rmtree(workdir, ignore_errors=True)
         return
 
     def _stage_out_and_report(
@@ -189,6 +207,7 @@ class Runner:
         workdir: str | None,
         result: Any,
         avg_power: float | None,
+        stage_in_bytes: int = 0,
     ) -> None:
         """Upload outputs (if success) then report metrics. Tail end of the
         run lifecycle; extracted so the surrounding `current_job_id` scope
@@ -249,6 +268,11 @@ class Runner:
                     "metrics": {
                         "cpuSeconds": result.cpu_seconds,
                         "avgPower": avg_power,
+                        # Transfer volumes for the ingress/egress concerns.
+                        # Strings: these are byte counts that overflow a JSON
+                        # number's exact range on large productions.
+                        "stageInBytes": str(stage_in_bytes),
+                        "stageOutBytes": str(sum(p.size for p in published)),
                         "peakRssBytes": str(result.peak_rss_bytes) if result.peak_rss_bytes is not None else None,
                         "diskReadBytes": str(result.disk_read_bytes) if result.disk_read_bytes is not None else None,
                         "diskWriteBytes": str(result.disk_write_bytes) if result.disk_write_bytes is not None else None,

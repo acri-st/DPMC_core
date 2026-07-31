@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -12,10 +11,9 @@ import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { DataTable } from '@/shared/components/data-table';
-import { PageHeader } from '@/shared/components/page-header';
+import { ListHeader } from '@/shared/components/list-header';
+import { useListParams } from '@/shared/hooks/use-list-params';
 import { PagePagination } from '@/shared/components/page-pagination';
-import { PageToolbar } from '@/shared/components/page-toolbar';
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { buildProjectColumns } from '@/features/project/components/project-columns';
 import {
   PROJECT_LIST_BASE_KEY,
@@ -38,23 +36,18 @@ export function ProjectListPage() {
 }
 
 function ProjectListPageInner() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
-  const trimmedQ = debouncedSearch.trim();
+  const lp = useListParams({
+    filterKeys: [],
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+  });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setPage(1);
-  }, [trimmedQ]);
-
   const { data, isLoading, isError, error, refetch, isFetching } =
     useProjectList({
-      page,
-      pageSize,
-      q: trimmedQ.length > 0 ? trimmedQ : undefined,
+      page: lp.page,
+      pageSize: lp.pageSize,
+      q: lp.trimmedQ || undefined,
     });
 
   const total = data?.total ?? 0;
@@ -86,37 +79,39 @@ function ProjectListPageInner() {
   });
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
+    <div className="flex flex-1 flex-col gap-2">
+      <ListHeader
         icon={FolderIcon}
         title="Projects"
         subtitle="Manage projects, defaults, and activation. Visible to admins."
         count={data ? total : undefined}
         noun="project"
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
-          <RefreshCwIcon className={isFetching ? 'animate-spin' : undefined} />
-          Refresh
-        </Button>
-        <Button asChild size="sm">
-          <Link to="/admin/projects/new">
-            <PlusIcon />
-            New project
-          </Link>
-        </Button>
-      </PageHeader>
-
-      <PageToolbar
         search={{
-          value: search,
-          onChange: setSearch,
+          value: lp.q,
+          onChange: lp.setQ,
           placeholder: 'Search by identifier or name…',
         }}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCwIcon
+                className={isFetching ? 'animate-spin' : undefined}
+              />
+              Refresh
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/admin/projects/new">
+                <PlusIcon />
+                New project
+              </Link>
+            </Button>
+          </>
+        }
       />
 
       {isError ? (
@@ -150,14 +145,11 @@ function ProjectListPageInner() {
 
       {data ? (
         <PagePagination
-          page={page}
-          pageSize={pageSize}
+          page={lp.page}
+          pageSize={lp.pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={lp.setPage}
+          onPageSizeChange={lp.setPageSize}
           noun="project"
           isFetching={isFetching}
         />

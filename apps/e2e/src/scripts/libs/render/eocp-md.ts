@@ -1,7 +1,8 @@
 import type { CoverageReport } from '../data/types';
 import { escapeMd, pct } from './format';
 
-const LEGEND = '**Legend:** Covered | Not covered | N/A (not testable via e2e)';
+const LEGEND =
+  '**Legend:** Covered | Not covered | Not applicable (with its reason)';
 
 export function renderEocpMd(report: CoverageReport) {
   const generatedAt = new Date().toISOString();
@@ -31,15 +32,20 @@ export function renderEocpMd(report: CoverageReport) {
     out.push('| ID | Requirement | Status | Test files |');
     out.push('|---|---|---|---|');
     for (const { requirement, tests } of evolution.requirements) {
-      const status = requirement.na
-        ? 'N/A'
+      const status = requirement.descoped
+        ? 'Not applicable'
         : tests.length > 0
           ? 'Covered'
           : 'Not covered';
       if (status === 'Covered') totalCovered++;
-      else if (status === 'N/A') totalNa++;
+      else if (status === 'Not applicable') totalNa++;
       else totalNotCovered++;
-      const files = [...new Set(tests.map((t) => t.file))].join(', ');
+      const evidence = requirement.descoped
+        ? `_${escapeMd(requirement.descoped)}_`
+        : [...new Set(tests.map((t) => t.file))].join(', ');
+      const files = requirement.note
+        ? `${evidence} — _${escapeMd(requirement.note)}_`
+        : evidence;
       out.push(
         `| ${requirement.id} | ${escapeMd(requirement.description)} | ${status} | ${files || '—'} |`,
       );
@@ -48,21 +54,39 @@ export function renderEocpMd(report: CoverageReport) {
   }
 
   const total = totalCovered + totalNa + totalNotCovered;
-  const coveredPct = total === 0 ? 0 : Math.round((totalCovered / total) * 100);
+  const inScope = total - totalNa;
+  const coveredPct = inScope === 0 ? 0 : Math.round((totalCovered / inScope) * 100);
 
   out.push('---');
   out.push('');
   out.push('## Summary');
   out.push('');
-  out.push('| Status | Count | % |');
+  out.push('| Status | Count | % of in-scope |');
   out.push('|---|---|---|');
-  out.push(`| Covered | ${totalCovered} | ${pct(totalCovered, total)}% |`);
-  out.push(`| Not covered | ${totalNotCovered} | ${pct(totalNotCovered, total)}% |`);
-  out.push(`| N/A | ${totalNa} | ${pct(totalNa, total)}% |`);
+  out.push(`| Covered | ${totalCovered} | ${pct(totalCovered, inScope)}% |`);
+  out.push(`| Not covered | ${totalNotCovered} | ${pct(totalNotCovered, inScope)}% |`);
+  out.push(`| **In scope** | **${inScope}** | |`);
+  out.push(`| Not applicable | ${totalNa} | — |`);
   out.push(`| **Total** | **${total}** | |`);
   out.push('');
-  out.push(`Coverage: **${coveredPct}%** of testable requirements covered.`);
+  out.push(`Coverage: **${coveredPct}%** of in-scope requirements covered.`);
   out.push('');
+
+  const descopedList = report.evolutions
+    .flatMap((e) => e.requirements)
+    .filter((r) => r.requirement.descoped);
+  if (descopedList.length > 0) {
+    out.push('### Not applicable');
+    out.push('');
+    out.push('Not addressed by this delivery, and not a testing limitation:');
+    out.push('');
+    for (const { requirement } of descopedList) {
+      out.push(
+        `- **${requirement.id}** ${escapeMd(requirement.description)} — ${escapeMd(requirement.descoped!)}`,
+      );
+    }
+    out.push('');
+  }
 
   return out.join('\n');
 }

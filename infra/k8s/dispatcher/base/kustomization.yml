@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: eocp-dev
+
+# No Service/Ingress: the dispatcher makes outbound calls only (Postgres +
+# API), nothing connects to it.
+resources:
+  - secret.yml
+  - configmap.yml
+  - deployment.yml
+
+labels:
+  - includeSelectors: true
+    pairs:
+      app: dispatcher

@@ -12,6 +12,7 @@ export const PATHS = {
     CREATE: '/batch',
     REPLAY: '/batch/:id/replay',
     UPDATE_PRIORITY: '/batch/:id/priority',
+    STATUS_SUMMARY: '/batch/status-summary',
   },
   JOB: {
     LIST: '/job',
@@ -37,6 +38,8 @@ export const PATHS = {
     LIST_COMPATIBLE_PRODUCTS: '/production-chain/:id/compatible-products',
     IMPORT: '/production-chain/import',
     IMPORT_PREVIEW: '/production-chain/import/preview',
+    IMPORT_ACS: '/production-chain/import/acs',
+    IMPORT_ACS_PREVIEW: '/production-chain/import/acs/preview',
     ADD_NODE: '/production-chain/:id/versions/:versionId/nodes',
     UPDATE_NODE: '/production-chain/:id/versions/:versionId/nodes/:nodeId',
     DELETE_NODE: '/production-chain/:id/versions/:versionId/nodes/:nodeId',
@@ -192,6 +195,8 @@ export const PATHS = {
   TASK_TABLE: {
     IMPORT: '/task-table/import',
     COMMIT: '/task-table/import/:planId/commit',
+    HISTORY: '/task-table/import',
+    HISTORY_GET: '/task-table/import/:planId',
   },
   ODATA: {
     LIST: '/odata/:resource',

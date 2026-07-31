@@ -4,6 +4,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type OnChangeFn,
   type SortingState,
 } from '@tanstack/react-table';
 import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from 'lucide-react';
@@ -25,6 +26,11 @@ type DataTableProps<TData> = {
   onRowClick?: (row: TData) => void;
   emptyMessage?: string;
   rowClassName?: string;
+  // Controlled server-side sorting: when both are provided the table stops
+  // sorting rows itself and just reports header clicks upward (the parent
+  // re-fetches ordered data). Omit both for the default client-side sort.
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
 };
 
 export function DataTable<TData>({
@@ -33,24 +39,34 @@ export function DataTable<TData>({
   onRowClick,
   emptyMessage = 'No results.',
   rowClassName,
+  sorting: controlledSorting,
+  onSortingChange,
 }: DataTableProps<TData>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+  const manualSorting =
+    controlledSorting !== undefined && Boolean(onSortingChange);
+  const sorting = controlledSorting ?? internalSorting;
 
   const table = useReactTable({
     data,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
+    onSortingChange: onSortingChange ?? setInternalSorting,
+    manualSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    // Server sorts the rows in manual mode; only sort client-side otherwise.
+    ...(manualSorting ? {} : { getSortedRowModel: getSortedRowModel() }),
   });
 
   return (
-    <div className="overflow-hidden rounded-md border">
+    <div className="overflow-auto rounded-md border">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((group) => (
-            <TableRow key={group.id} className="bg-muted/30 hover:bg-muted/30">
+            <TableRow
+              key={group.id}
+              className="bg-muted/40 hover:bg-muted/40 sticky top-0 z-10"
+            >
               {group.headers.map((header) => {
                 const sortable = header.column.getCanSort();
                 const sortDir = header.column.getIsSorted();
@@ -58,7 +74,7 @@ export function DataTable<TData>({
                   <TableHead
                     key={header.id}
                     className={cn(
-                      'text-muted-foreground text-xs font-medium uppercase tracking-wide',
+                      'text-muted-foreground h-8 py-0 text-xs font-medium uppercase tracking-wide',
                       sortable && 'cursor-pointer select-none',
                     )}
                     onClick={
@@ -110,7 +126,7 @@ export function DataTable<TData>({
                 }
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="text-sm">
+                  <TableCell key={cell.id} className="py-1.5 text-sm">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

@@ -13,6 +13,8 @@ export const poolListKey = (params: ListPoolsParams) =>
     params.page,
     params.pageSize,
     params.q ?? '',
+    params.sort ?? '',
+    params.order ?? '',
   ] as const;
 
 export function usePoolList(params: ListPoolsParams) {

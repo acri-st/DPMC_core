@@ -78,8 +78,8 @@ describe('T04.4 — Reuse of embedded processing chains across productions', () 
     expect(resA.status).toBe(200);
     expect(resB.status).toBe(200);
 
-    const pcsA = resA.body.data.latestVersion?.processingChains ?? [];
-    const pcsB = resB.body.data.latestVersion?.processingChains ?? [];
+    const pcsA = resA.body.data.processingChains ?? [];
+    const pcsB = resB.body.data.processingChains ?? [];
     log.ok(`chain A script: ${pcsA[0]?.processingScriptId}, chain B script: ${pcsB[0]?.processingScriptId}`);
     expect(pcsA[0].processingScriptId).toBe(PROCESSING_SCRIPT_ID);
     expect(pcsB[0].processingScriptId).toBe(PROCESSING_SCRIPT_ID);

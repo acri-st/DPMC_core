@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T06.2 — Scheduling engine scalability under mixed workload
-// @covers EOCP-E6-03
+// @covers EOCP-E6-01, EOCP-E6-03
 //
 // Description: This test verifies that the scheduler can handle a large number of concurrent jobs
 //   with mixed priorities and dependencies.
@@ -40,7 +40,7 @@ describe('T06.2 — Scheduling engine scalability under mixed workload', () => {
   });
 
   // @plan T06.2
-  // @covers EOCP-E6-03
+  // @covers EOCP-E6-01, EOCP-E6-03
   it('Step 1 – batch of tasks with mixed priorities is accepted without timeout', async () => {
     log.step('Step 1 — POST /task x5 with mixed priorities');
     const priorities = [0, 1, 2, 3, 4];
@@ -71,7 +71,7 @@ describe('T06.2 — Scheduling engine scalability under mixed workload', () => {
   });
 
   // @plan T06.2
-  // @covers EOCP-E6-03
+  // @covers EOCP-E6-01, EOCP-E6-03
   it('Step 2 – task status summary reflects queued tasks (scheduler tracking them)', async () => {
     log.step('Step 2 — GET /task/status-summary');
     const res = await request(API)
@@ -84,7 +84,7 @@ describe('T06.2 — Scheduling engine scalability under mixed workload', () => {
   });
 
   // @plan T06.2
-  // @covers EOCP-E6-03
+  // @covers EOCP-E6-01, EOCP-E6-03
   it('Step 3 – GET /task returns all submitted tasks without server error (API remains responsive)', async () => {
     log.step('Step 3 — GET /task');
     const res = await request(API)

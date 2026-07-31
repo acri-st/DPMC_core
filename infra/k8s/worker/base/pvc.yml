@@ -1,0 +1,13 @@
+# Shared workdir: the worker stages S3 inputs here and job pods mount the
+# same subPaths. RWO is enough while the cluster is single-node (worker and
+# job pods co-located); switch to Longhorn RWX if the cluster grows.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: worker-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi

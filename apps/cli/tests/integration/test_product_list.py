@@ -109,7 +109,7 @@ def test_list_with_size_includes_pretty_size() -> None:
     )
     result = runner.invoke(app, ["product", "list", "--with-size"])
     assert result.exit_code == 0
-    assert "1.0 KB" in result.stdout or "1.00 KB" in result.stdout
+    assert "1.0 KiB" in result.stdout or "1.00 KiB" in result.stdout
 
 
 @respx.mock

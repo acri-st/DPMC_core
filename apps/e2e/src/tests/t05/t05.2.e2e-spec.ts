@@ -52,7 +52,7 @@ describe('T05.2 — Detection of parallelizable tasks within a dependency graph'
     log.action('GET chain to resolve processing-chain IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.2-step-A')?.id;
     stepBId = pcs.find((pc: { name: string }) => pc.name === 'T05.2-step-B')?.id;
     log.ok(`stepA=${stepAId}, stepB=${stepBId}`);
@@ -78,11 +78,11 @@ describe('T05.2 — Detection of parallelizable tasks within a dependency graph'
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     expect(pcs.some((pc: { id: string }) => pc.id === stepAId)).toBe(true);
     expect(pcs.some((pc: { id: string }) => pc.id === stepBId)).toBe(true);
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const hasEdge = edges.some(
       (e: { parentChainId: string; childChainId: string }) =>
         (e.parentChainId === stepAId && e.childChainId === stepBId) ||
@@ -135,7 +135,7 @@ describe('T05.2 — Detection of parallelizable tasks within a dependency graph'
     log.http('GET', `/production-chain/${chainId}`, chain.status);
     expect(chain.status).toBe(200);
 
-    const edges = chain.body.data.latestVersion?.edges ?? [];
+    const edges = chain.body.data.edges ?? [];
     log.ok(`edges after adding OnCompletion: ${edges.length}`);
     expect(edges.length).toBeGreaterThan(0);
   });

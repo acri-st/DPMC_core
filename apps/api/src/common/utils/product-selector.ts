@@ -7,7 +7,7 @@ export interface ProductSelector {
 export interface ProductCandidate {
   id: number;
   productTypeId: number;
-  version: string | null;
+  version: string;
   isDefault: boolean;
   generatedAt: Date | null;
 }

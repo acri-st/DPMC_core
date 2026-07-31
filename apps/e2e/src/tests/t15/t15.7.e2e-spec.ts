@@ -4,7 +4,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T15.7 — Performance of footprint metric export on large datasets
-// @covers EOCP-E15-01
+// @covers EOCP-E15-03
 //
 // Description: Verifies that the CO2 endpoint responds within an acceptable time budget
 //   regardless of the number of projects in the view. Also verifies invalid groupBy values
@@ -23,7 +23,7 @@ describe('T15.7 — Performance of footprint metric export on large datasets', (
   });
 
   // @plan T15.7
-  // @covers EOCP-E15-01
+  // @covers EOCP-E15-03
   it(`Step 1 – GET /metrics/co2 responds within ${ACCEPTABLE_RESPONSE_MS}ms`, async () => {
     log.step('Step 1 — GET /metrics/co2 (response time)');
 
@@ -38,7 +38,7 @@ describe('T15.7 — Performance of footprint metric export on large datasets', (
   });
 
   // @plan T15.7
-  // @covers EOCP-E15-01
+  // @covers EOCP-E15-03
   it('Step 2 – GET /metrics (Prometheus) responds within acceptable time', async () => {
     log.step('Step 2 — GET /metrics (Prometheus, timed)');
 
@@ -53,7 +53,7 @@ describe('T15.7 — Performance of footprint metric export on large datasets', (
   });
 
   // @plan T15.7
-  // @covers EOCP-E15-01
+  // @covers EOCP-E15-03
   it('Step 3 – invalid groupBy value is rejected with 400', async () => {
     log.step('Step 3 — GET /metrics/co2?groupBy=invalid (expect 4xx)');
 

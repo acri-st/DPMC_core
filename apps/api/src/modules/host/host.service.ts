@@ -2,10 +2,30 @@ import { PrismaService } from '@/core/prisma';
 import {
   DEFAULT_PAGE_SIZE,
   PaginatedResult,
+  buildOrderBy,
   buildSearchWhere,
   paginationSkipTake,
 } from '@/common/utils/pagination';
 import type { HostListQuery } from './host.dto';
+
+// Columns the host list may be sorted by (real Host scalar fields only).
+const HOST_SORTABLE = [
+  'hostname',
+  'status',
+  'ipAddress',
+  'osType',
+  'osVersion',
+  'schedulingPriority',
+  'nbCores',
+  'ram',
+  'disk',
+  'gpuCount',
+  'containerRuntime',
+  'lastHeartbeatAt',
+  'createdAt',
+  'updatedAt',
+  'id',
+] as const;
 import { toBigInt } from '@/common/utils';
 import {
   EVENTS,
@@ -112,15 +132,23 @@ export class HostService {
     const { skip, take } = paginationSkipTake(p);
     const search = buildSearchWhere(['hostname', 'ipAddress'], p.q);
     const where = {
-      ...(query?.status ? { status: query.status } : {}),
+      ...(query?.status?.length ? { status: { in: query.status } } : {}),
+      ...(query?.containerRuntime?.length
+        ? { containerRuntime: { in: query.containerRuntime } }
+        : {}),
       ...(search ?? {}),
     };
+    // Default: hostname ascending; overridable via ?sort=&order= against the
+    // HOST_SORTABLE allowlist.
+    const orderBy = buildOrderBy(HOST_SORTABLE, query?.sort, query?.order, [
+      { hostname: 'asc' },
+    ]);
     const [hosts, total] = await Promise.all([
       this.prisma.host.findMany({
         where,
         skip,
         take,
-        orderBy: { hostname: 'asc' },
+        orderBy,
       }),
       this.prisma.host.count({ where }),
     ]);

@@ -18,7 +18,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
+  Res,
 } from '@nestjs/common';
+import type { Response as ExpressResponse } from 'express';
 import { ZodValidationPipe } from 'nestjs-zod';
 import type { CreateTaskScheduleBody } from './task-schedule.dto';
 import {
@@ -29,6 +32,7 @@ import {
   GetTaskScheduleResponseSchema,
   ListTaskScheduleResponse,
   ListTaskScheduleResponseSchema,
+  TaskScheduleListQueryDto,
   UpdateTaskScheduleBody,
   UpdateTaskScheduleResponse,
   UpdateTaskScheduleResponseSchema,
@@ -43,10 +47,13 @@ export class TaskScheduleController {
   @SuccessResponse(ListTaskScheduleResponseSchema)
   @Get(PATHS.TASK_SCHEDULE.LIST)
   async list(
+    @Query() query: TaskScheduleListQueryDto,
     @CurrentProject() project: Project,
+    @Res({ passthrough: true }) res: ExpressResponse,
   ): Promise<ListTaskScheduleResponse> {
-    const data = await this.service.list(project.id);
-    return Response.success(data);
+    const { items, total } = await this.service.list(project.id, query);
+    res.setHeader('X-Total-Count', String(total));
+    return Response.success(items);
   }
 
   @ProjectScoped('admin', 'operator')

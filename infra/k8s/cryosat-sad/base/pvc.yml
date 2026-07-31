@@ -1,0 +1,18 @@
+# CryoSat Ocean static aux data (the ~20GB sad/ tree: SSB tables, tide and
+# pressure maps, land-sea mask…). Too large to bake into the cryosat-ocean
+# images — job pods mount this volume read-only at /data/cryosat-sad (declared
+# per chain node via configuration.staticVolumes, resolved by the API's
+# DPMC_STATIC_VOLUMES map). Populated once by the bootstrap Job (job.yml).
+# RWO is enough while the cluster is single-node (worker and job pods
+# co-located, same rationale as worker-data); switch to Longhorn RWX if the
+# cluster grows.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cryosat-sad
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 25Gi

@@ -1,40 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { AlertCircleIcon, PlayCircleIcon, RefreshCwIcon } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { DataTable } from '@/shared/components/data-table';
+import { ListHeader } from '@/shared/components/list-header';
 import { ViewModeToggle } from '@/shared/components/view-mode-toggle';
 import { useViewMode } from '@/shared/hooks/use-view-mode';
-import { PageHeader } from '@/shared/components/page-header';
-import { PageToolbar } from '@/shared/components/page-toolbar';
+import { useListParams } from '@/shared/hooks/use-list-params';
 import { PagePagination } from '@/shared/components/page-pagination';
 import { JobCard } from '@/features/job/components/job-card';
 import { buildJobColumns } from '@/features/job/components/job-columns';
 import { useJobList } from '@/features/job/hooks/use-job-list';
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { useHostList } from '@/features/host/hooks/use-host-list';
 
 const DEFAULT_PAGE_SIZE = 25;
 
 export function JobListPage() {
+  const lp = useListParams({
+    filterKeys: [],
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+  });
   const [viewMode, setViewMode] = useViewMode('jobs', 'table');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
-  const trimmedQ = debouncedSearch.trim();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setPage(1);
-  }, [trimmedQ]);
-
   const jobsQuery = useJobList({
-    page,
-    pageSize,
-    q: trimmedQ.length > 0 ? trimmedQ : undefined,
+    page: lp.page,
+    pageSize: lp.pageSize,
+    q: lp.trimmedQ || undefined,
+    sort: lp.sort,
+    order: lp.order,
   });
   const { data: hostsResult } = useHostList({ page: 1, pageSize: 500 });
 
@@ -67,34 +63,34 @@ export function JobListPage() {
   const total = jobsQuery.data?.total ?? 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
+    <div className="flex flex-1 flex-col gap-2">
+      <ListHeader
         icon={PlayCircleIcon}
         title="Jobs"
         subtitle="Individual script executions across all batches."
         count={jobsQuery.data ? total : undefined}
         noun="job"
-      >
-        <ViewModeToggle value={viewMode} onChange={setViewMode} />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => jobsQuery.refetch()}
-          disabled={jobsQuery.isFetching}
-        >
-          <RefreshCwIcon
-            className={jobsQuery.isFetching ? 'animate-spin' : undefined}
-          />
-          Refresh
-        </Button>
-      </PageHeader>
-
-      <PageToolbar
         search={{
-          value: search,
-          onChange: setSearch,
+          value: lp.q,
+          onChange: lp.setQ,
           placeholder: 'Search by execution tag…',
         }}
+        actions={
+          <>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => jobsQuery.refetch()}
+              disabled={jobsQuery.isFetching}
+            >
+              <RefreshCwIcon
+                className={jobsQuery.isFetching ? 'animate-spin' : undefined}
+              />
+              Refresh
+            </Button>
+          </>
+        }
       />
 
       {jobsQuery.isError ? (
@@ -133,6 +129,8 @@ export function JobListPage() {
         <DataTable
           data={items}
           columns={columns}
+          sorting={lp.sorting}
+          onSortingChange={lp.setSorting}
           onRowClick={(row) =>
             navigate({ to: '/jobs/$id', params: { id: String(row.id) } })
           }
@@ -142,14 +140,11 @@ export function JobListPage() {
 
       {jobsQuery.data ? (
         <PagePagination
-          page={page}
-          pageSize={pageSize}
+          page={lp.page}
+          pageSize={lp.pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={lp.setPage}
+          onPageSizeChange={lp.setPageSize}
           noun="job"
           isFetching={jobsQuery.isFetching}
         />

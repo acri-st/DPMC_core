@@ -6,8 +6,12 @@ import {
   Error500Schema,
 } from '@/schemas';
 import { METHODS, PATHS } from '@/constants';
-import { HostSchema, OsTypeSchema, SchedulingPrioritySchema } from '../schemas';
-import { ContainerRuntimeSchema } from '../../processing-script/schemas';
+import {
+  HostContainerRuntimeSchema,
+  HostSchema,
+  OsTypeSchema,
+  SchedulingPrioritySchema,
+} from '../schemas';
 
 export const RegisterHostBodySchema = z.object({
   dataCenterCode: z.string().min(1),
@@ -24,7 +28,7 @@ export const RegisterHostBodySchema = z.object({
   hasGpu: z.boolean().optional().default(false),
   gpuCount: z.coerce.number().int().nonnegative().optional().default(0),
   gpuModel: z.string().nullable().optional(),
-  containerRuntime: ContainerRuntimeSchema.optional().default('None'),
+  containerRuntime: HostContainerRuntimeSchema.optional().default('None'),
 });
 
 export type RegisterHostBody = z.infer<typeof RegisterHostBodySchema>;

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dispatcher
+spec:
+  # The dispatcher is a singleton orchestrator: its loops (dispatch, monitor,
+  # recovery…) assume exactly one instance owns the scheduling state. Recreate
+  # kills the old pod before starting the new one so two dispatchers never
+  # run concurrently during a rollout.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dispatcher
+  template:
+    metadata:
+      labels:
+        app: dispatcher
+    spec:
+      imagePullSecrets:
+        - name: harbor-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        # Matches the `dispatcher` user (uid 1000) created in
+        # apps/dispatcher/Dockerfile.
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      tolerations:
+        - key: project
+          operator: Equal
+          value: shared
+          effect: NoSchedule
+      containers:
+        - name: dispatcher
+          image: harbor.shared.acrist-services.com/dsy/damps/dpmc/dispatcher:development
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: dispatcher
+            - secretRef:
+                name: dispatcher
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          # No HTTP probes: the dispatcher exposes no server. Startup ordering
+          # is handled in-process (wait_for_api_ready polls GET /status), and
+          # health is observable through its scheduler heartbeat in the API.

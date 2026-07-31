@@ -11,7 +11,7 @@ describe('T12.2 — Token and session management', () => {
   // @plan T12.2
   // @covers EOCP-E12-01
   it('rejects an unknown session id with 401', async () => {
-    const fake = `${CONFIG.session.cookieName}=00000000-0000-0000-0000-deadbeef0000`;
+    const fake = `${CONFIG.session.cookieName}=deadbeef0000`;
     await request(API).get('/task').set('Cookie', fake).expect(401);
   });
 

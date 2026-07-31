@@ -9,3 +9,4 @@ export * from './product-types';
 export * from './nodes';
 export * from './compatible-products';
 export * from './import-task-table';
+export * from './import-acs-task-table';

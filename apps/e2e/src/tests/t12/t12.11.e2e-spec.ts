@@ -4,7 +4,7 @@ import { API } from '../../support/auth';
 import { asAdminSession } from '../../support/session';
 
 // @plan T12.11 — Prevention of protocol downgrade attacks
-// @covers EOCP-E12-11
+// @covers EOCP-E12-03
 //
 // Description: This test verifies that insecure protocol downgrades are not permitted.
 //   TLS termination is an infrastructure concern handled by the reverse proxy in production.
@@ -19,7 +19,7 @@ import { asAdminSession } from '../../support/session';
 
 describe('T12.11 — Prevention of protocol downgrade attacks', () => {
   // @plan T12.11
-  // @covers EOCP-E12-11
+  // @covers EOCP-E12-03
   it('Step 1 – API does not accept HTTP Basic authentication on protected endpoints', async () => {
     // Providing Basic auth credentials must not bypass the session guard
     await request(API)
@@ -34,7 +34,7 @@ describe('T12.11 — Prevention of protocol downgrade attacks', () => {
   });
 
   // @plan T12.11
-  // @covers EOCP-E12-11
+  // @covers EOCP-E12-03
   it('Step 2 – API responds correctly over the configured protocol', async () => {
     expect(CONFIG.api.url).toMatch(/^https?:\/\//);
     await request(API).get('/healthz').expect(200);
@@ -42,7 +42,7 @@ describe('T12.11 — Prevention of protocol downgrade attacks', () => {
   });
 
   // @plan T12.11
-  // @covers EOCP-E12-11
+  // @covers EOCP-E12-03
   it('Step 3 – session cookie is not set to an insecure default name', async () => {
     // If the cookie name were empty or a known insecure default, it would indicate misconfiguration
     expect(CONFIG.session.cookieName).toBeTruthy();

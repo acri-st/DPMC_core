@@ -14,11 +14,12 @@ import {
 import type { Response as ExpressResponse } from 'express';
 import { PATHS } from '@dpmc/client';
 import { Response } from '@/common';
-import { parsePagination, paginationSkipTake } from '@/common/utils/pagination';
+import { paginationSkipTake } from '@/common/utils/pagination';
 import { DatasetService } from './dataset.service';
 import {
   CreateDatasetBody,
   CreateDatasetResponse,
+  DatasetListQueryDto,
   GetDatasetResponse,
   ListDatasetResponse,
   UpdateDatasetBody,
@@ -31,16 +32,19 @@ export class DatasetController {
 
   @Get(PATHS.DATASET.LIST)
   async list(
-    @Query() q: any,
+    @Query() query: DatasetListQueryDto,
     @Res({ passthrough: true }) res: ExpressResponse,
   ): Promise<ListDatasetResponse> {
-    const pagination = parsePagination(q);
-    const { skip, take } = paginationSkipTake(pagination);
+    const { skip, take } = paginationSkipTake(query);
     const { data, total } = await this.service.list({
       skip,
       take,
-      producedByBatchId: q.producedByBatchId,
-      name: q.name,
+      producedByBatchId: query.producedByBatchId,
+      name: query.name,
+      origin: query.origin,
+      q: query.q,
+      sort: query.sort,
+      order: query.order,
     });
     res.setHeader('X-Total-Count', String(total));
     return Response.success(data, { total }) as unknown as ListDatasetResponse;

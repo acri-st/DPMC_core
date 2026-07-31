@@ -7,7 +7,7 @@ import { PROJECT_ID } from './_shared';
 import { FIXTURES } from '../../setup/fixtures';
 
 // @plan T08.5 — Audit trail reconstruction for processor versions
-// @covers EOCP-E8-01 EOCP-E8-02
+// @covers EOCP-E8-02
 //
 // Description: This test verifies that it is possible to reconstruct which processor version was
 //   used for any past execution.
@@ -70,7 +70,7 @@ describe('T08.5 — Audit trail reconstruction for processor versions', () => {
   });
 
   // @plan T08.5
-  // @covers EOCP-E8-01 EOCP-E8-02
+  // @covers EOCP-E8-02
   it('Step 1 – task submitted with a specific processorVersionId is accessible via GET', async () => {
     log.step('Step 1 — POST /task + GET /task/:id');
     const createRes = await request(API)
@@ -100,7 +100,7 @@ describe('T08.5 — Audit trail reconstruction for processor versions', () => {
   });
 
   // @plan T08.5
-  // @covers EOCP-E8-01 EOCP-E8-02
+  // @covers EOCP-E8-02
   it('Step 2 – task metadata carries processorVersionId (version identifiable from task record)', async () => {
     log.step(`Step 2 — GET /task/${taskId} (processorVersionId check)`);
     const res = await request(API)
@@ -113,7 +113,7 @@ describe('T08.5 — Audit trail reconstruction for processor versions', () => {
   });
 
   // @plan T08.5
-  // @covers EOCP-E8-01 EOCP-E8-02
+  // @covers EOCP-E8-02
   it('Step 3 – processor version details are retrievable from registry (audit correlation)', async () => {
     log.step(`Step 3 — GET /processor-version/${pvId}`);
     const res = await request(API)

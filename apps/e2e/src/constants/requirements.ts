@@ -3,26 +3,46 @@ export interface Requirement {
   evolution: string;
   description: string;
   /**
-   * Marks an architectural / infrastructure concern that is not addressable
-   * via the e2e test harness. Reported as "N/A" in TRACEABILITY.md instead of
-   * "Not covered".
+   * Excluded from the delivered scope by an explicit decision, carrying the
+   * reason. A descoped requirement is not a coverage failure and is left out
+   * of the ratio, but it is always listed with its justification — the reader
+   * has to be able to tell "we chose not to build this" apart from "we failed
+   * to test it".
    */
-  na?: boolean;
+  descoped?: string;
+  /**
+   * Qualifies what the coverage actually establishes, when a requirement's
+   * wording is broader than the evidence behind it.
+   */
+  note?: string;
 }
 
-const req = (id: string, description: string, opts: { na?: boolean } = {}): Requirement => {
+const req = (
+  id: string,
+  description: string,
+  opts: { descoped?: string; note?: string } = {},
+): Requirement => {
   const evolution = id.split('-')[1];
   return { id, evolution, description, ...opts };
 };
 
-const NA = { na: true };
+// Multi-site production and federated scheduling are dropped from the delivery.
+// Neither exists in the product: `dataCenterId` is carried only by Host and is
+// never read when selecting a node, and the dispatcher has no notion of a peer,
+// a master or a satellite.
+const DESCOPED_MULTI_SITE = {
+  descoped: 'Multi-site production is not part of the delivered system',
+};
+const DESCOPED_FEDERATION = {
+  descoped: 'Federated scheduling is not part of the delivered system',
+};
 
 export const REQUIREMENTS: Requirement[] = [
-  req('EOCP-E1-01', 'Modularity — components decoupled', NA),
+  req('EOCP-E1-01', 'Modularity — components decoupled'),
   req('EOCP-E1-02', 'Standardized REST APIs'),
-  req('EOCP-E1-03', 'Portability, observability, resilience', NA),
+  req('EOCP-E1-03', 'Portability, observability, resilience'),
   req('EOCP-E1-04', 'Security in system design'),
-  req('EOCP-E1-05', 'DB normalization, naming conventions', NA),
+  req('EOCP-E1-05', 'DB normalization, naming conventions'),
 
   req('EOCP-E2-01', 'Multiple production modes'),
   req('EOCP-E2-02', 'Mode-specific rules'),
@@ -50,13 +70,13 @@ export const REQUIREMENTS: Requirement[] = [
   req('EOCP-E5-05', 'Runtime dependency resolution'),
 
   req('EOCP-E6-01', 'Scheduling engine'),
-  req('EOCP-E6-02', 'Multi-site production'),
+  req('EOCP-E6-02', 'Multi-site production', DESCOPED_MULTI_SITE),
   req('EOCP-E6-03', 'Job dispatcher'),
   req('EOCP-E6-04', 'Queue manager'),
   req('EOCP-E6-05', 'Node registry & health monitoring'),
   req('EOCP-E6-06', 'Execution engine interface'),
   req('EOCP-E6-07', 'Persistence layer'),
-  req('EOCP-E6-08', 'Federated scheduling'),
+  req('EOCP-E6-08', 'Federated scheduling', DESCOPED_FEDERATION),
   req('EOCP-E6-09', 'Priority engine'),
   req('EOCP-E6-10', 'Elastic compute pools'),
   req('EOCP-E6-11', 'Fault tolerance & rescheduling'),
@@ -91,13 +111,19 @@ export const REQUIREMENTS: Requirement[] = [
 
   req('EOCP-E12-01', 'User authentication'),
   req('EOCP-E12-02', 'Role-based access control'),
-  req('EOCP-E12-03', 'Secure communication (HTTPS)', NA),
+  req('EOCP-E12-03', 'Secure communication (HTTPS)'),
   req('EOCP-E12-04', 'Security event logging'),
   req('EOCP-E12-05', 'External IAM integration'),
 
   req('EOCP-E13-01', 'Docker/Apptainer execution'),
   req('EOCP-E13-02', 'Standard container interface'),
-  req('EOCP-E13-03', 'Container security/resource limits'),
+  req('EOCP-E13-03', 'Container security/resource limits', {
+    // The wording spans two aspects and only one is verified: T13.3 checks the
+    // declared cpu/memory limits reach the execution contract. Container
+    // hardening is out of the delivered scope, so nothing establishes the
+    // security half — stated here rather than left for a reader to notice.
+    note: 'Verified on the resource-limits aspect; container hardening is not part of the delivered system',
+  }),
 
   req('EOCP-E14-01', 'Multiple product versions coexist'),
   req('EOCP-E14-02', 'Product versions traceable'),

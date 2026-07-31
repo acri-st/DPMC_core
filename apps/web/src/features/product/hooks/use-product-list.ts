@@ -7,7 +7,15 @@ import {
 } from '@/features/product/services/product.service';
 
 export const productListKey = (params: ListProductsParams) =>
-  ['product', 'list', params.page, params.pageSize, params.q ?? ''] as const;
+  [
+    'product',
+    'list',
+    params.page,
+    params.pageSize,
+    params.q ?? '',
+    params.sort ?? '',
+    params.order ?? '',
+  ] as const;
 
 export function useProductList(params: ListProductsParams) {
   const { status } = useCurrentUser();

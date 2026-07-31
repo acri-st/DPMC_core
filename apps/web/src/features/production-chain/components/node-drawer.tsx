@@ -1,13 +1,29 @@
+import { useEffect, useState } from 'react';
 import {
   ArrowDownToLineIcon,
   ArrowUpFromLineIcon,
   ContainerIcon,
   CpuIcon,
   HardDriveIcon,
+  Trash2Icon,
   ZapIcon,
 } from 'lucide-react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shared/components/ui/alert-dialog';
 import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import {
   Sheet,
   SheetContent,
@@ -20,10 +36,26 @@ import type { ProcessingScriptNode } from '@/features/production-chain/types';
 
 type NodeDrawerProps = {
   node: ProcessingScriptNode | null;
+  editable?: boolean;
+  disabled?: boolean;
   onOpenChange: (open: boolean) => void;
+  onRename?: (name: string) => void;
+  onDelete?: () => void;
 };
 
-export function NodeDrawer({ node, onOpenChange }: NodeDrawerProps) {
+export function NodeDrawer({
+  node,
+  editable,
+  disabled,
+  onOpenChange,
+  onRename,
+  onDelete,
+}: NodeDrawerProps) {
+  const [name, setName] = useState('');
+  useEffect(() => {
+    setName(node?.acronym ?? '');
+  }, [node]);
+
   return (
     <Sheet open={node !== null} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto">
@@ -40,6 +72,60 @@ export function NodeDrawer({ node, onOpenChange }: NodeDrawerProps) {
             </SheetHeader>
 
             <div className="flex flex-col gap-4 p-4 pt-0 text-xs">
+              {editable ? (
+                <div className="flex flex-col gap-2 border-b pb-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="node-rename-input" className="text-[10px] uppercase tracking-wider">
+                      Node name
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="node-rename-input"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="h-8 text-xs"
+                        disabled={disabled}
+                      />
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={disabled || !name.trim() || name === node.acronym}
+                        onClick={() => onRename?.(name.trim())}
+                      >
+                        Rename
+                      </Button>
+                    </div>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" disabled={disabled}>
+                        <Trash2Icon /> Delete node
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Delete node "{node.acronym}"?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This removes the node and all its edges from the
+                          production chain. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={onDelete}
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              ) : null}
+
               {/* Resources */}
               <Section title="Resources">
                 <div className="grid grid-cols-3 gap-2">

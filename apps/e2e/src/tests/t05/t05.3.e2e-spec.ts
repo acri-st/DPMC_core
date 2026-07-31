@@ -53,7 +53,7 @@ describe('T05.3 — Declarative definition of task dependencies', () => {
     log.action('GET chain to resolve processing-chain IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.3-step-A')?.id;
     stepBId = pcs.find((pc: { name: string }) => pc.name === 'T05.3-step-B')?.id;
     log.ok(`stepA=${stepAId}, stepB=${stepBId}`);
@@ -116,7 +116,7 @@ describe('T05.3 — Declarative definition of task dependencies', () => {
     log.http('GET', `/production-chain/${chainId}`, chainRes.status);
     expect(chainRes.status).toBe(200);
 
-    const edges = chainRes.body.data.latestVersion?.edges ?? [];
+    const edges = chainRes.body.data.edges ?? [];
     const hasOnSuccess = edges.some((e: { dependencyMode: string }) => e.dependencyMode === 'OnSuccess');
     log.ok(`OnSuccess edge in structure: ${hasOnSuccess}`);
     expect(hasOnSuccess).toBe(true);

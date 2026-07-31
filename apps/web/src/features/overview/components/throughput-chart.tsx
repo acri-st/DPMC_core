@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { AreaChartIcon, BarChart3Icon } from 'lucide-react';
 import {
   Area,
@@ -37,6 +37,20 @@ const HOURS = 24;
 const HOUR_MS = 60 * 60 * 1000;
 const SUCCESS_COLOR = '#10b981';
 const FAILED_COLOR = '#f43f5e';
+
+// Recharts tooltips render with an inline white background by default, which is
+// unreadable in dark mode. Drive them off the theme's popover tokens instead.
+const TOOLTIP_CONTENT_STYLE: CSSProperties = {
+  borderRadius: 6,
+  fontSize: 12,
+  backgroundColor: 'var(--popover)',
+  color: 'var(--popover-foreground)',
+  border: '1px solid var(--border)',
+};
+const TOOLTIP_LABEL_STYLE: CSSProperties = {
+  fontWeight: 600,
+  color: 'var(--popover-foreground)',
+};
 
 export function ThroughputChart({ tasks, isLoading }: ThroughputChartProps) {
   const [mode, setMode] = useState<ChartMode>('bars');
@@ -105,8 +119,8 @@ export function ThroughputChart({ tasks, isLoading }: ThroughputChartProps) {
                   />
                   <Tooltip
                     cursor={{ fill: 'currentColor', opacity: 0.05 }}
-                    contentStyle={{ borderRadius: 6, fontSize: 12 }}
-                    labelStyle={{ fontWeight: 600 }}
+                    contentStyle={TOOLTIP_CONTENT_STYLE}
+                    labelStyle={TOOLTIP_LABEL_STYLE}
                   />
                   <Bar
                     stackId="1"
@@ -182,8 +196,8 @@ export function ThroughputChart({ tasks, isLoading }: ThroughputChartProps) {
                     width={30}
                   />
                   <Tooltip
-                    contentStyle={{ borderRadius: 6, fontSize: 12 }}
-                    labelStyle={{ fontWeight: 600 }}
+                    contentStyle={TOOLTIP_CONTENT_STYLE}
+                    labelStyle={TOOLTIP_LABEL_STYLE}
                   />
                   <Area
                     type="monotone"

@@ -105,10 +105,10 @@ function renderLegend(): string {
   }).join('');
 
   return `
-    <details class="bg-white rounded-xl ring-1 ring-slate-200 overflow-hidden" data-testid="legend">
+    <details open class="bg-white rounded-xl ring-1 ring-slate-200 overflow-hidden" data-testid="legend">
       <summary class="px-5 py-3 cursor-pointer select-none flex items-center justify-between text-sm font-medium text-slate-700 hover:bg-slate-50">
         <span>Legend — what each status means</span>
-        <span class="text-xs text-slate-400">click to expand</span>
+        <span class="print-hide text-xs text-slate-400">click to collapse</span>
       </summary>
       <ul class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 border-t border-slate-100">${items}</ul>
     </details>`;
@@ -198,6 +198,16 @@ export function renderPlanHtml(report: PlanCoverageReport) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EOCP Test Plan Coverage</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Keep colored badges/bars in the printed PDF */
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin: 14mm; }
+    @media print {
+      .print-hide { display: none !important; }            /* interactive toolbars */
+      .max-w-5xl { max-width: none !important; padding: 0 !important; }
+      section, details, li, tr { break-inside: avoid; }
+    }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">
   <div class="max-w-5xl mx-auto px-6 py-10 space-y-6">
@@ -206,7 +216,7 @@ export function renderPlanHtml(report: PlanCoverageReport) {
         <h1 class="text-2xl font-bold tracking-tight">EOCP Test Plan Coverage</h1>
         <p class="text-sm text-slate-500 mt-1">DAMPS.ACR.PLN.012 · Generated ${escapeHtml(generatedAt)}</p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="print-hide flex items-center gap-2">
         <button
           onclick="downloadHtml()"
           class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"

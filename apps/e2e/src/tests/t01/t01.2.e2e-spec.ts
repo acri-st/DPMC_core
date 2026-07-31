@@ -6,7 +6,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from './_env-check';
 
 // @plan T01.2 — Contract-based interactions with mocked components
-// @covers EOCP-E1-01
+// @covers EOCP-E1-01, EOCP-E1-02
 //
 // Description: This test validates that DPMC components interact strictly through formal contracts,
 //   allowing a component to be replaced by a mock implementation without breaking the system.
@@ -44,7 +44,7 @@ describe('T01.2 — Contract-based interactions with mocked components', () => {
   });
 
   // @plan T01.2
-  // @covers EOCP-E1-01
+  // @covers EOCP-E1-01, EOCP-E1-02
   it('Step 1 – GET /status confirms API layer accepts connections regardless of downstream state', async () => {
     log.step('Step 1 — GET /status');
 
@@ -56,7 +56,7 @@ describe('T01.2 — Contract-based interactions with mocked components', () => {
   });
 
   // @plan T01.2
-  // @covers EOCP-E1-01
+  // @covers EOCP-E1-01, EOCP-E1-02
   it('Step 2 – POST /task is handled through the documented contract (returns 201 with id and status)', async () => {
     log.step('Step 2 — POST /task (contract check)');
 
@@ -83,7 +83,7 @@ describe('T01.2 — Contract-based interactions with mocked components', () => {
   });
 
   // @plan T01.2
-  // @covers EOCP-E1-01
+  // @covers EOCP-E1-01, EOCP-E1-02
   it('Step 3 – GET /task/:id returns data conforming to the documented contract shape', async () => {
     const taskId = createdIds[0];
     log.step(`Step 3 — GET /task/${taskId} (contract shape check)`);
@@ -107,7 +107,7 @@ describe('T01.2 — Contract-based interactions with mocked components', () => {
   });
 
   // @plan T01.2
-  // @covers EOCP-E1-01
+  // @covers EOCP-E1-01, EOCP-E1-02
   it('Step 4 – DELETE /task/:id removes task and system returns to baseline (no undocumented side effects)', async () => {
     log.step('Step 4 — DELETE tasks + baseline check');
 

@@ -51,7 +51,9 @@ describe('T11.7 — API authentication and authorization enforcement', () => {
   // @covers EOCP-E11-07
   it('Step 3 – a fake/unknown session id is rejected with 401', async () => {
     log.step('Step 3 — fake session');
-    const fakeCookie = `dpmc.sid=00000000-0000-0000-0000-000000000099`;
+    // Must be far above any session id the suite auto-creates (sessions are
+    // autoincrement from 1), otherwise this "unknown" id collides with a real one.
+    const fakeCookie = `dpmc.sid=2000000000`;
     const res = await request(API).get('/task').set('Cookie', fakeCookie);
     log.http('GET', '/task', res.status, res.body);
     expect(res.status).toBe(401);

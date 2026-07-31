@@ -19,4 +19,12 @@
 .git
 .gitlab-ci.yml
 **/*.log
-data
+
+# Local MinIO storage, S3 buckets and seed fixtures — large, never needed in an
+# image. NOT a blanket `data` exclusion: job images bake their own sources —
+# warhol (data/warhol/<scripts> + _lib) and dpmc_tst (data/dpmc_tst/components +
+# conf) must stay in the build context. Only the heavy/runtime dirs under data/
+# are excluded (warhol/runs = job outputs; data/seed = generated DPMC_TST_*.txt).
+data/.minio.sys
+data/dpmc
+data/warhol/runs

@@ -13,8 +13,19 @@ import type { ChainIr } from './chain-ir';
 import { EarthCAREAdapter } from './adapters/earthcare';
 import { S3TTAdapter } from './adapters/s3';
 import { parseIpfTaskTable } from './adapters/ipf';
+import {
+  buildAcsChainPlan,
+  CRYOSAT_STATIC_VOLUMES,
+  type AcsChainPlan,
+} from './adapters/acs';
 import { TtParseError, type TtAdapter } from './adapters/base';
 import { deserializeIr, serializeIr } from './task-table.utils';
+
+export interface AcsImportOptions {
+  installRoot?: string | null;
+  chainName?: string;
+  images?: Record<string, { imageUrl: string; imageTag?: string }>;
+}
 
 const ADAPTERS: Record<string, () => TtAdapter> = {
   s3: () => new S3TTAdapter(),
@@ -25,16 +36,59 @@ const ADAPTERS: Record<string, () => TtAdapter> = {
 export class TaskTableService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Ingestion history, most recent first (EOCP-E9-03). */
+  async history() {
+    const rows = await this.prisma.taskTableImportPlan.findMany({
+      orderBy: { id: 'desc' },
+      select: {
+        id: true,
+        adapter: true,
+        sourceName: true,
+        acceptedCount: true,
+        rejectedCount: true,
+        createdAt: true,
+        committedAt: true,
+        committedScriptId: true,
+        committedVersionId: true,
+      },
+    });
+    return rows.map(({ id, ...rest }) => ({ planId: id, ...rest }));
+  }
+
+  /** One history entry with the source document and the parsed IR. */
+  async historyGet(planId: number) {
+    const row = await this.prisma.taskTableImportPlan.findUnique({
+      where: { id: planId },
+    });
+    if (!row) throw new NotFoundException(`Plan ${planId} not found`);
+    return {
+      planId: row.id,
+      adapter: row.adapter,
+      sourceName: row.sourceName,
+      acceptedCount: row.acceptedCount,
+      rejectedCount: row.rejectedCount,
+      createdAt: row.createdAt,
+      committedAt: row.committedAt,
+      committedScriptId: row.committedScriptId,
+      committedVersionId: row.committedVersionId,
+      sourceContent: row.sourceContent,
+      // Stored JSON-safe already; deserializing here would reintroduce the
+      // BigInt fields that cannot be serialized back into the response.
+      ir: row.content,
+    };
+  }
+
   async plan(
     adapter: string,
     content: string,
+    sourceName?: string,
   ): Promise<{
     planId: number;
     summary: {
       adapter: string;
       acceptedCount: number;
       rejectedCount: number;
-      ir: CanonicalIR;
+      ir: Prisma.InputJsonValue;
     };
   }> {
     const factory = ADAPTERS[adapter];
@@ -54,11 +108,20 @@ export class TaskTableService {
         content: serializeIr(ir),
         acceptedCount: accepted,
         rejectedCount: 0,
+        sourceName: sourceName ?? null,
+        sourceContent: content,
       },
     });
     return {
+      // `ir` carries BigInt byte counts, which JSON.stringify throws on. The
+      // response ships the same JSON-safe projection that is persisted.
       planId: row.id,
-      summary: { adapter, acceptedCount: accepted, rejectedCount: 0, ir },
+      summary: {
+        adapter,
+        acceptedCount: accepted,
+        rejectedCount: 0,
+        ir: serializeIr(ir),
+      },
     };
   }
 
@@ -107,7 +170,11 @@ export class TaskTableService {
       }
       await tx.taskTableImportPlan.update({
         where: { id: planId },
-        data: { committedAt: new Date() },
+        data: {
+          committedAt: new Date(),
+          committedScriptId: script.id,
+          committedVersionId: version.id,
+        },
       });
 
       return { scriptId: script.id, versionId: version.id, chainId: script.id };
@@ -176,6 +243,166 @@ export class TaskTableService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Dry-run parse of one or more old-ACS `<Task_Table>` documents (CryoSat
+   * style) for the wizard's preview step: one node per table, cross-table
+   * edges inferred from DB output/input type matches.
+   */
+  previewAcs(
+    files: Array<{ name: string; content: string }>,
+    options: AcsImportOptions = {},
+  ): AcsChainPlan {
+    try {
+      return buildAcsChainPlan(files, { installRoot: options.installRoot });
+    } catch (err) {
+      if (err instanceof TtParseError) {
+        throw new BadRequestException(`ACS TT parse failed: ${err.message}`);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Materialize a ProductionChain from one or more old-ACS task tables:
+   * one ProcessingScript per table with the pools as sequenced executables,
+   * the full transcription stored as the node's `configuration.taskTable`
+   * (consumed by the job-order generator at dispatch time), node outputs
+   * derived from DB destinations, and typed cross-table edges. Additive
+   * next to {@link createChainFromIpf} — the Sentinel-style flow is
+   * untouched.
+   */
+  async createChainFromAcs(
+    projectId: number,
+    files: Array<{ name: string; content: string }>,
+    options: AcsImportOptions = {},
+  ): Promise<{ chainId: number; nodeCount: number; edgeCount: number }> {
+    const plan = this.previewAcs(files, options);
+
+    return this.prisma
+      .$transaction(async (tx) => {
+        const scriptByAcronym = new Map<string, number>();
+        for (const node of plan.nodes) {
+          const existingScript = await tx.processingScript.findUnique({
+            where: { acronym: node.acronym },
+            select: { id: true },
+          });
+          const script =
+            existingScript ??
+            (await tx.processingScript.create({
+              data: { name: node.acronym, acronym: node.acronym },
+            }));
+          if (existingScript) {
+            await tx.processingScriptVersion.updateMany({
+              where: { processingScriptId: script.id, isLatest: true },
+              data: { isLatest: false },
+            });
+          }
+
+          const taken = await tx.processingScriptVersion.findFirst({
+            where: { processingScriptId: script.id, version: node.version },
+            select: { id: true },
+          });
+          const versionLabel = taken
+            ? await this.pickAvailableScriptVersion(tx, script.id)
+            : node.version;
+
+          const image = options.images?.[node.acronym];
+          const version = await tx.processingScriptVersion.create({
+            data: {
+              processingScriptId: script.id,
+              version: versionLabel,
+              isLatest: true,
+              runtime: 'Docker',
+              imageUrl: image?.imageUrl ?? node.suggestedImageUrl,
+              imageTag: image?.imageTag ?? 'development',
+              requiredCpu: 1,
+              requiredRam: 2n * 1024n * 1024n * 1024n,
+              requiredDisk: BigInt(node.requiredDiskBytes),
+            },
+          });
+          for (const exe of node.executables) {
+            await tx.processingScriptExecutable.create({
+              data: {
+                processingScriptVersionId: version.id,
+                scriptType: exe.scriptType,
+                stage: exe.stage,
+                path: exe.path,
+                name: exe.name,
+                sequence: exe.sequence,
+              },
+            });
+          }
+          await tx.processingScript.update({
+            where: { id: script.id },
+            data: { defaultVersionId: version.id },
+          });
+          scriptByAcronym.set(node.acronym, script.id);
+        }
+
+        const chainName = await this.pickAvailableChainName(
+          tx,
+          projectId,
+          options.chainName ?? plan.name,
+        );
+        const chain = await tx.productionChain.create({
+          data: {
+            projectId,
+            name: chainName,
+            configuration: {
+              source: {
+                adapter: 'acs',
+                files: plan.nodes.map((n) => n.sourceName),
+              },
+            },
+          },
+        });
+
+        const nodeRowByAcronym = new Map<string, number>();
+        for (const node of plan.nodes) {
+          const pc = await tx.processingChain.create({
+            data: {
+              productionChainId: chain.id,
+              processingScriptId: scriptByAcronym.get(node.acronym)!,
+              name: node.acronym,
+              configuration: {
+                staticVolumes: CRYOSAT_STATIC_VOLUMES,
+                taskTable: node.taskTable,
+              } as unknown as Prisma.InputJsonValue,
+              outputs: node.outputs,
+            },
+          });
+          nodeRowByAcronym.set(node.acronym, pc.id);
+        }
+        for (const edge of plan.edges) {
+          await tx.productionChainEdge.create({
+            data: {
+              productionChainId: chain.id,
+              parentChainId: nodeRowByAcronym.get(edge.parentAcronym)!,
+              childChainId: nodeRowByAcronym.get(edge.childAcronym)!,
+              dependencyMode: edge.dependencyMode,
+            },
+          });
+        }
+
+        return {
+          chainId: chain.id,
+          nodeCount: plan.nodes.length,
+          edgeCount: plan.edges.length,
+        };
+      })
+      .catch((err) => {
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'ACS import conflicts with existing data (unique constraint).',
+          );
+        }
+        throw err;
+      });
   }
 
   /**

@@ -24,6 +24,21 @@ data:
   # Multiplied by 1000 (→ ms) by the config schema.
   COOKIE_MAX_AGE: "10000"
   WORKER_OFFLINE_THRESHOLD_S: "60"
+  # Root for the mount sources embedded in worker dispatches. MUST line up
+  # with the worker's WORKDIR_BASE and DPMC_K8S_MOUNT_MAP (worker configmap):
+  # without it the API falls back to <cwd>/data/warhol (= /app/data/warhol in
+  # the image) and every k8s-backend job fails with "mount source outside
+  # mount map".
+  WARHOL_DATA_ROOT: /repo/data/warhol
+  # Named static volumes for jobs (see config.schema.ts). On k8s the value is
+  # a pvc:// source the worker's kubernetes backend mounts directly; the PVC
+  # is provisioned by infra/k8s/cryosat-sad (PVC + bootstrap Job from MinIO).
+  DPMC_STATIC_VOLUMES: cryosat-sad=pvc://cryosat-sad
+  # URLs injected into job-container env (DPMC_API_URL / S3_ENDPOINT). The
+  # schema defaults point at host.docker.internal (dev compose) — in-cluster
+  # the job pods reach the API and MinIO via Service DNS.
+  SCRIPT_API_URL: http://api/api
+  SCRIPT_S3_ENDPOINT: http://s3:9000
   # S3 / MinIO — NOT yet deployed in k8s. Points at a future in-cluster `s3`
   # Service; the API validates this at boot but object storage calls fail until
   # MinIO (or another S3) exists at this endpoint.

@@ -129,7 +129,7 @@ describe('T04.10 — Regression protection when reusing chains', () => {
     expect(resA.body.data.comment).toBe('T04.10 chain A MODIFIED');
     expect(resB.body.data.comment).toBe(originalBComment);
 
-    const pcsB = resB.body.data.latestVersion?.processingChains ?? [];
+    const pcsB = resB.body.data.processingChains ?? [];
     const found = pcsB.some((pc: { name: string }) => pc.name === 'T04.10-B-shared-step');
     log.ok(`chain B step intact: ${found}`);
     expect(found).toBe(true);

@@ -9,10 +9,21 @@ import { toHostDto } from '../host/host.utils';
 import {
   PaginatedResult,
   PaginationQuery,
+  buildOrderBy,
   buildSearchWhere,
   paginationSkipTake,
 } from '@/common/utils/pagination';
 import type { CreatePoolBody, UpdatePoolBody } from './pool.dto';
+
+// Columns the pool list may be sorted by (real Pool scalar fields only —
+// computed values like hostCount/dataCenterCount can't be ordered in the DB).
+const POOL_SORTABLE = [
+  'name',
+  'comment',
+  'createdAt',
+  'updatedAt',
+  'id',
+] as const;
 
 @Injectable()
 export class PoolService {
@@ -22,12 +33,20 @@ export class PoolService {
     const { skip, take } = paginationSkipTake(pagination);
     const search = buildSearchWhere(['name'], pagination.q);
     const where = search ?? undefined;
+    // Default: name asc (id desc breaks ties for stable pagination);
+    // overridable via ?sort=&order= against the POOL_SORTABLE allowlist.
+    const orderBy = buildOrderBy(
+      POOL_SORTABLE,
+      pagination.sort,
+      pagination.order,
+      [{ name: 'asc' }, { id: 'desc' }],
+    );
     const [rawItems, total] = await Promise.all([
       this.prisma.pool.findMany({
         where,
         skip,
         take,
-        orderBy: { name: 'asc' },
+        orderBy,
         include: {
           _count: { select: { hosts: true } },
           hosts: { select: { host: { select: { dataCenterId: true } } } },

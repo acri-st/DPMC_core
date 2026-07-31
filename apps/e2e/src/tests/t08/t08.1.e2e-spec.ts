@@ -30,20 +30,20 @@ describe('T08.1 — Coexistence of multiple processor versions', () => {
     expect(res.body.data.length).toBeGreaterThan(0);
 
     for (const script of res.body.data) {
-      expect(typeof script.id).toBe('string');
+      expect(typeof script.id).toBe('number');
       expect(typeof script.acronym).toBe('string');
     }
 
     const withVersion = res.body.data.find(
-      (s: { defaultVersionId: string | null }) => s.defaultVersionId !== null,
+      (s: { defaultVersionId: number | null }) => s.defaultVersionId !== null,
     );
     log.ok(`script with defaultVersionId: ${withVersion?.id}`);
     expect(withVersion).toBeDefined();
-    expect(typeof withVersion.defaultVersionId).toBe('string');
+    expect(typeof withVersion.defaultVersionId).toBe('number');
   });
 
   // @plan T08.1
-  // @covers EOCP-E8-01 EOCP-E8-02
+  // @covers EOCP-E8-01
   it('GET /processing-script/:id returns the script by id', async () => {
     log.step(`GET /processing-script/${PROCESSING_SCRIPT_ID}`);
     const res = await request(API)

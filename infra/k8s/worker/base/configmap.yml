@@ -1,0 +1,37 @@
+# Non-sensitive worker config (DPMC_* — see apps/worker/src/worker/config.py).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker
+data:
+  # In-cluster API Service (port 80 -> 3000), global /api prefix.
+  DPMC_API_URL: http://api/api
+  DPMC_DATA_CENTER_CODE: ACR
+  DPMC_PROCESSING_DIR: /var/lib/dpmc/processing
+  DPMC_CACHE_DIR: /var/cache/dpmc
+  DPMC_LOG_LEVEL: INFO
+  # Concurrent jobs per worker pod (runner threads).
+  DPMC_RUNNER_SLOTS: "8"
+  # Kubernetes execution backend: jobs run as batch/v1 Jobs on the shared
+  # PVC (see infra/k8s/worker/base/pvc.yml). The mount map translates the
+  # host-style mount sources the API embeds into PVC subPaths. Requires
+  # WARHOL_DATA_ROOT=/repo/data/warhol in the api ConfigMap.
+  # Scripts must be in-image — baked Warhol scripts at /dpmc/scripts/<exe>/
+  # <version>/main.py (data/warhol/Dockerfile), or a self-contained processor
+  # image — so only their /work run dir is mounted, via the `runs` entry below.
+  # `/app` bind-mounted dev scripts are NOT supported: their
+  # /repo/data/warhol/<exe>/ and _lib sources are outside this map and nothing
+  # populates them on the PVC, so they fail with "mount source outside mount map".
+  DPMC_EXECUTION_BACKEND: kubernetes
+  DPMC_K8S_PVC_NAME: worker-data
+  DPMC_K8S_MOUNT_MAP: /repo/data/warhol/runs=runs,/var/lib/dpmc/processing=processing,/var/cache/dpmc=cache
+  DPMC_K8S_IMAGE_PULL_SECRET: harbor-pull-secret
+  # Cluster nodes are tainted project=shared; job pods don't inherit the
+  # worker Deployment's tolerations, so they'd stay Unschedulable without this.
+  DPMC_K8S_JOB_TOLERATIONS: '[{"key": "project", "operator": "Equal", "value": "shared", "effect": "NoSchedule"}]'
+  # S3/MinIO staging (stage-in/out of job inputs/outputs). Same in-cluster
+  # endpoint the API uses; credentials live in the worker Secret.
+  S3_ENDPOINT: http://s3:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: dpmc
+  S3_FORCE_PATH_STYLE: "true"

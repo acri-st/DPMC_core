@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -12,21 +12,14 @@ import { toast } from 'sonner';
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { DataTable } from '@/shared/components/data-table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
-import { PageHeader } from '@/shared/components/page-header';
-import { PageToolbar } from '@/shared/components/page-toolbar';
+import { FacetedFilter } from '@/shared/components/faceted-filter';
+import { ListHeader } from '@/shared/components/list-header';
 import { PagePagination } from '@/shared/components/page-pagination';
+import { useListParams } from '@/shared/hooks/use-list-params';
 import { useTaskList } from '@/features/task/hooks/use-task-list';
-import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { buildTaskColumns } from '@/features/task/components/task-columns';
 import { deleteTask, triggerTask } from '@/features/task/services/task.service';
-import type { TaskStatus } from '@dpmc/client';
+import type { TaskKind, TaskStatus } from '@dpmc/client';
 
 const STATUSES: TaskStatus[] = [
   'Edited',
@@ -37,27 +30,31 @@ const STATUSES: TaskStatus[] = [
   'Suspended',
 ];
 
+const TASK_STATUS_OPTIONS = STATUSES.map((s) => ({ value: s, label: s }));
+
+const TASK_KIND_OPTIONS = (['Chain', 'Standalone'] as TaskKind[]).map((k) => ({
+  value: k,
+  label: k,
+}));
+
 const DEFAULT_PAGE_SIZE = 25;
 
 export function TaskListPage() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
-  const trimmedQ = debouncedSearch.trim();
+  const lp = useListParams({
+    filterKeys: ['status', 'kind'],
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    setPage(1);
-  }, [trimmedQ, statusFilter]);
-
   const tasksQuery = useTaskList({
-    page,
-    pageSize,
-    q: trimmedQ.length > 0 ? trimmedQ : undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
+    page: lp.page,
+    pageSize: lp.pageSize,
+    q: lp.trimmedQ || undefined,
+    status: lp.filters.status as TaskStatus[],
+    kind: lp.filters.kind as TaskKind[],
+    sort: lp.sort,
+    order: lp.order,
   });
 
   const trigger = useMutation({
@@ -94,57 +91,56 @@ export function TaskListPage() {
   const total = tasksQuery.data?.total ?? 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
+    <div className="flex flex-1 flex-col gap-2">
+      <ListHeader
         icon={ListChecksIcon}
         title="Tasks"
         subtitle="Scheduled, high-level work items. Each task spawns one or more batches when triggered."
         count={tasksQuery.data ? total : undefined}
         noun="task"
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => tasksQuery.refetch()}
-          disabled={tasksQuery.isFetching}
-        >
-          <RefreshCwIcon
-            className={tasksQuery.isFetching ? 'animate-spin' : undefined}
-          />
-          Refresh
-        </Button>
-        <Button size="sm" asChild>
-          <Link to="/tasks/new">
-            <PlusIcon />
-            New task
-          </Link>
-        </Button>
-      </PageHeader>
-
-      <PageToolbar
         search={{
-          value: search,
-          onChange: setSearch,
+          value: lp.q,
+          onChange: lp.setQ,
           placeholder: 'Search by execution tag, id, comment…',
         }}
-      >
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as 'all' | TaskStatus)}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </PageToolbar>
+        filters={
+          <>
+            <FacetedFilter
+              label="Status"
+              options={TASK_STATUS_OPTIONS}
+              selected={lp.filters.status}
+              onChange={(v) => lp.setFilter('status', v)}
+            />
+            <FacetedFilter
+              label="Kind"
+              options={TASK_KIND_OPTIONS}
+              selected={lp.filters.kind}
+              onChange={(v) => lp.setFilter('kind', v)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => tasksQuery.refetch()}
+              disabled={tasksQuery.isFetching}
+            >
+              <RefreshCwIcon
+                className={tasksQuery.isFetching ? 'animate-spin' : undefined}
+              />
+              Refresh
+            </Button>
+            <Button size="sm" asChild>
+              <Link to="/tasks/new">
+                <PlusIcon />
+                New task
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {tasksQuery.isError ? (
         <div className="text-destructive flex items-start gap-2 rounded-md border p-4 text-sm">
@@ -161,6 +157,8 @@ export function TaskListPage() {
         <DataTable
           data={items}
           columns={columns}
+          sorting={lp.sorting}
+          onSortingChange={lp.setSorting}
           onRowClick={(row) =>
             navigate({ to: '/tasks/$id', params: { id: String(row.id) } })
           }
@@ -170,14 +168,11 @@ export function TaskListPage() {
 
       {tasksQuery.data ? (
         <PagePagination
-          page={page}
-          pageSize={pageSize}
+          page={lp.page}
+          pageSize={lp.pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={lp.setPage}
+          onPageSizeChange={lp.setPageSize}
           noun="task"
           isFetching={tasksQuery.isFetching}
         />

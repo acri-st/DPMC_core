@@ -1,7 +1,9 @@
 import {
   CommitTaskTableResponse200Schema,
+  GetTaskTableImportResponse200Schema,
   ImportTaskTableBodySchema,
   ImportTaskTableResponse201Schema,
+  ListTaskTableImportResponse200Schema,
 } from '@dpmc/client';
 import { createZodDto } from 'nestjs-zod';
 
@@ -20,4 +22,18 @@ export class ImportTaskTableResponse extends createZodDto(
 export const CommitTaskTableResponseSchema = CommitTaskTableResponse200Schema;
 export class CommitTaskTableResponse extends createZodDto(
   CommitTaskTableResponseSchema,
+) {}
+
+// GET /task-table/import
+export const ListTaskTableImportResponseSchema =
+  ListTaskTableImportResponse200Schema;
+export class ListTaskTableImportResponse extends createZodDto(
+  ListTaskTableImportResponseSchema,
+) {}
+
+// GET /task-table/import/:planId
+export const GetTaskTableImportResponseSchema =
+  GetTaskTableImportResponse200Schema;
+export class GetTaskTableImportResponse extends createZodDto(
+  GetTaskTableImportResponseSchema,
 ) {}

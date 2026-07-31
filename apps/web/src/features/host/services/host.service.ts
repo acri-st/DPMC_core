@@ -4,6 +4,7 @@ import {
   HostSchema,
   type Batch,
   type Host as ApiHost,
+  type HostContainerRuntime,
   type HostMetrics,
   type HostStatus,
 } from '@dpmc/client';
@@ -43,11 +44,16 @@ export type HostBatchEntry = {
   lastJobStartedAt: string | null;
 };
 
+export type SortOrder = 'asc' | 'desc';
+
 export type ListHostsParams = {
   page: number;
   pageSize: number;
   q?: string;
-  status?: HostStatus;
+  status?: HostStatus[];
+  containerRuntime?: HostContainerRuntime[];
+  sort?: string;
+  order?: SortOrder;
 };
 export type ListHostsResult = { items: Host[]; total: number };
 
@@ -59,7 +65,13 @@ export async function listHosts(
     pageSize: String(params.pageSize),
   });
   if (params.q) search.set('q', params.q);
-  if (params.status) search.set('status', params.status);
+  for (const s of params.status ?? []) search.append('status', s);
+  for (const r of params.containerRuntime ?? [])
+    search.append('containerRuntime', r);
+  if (params.sort) {
+    search.set('sort', params.sort);
+    search.set('order', params.order ?? 'desc');
+  }
   const { data, headers } = await apiFetchWithMeta<unknown>(
     `/host?${search.toString()}`,
   );

@@ -12,8 +12,10 @@ mkdir -p "$OUTPUT_DIR"
 HOST=$(hostname)
 echo "[L1] START host=$HOST input=$INPUT_DIR output=$OUTPUT_DIR"
 
-# Find unique L0 file (exactly one expected per job)
-l0_files=("$INPUT_DIR"/DPMC_TST_L0__*.txt)
+# Find unique L0 file (exactly one expected per job). The leading * tolerates the
+# `<batchId>-out-` prefix the DPMC platform prepends to batch-produced products
+# (harmless here since L0 is a task input, but kept uniform with L2).
+l0_files=("$INPUT_DIR"/*DPMC_TST_L0__*.txt)
 [[ -f "${l0_files[0]}" ]] || { echo "[L1] ERROR: no L0 file found in $INPUT_DIR"; exit 1; }
 L0_FILE="${l0_files[0]}"
 echo "[L1] L0 selected: $(basename "$L0_FILE")"

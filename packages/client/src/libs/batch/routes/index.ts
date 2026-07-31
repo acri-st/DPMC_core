@@ -7,3 +7,4 @@ export * from './list-logs';
 export * from './create';
 export * from './replay';
 export * from './update-priority';
+export * from './status-summary';

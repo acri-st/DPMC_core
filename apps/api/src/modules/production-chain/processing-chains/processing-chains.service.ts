@@ -1,5 +1,10 @@
 import { PrismaService } from '@/core/prisma';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { isUniqueViolation } from '@/common/utils';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   AddProcessingChainBody,
   ProcessingChainNode,
@@ -32,19 +37,28 @@ export class ProcessingChainsService {
         `ProcessingScript ${dto.processingScriptId} not found`,
       );
     }
-    const created = await this.prisma.processingChain.create({
-      data: {
-        productionChainId: chainId,
-        processingScriptId: dto.processingScriptId,
-        name: dto.name,
-        comment: dto.comment ?? null,
-        configuration:
-          dto.configuration === undefined || dto.configuration === null
-            ? Prisma.JsonNull
-            : (dto.configuration as Prisma.InputJsonValue),
-      },
-    });
-    return processingChainToDto(created);
+    try {
+      const created = await this.prisma.processingChain.create({
+        data: {
+          productionChainId: chainId,
+          processingScriptId: dto.processingScriptId,
+          name: dto.name,
+          comment: dto.comment ?? null,
+          configuration:
+            dto.configuration === undefined || dto.configuration === null
+              ? Prisma.JsonNull
+              : (dto.configuration as Prisma.InputJsonValue),
+        },
+      });
+      return processingChainToDto(created);
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw new ConflictException(
+          `A node named "${dto.name}" already exists in this chain.`,
+        );
+      }
+      throw err;
+    }
   }
 
   async update(

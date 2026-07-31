@@ -7,7 +7,7 @@ const PLAN_RE = /@plan\s+(.*)/;
 const REQ_RE = /EOCP-E\d+-\d+/g;
 const PLAN_ID_RE = /T\d+\.\d+[a-z]?/g;
 const IT_RE = /(?:it|test)(\.\w+)?\(\s*['"`](.+?)['"`]/;
-const DESCRIBE_RE = /describe\(\s*['"`](.+?)['"`]/;
+const DESCRIBE_RE = /describe(\.\w+)?\(\s*['"`](.+?)['"`]/;
 
 export function scanTags(testsDir: string) {
   const files = walkSpecs(testsDir);
@@ -32,11 +32,15 @@ function walkSpecs(dir: string): string[] {
 
 function scanFile(file: string, source: string) {
   const tags: TestTag[] = [];
-  const describeStack: Array<{ name: string; depth: number }> = [];
+  const describeStack: Array<{ name: string; depth: number; skipped: boolean }> = [];
   let pendingRequirements: string[] = [];
   let pendingPlanIds: string[] = [];
 
   for (const line of source.split('\n')) {
+    // A blank line has no indentation and would otherwise pop every open
+    // describe, leaving describePath empty and hiding `describe.skip`.
+    if (line.trim() === '') continue;
+
     const depth = countLeadingSpaces(line);
     while (
       describeStack.length > 0 &&
@@ -47,7 +51,11 @@ function scanFile(file: string, source: string) {
 
     const describeMatch = line.match(DESCRIBE_RE);
     if (describeMatch) {
-      describeStack.push({ name: describeMatch[1], depth });
+      describeStack.push({
+        name: describeMatch[2],
+        depth,
+        skipped: describeMatch[1] === '.skip',
+      });
       continue;
     }
 
@@ -77,6 +85,7 @@ function scanFile(file: string, source: string) {
         requirementIds: pendingRequirements,
         planIds: pendingPlanIds,
         isTodo,
+        isSkipped: modifier === '.skip' || describeStack.some((d) => d.skipped),
       });
       pendingRequirements = [];
       pendingPlanIds = [];

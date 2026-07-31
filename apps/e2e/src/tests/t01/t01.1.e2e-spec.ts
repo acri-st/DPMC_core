@@ -3,6 +3,7 @@ import { API } from '../../support/auth';
 import { asAdminSession } from '../../support/session';
 import { dispatcher } from '../../setup/services/dispatcher';
 import { workerProcess } from '../../setup/services/worker-process';
+import { CONFIG } from '../../constants/config';
 import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from './_env-check';
 
@@ -17,11 +18,21 @@ import { requireEnvReady } from './_env-check';
 //   This test controls the dispatcher and worker lifecycle directly.
 // Steps:
 //   1. API layer is reachable independently (no dispatcher, no worker)
-//   2. Stop the dispatcher → /scheduler/status reports unavailability clearly
-//   3. Restart the dispatcher → /scheduler/status reports healthy again
+//   2. Stop the dispatcher → /status reports the dispatcher as unavailable (KO)
+//   3. Restart the dispatcher → /status reports the dispatcher healthy (OK) again
 //   4. Worker (Execution Engine) registers and goes offline when stopped
 
 const log = makeLogger('T01.1');
+
+// Dispatcher liveness is surfaced as a service entry on the aggregated `/status`
+// endpoint: `{ name: 'dispatcher', status: 'OK' | 'KO' }`.
+async function dispatcherServiceStatus(cookie: string): Promise<string | undefined> {
+  const res = await request(API).get('/status').set('Cookie', cookie).expect(200);
+  const services = res.body.data?.services as
+    | Array<{ name: string; status: string }>
+    | undefined;
+  return services?.find((s) => s.name === 'dispatcher')?.status;
+}
 
 describe('T01.1 — Independent deployment and restart of core DPMC components', () => {
   let cookie: string;
@@ -41,10 +52,18 @@ describe('T01.1 — Independent deployment and restart of core DPMC components',
     log.ok('dispatcher + workers stopped');
   });
 
-  afterAll(() => {
-    log.action('afterAll — cleanup: stopping dispatcher + workers');
+  afterAll(async () => {
+    // This suite stops the dispatcher and the worker on purpose, and the stack
+    // is shared by the whole run. Leaving them down means every later suite
+    // scheduling a job silently gets no scheduler at all — so the services are
+    // handed back in the state the run started in.
+    log.action('afterAll — restoring dispatcher + worker for the rest of the run');
     dispatcher.stop();
     workerProcess.stopAll();
+    dispatcher.start();
+    await dispatcher.waitHealthy(CONFIG.api.url, 30_000);
+    workerProcess.start('e2e');
+    log.ok('dispatcher and worker are back up');
   });
 
   // @plan T01.1 — Step 1
@@ -62,24 +81,23 @@ describe('T01.1 — Independent deployment and restart of core DPMC components',
 
   // @plan T01.1 — Step 2
   // @covers EOCP-E1-01
-  it('Step 2 – /scheduler/status reports unavailability when dispatcher is stopped', async () => {
+  it('Step 2 – /status reports the dispatcher as unavailable when it is stopped', async () => {
     log.step('Step 2 — waiting for dispatcher healthy threshold to expire (≤40s)');
 
     await dispatcher.waitUnhealthy(API, 40_000);
     log.ok('dispatcher is now unhealthy');
 
-    const res = await request(API).get('/scheduler/status').set('Cookie', cookie).expect(200);
-    log.http('GET', '/scheduler/status', res.status, res.body.data);
+    const status = await dispatcherServiceStatus(cookie);
+    log.http('GET', '/status', 200, { dispatcher: status });
 
-    const data = res.body.data as { healthy?: boolean } | null;
-    // Either no record yet (null) or healthy=false — both are valid "unavailable" states
-    expect(!data || data.healthy === false).toBe(true);
-    log.ok('scheduler status reports unavailability', { data });
+    // Either no entry yet (undefined) or 'KO' — both are valid "unavailable" states
+    expect(status === undefined || status === 'KO').toBe(true);
+    log.ok('status reports dispatcher unavailability', { dispatcher: status });
   }, 45_000);
 
   // @plan T01.1 — Step 3
   // @covers EOCP-E1-01
-  it('Step 3 – Restart dispatcher → /scheduler/status reports healthy', async () => {
+  it('Step 3 – Restart dispatcher → /status reports the dispatcher healthy', async () => {
     log.step('Step 3 — starting dispatcher');
     dispatcher.start();
     log.action('waiting for dispatcher to become healthy (≤20s)');
@@ -87,16 +105,16 @@ describe('T01.1 — Independent deployment and restart of core DPMC components',
     await dispatcher.waitHealthy(API, 20_000);
     log.ok('dispatcher is healthy');
 
-    const res = await request(API).get('/scheduler/status').set('Cookie', cookie).expect(200);
-    log.http('GET', '/scheduler/status', res.status, res.body.data);
+    const status = await dispatcherServiceStatus(cookie);
+    log.http('GET', '/status', 200, { dispatcher: status });
 
-    expect(res.body.data?.healthy).toBe(true);
-    log.ok('scheduler status reports healthy', { healthy: res.body.data?.healthy });
+    expect(status).toBe('OK');
+    log.ok('status reports dispatcher healthy', { dispatcher: status });
   }, 25_000);
 
   // @plan T01.1 — Step 3b
   // @covers EOCP-E1-01
-  it('Step 3b – Stop dispatcher → /scheduler/status becomes unhealthy (no side effects on API)', async () => {
+  it('Step 3b – Stop dispatcher → /status becomes unhealthy (no side effects on API)', async () => {
     log.step('Step 3b — stopping dispatcher');
     dispatcher.stop();
     log.action('waiting for healthy threshold to expire (≤40s)');
@@ -104,10 +122,10 @@ describe('T01.1 — Independent deployment and restart of core DPMC components',
     await dispatcher.waitUnhealthy(API, 40_000);
     log.ok('dispatcher is now unhealthy again');
 
-    const res = await request(API).get('/scheduler/status').set('Cookie', cookie).expect(200);
-    log.http('GET', '/scheduler/status', res.status, res.body.data);
-    expect(res.body.data?.healthy).toBe(false);
-    log.ok('scheduler reports unhealthy', { healthy: res.body.data?.healthy });
+    const status = await dispatcherServiceStatus(cookie);
+    log.http('GET', '/status', 200, { dispatcher: status });
+    expect(status).toBe('KO');
+    log.ok('status reports dispatcher unhealthy', { dispatcher: status });
 
     log.action('GET /status — verifying API has no side effects');
     const statusRes = await request(API).get('/status').set('Cookie', cookie).expect(200);

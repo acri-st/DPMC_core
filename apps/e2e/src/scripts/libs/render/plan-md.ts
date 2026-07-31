@@ -16,17 +16,20 @@ export function renderPlanMd(report: PlanCoverageReport) {
   out.push(LEGEND);
   out.push('');
 
-  const { total, implemented, passed, failed, todo, blocked } = report.totals;
+  const { total, inScope, descoped, implemented, passed, failed, todo, blocked } =
+    report.totals;
   out.push('## Summary');
   out.push('');
   out.push('| Metric | Count | % |');
   out.push('|---|---|---|');
-  out.push(`| Total cases | ${total} | 100% |`);
-  out.push(`| Implemented | ${implemented} | ${pct(implemented, total)}% |`);
-  out.push(`| Passed | ${passed} | ${pct(passed, total)}% |`);
-  out.push(`| Failed | ${failed} | ${pct(failed, total)}% |`);
-  out.push(`| Todo (incl. skipped) | ${todo} | ${pct(todo, total)}% |`);
-  out.push(`| ↳ of which blocked | ${blocked} | ${pct(blocked, total)}% |`);
+  out.push(`| Total cases | ${total} | |`);
+  out.push(`| In scope | ${inScope} | 100% |`);
+  out.push(`| Implemented | ${implemented} | ${pct(implemented, inScope)}% |`);
+  out.push(`| Passed | ${passed} | ${pct(passed, inScope)}% |`);
+  out.push(`| Failed | ${failed} | ${pct(failed, inScope)}% |`);
+  out.push(`| Todo (incl. skipped) | ${todo} | ${pct(todo, inScope)}% |`);
+  out.push(`| ↳ of which blocked | ${blocked} | ${pct(blocked, inScope)}% |`);
+  out.push(`| Not applicable | ${descoped} | — |`);
   out.push('');
 
   for (const section of report.sections) {

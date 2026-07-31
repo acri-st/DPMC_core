@@ -46,17 +46,21 @@ def collect_facts(config: WorkerConfig) -> dict[str, Any]:
         "hasGpu": False,
         "gpuCount": 0,
         "gpuModel": None,
-        "containerRuntime": _detect_container_runtime(),
+        "containerRuntime": _detect_container_runtime(config),
     }
 
 
-def _detect_container_runtime() -> str:
+def _detect_container_runtime(config: WorkerConfig) -> str:
     """Return the runtime this host can actually launch, or 'None'.
 
     Why: a worker container reports the runtime its host's daemon can run,
-    not what's installed inside its own image. We probe the docker socket
-    (mounted from the host) before the apptainer CLI.
+    not what's installed inside its own image. In kubernetes mode the
+    cluster IS the runtime — we report "Kubernetes", a host-only capability
+    the dispatcher treats as satisfying Docker (OCI) requirements, so
+    existing Docker Tasks dispatch unchanged; see the k8s backend design doc.
     """
+    if config.execution_backend == "kubernetes":
+        return "Kubernetes" if _k8s_api_reachable(config) else "None"
     if Path("/var/run/docker.sock").exists() and shutil.which("docker"):
         try:
             subprocess.run(
@@ -73,6 +77,45 @@ def _detect_container_runtime() -> str:
     return "None"
 
 
+def _k8s_api_reachable(config: WorkerConfig) -> bool:
+    """True when the k8s API answers AND the ServiceAccount may create Jobs.
+
+    The RBAC check matters: /version is open to any authenticated caller, so
+    without it a worker whose Role was never applied would register as
+    "Kubernetes" and then 403 on every dispatch instead of registering "None".
+    """
+    try:
+        from kubernetes import client as k8s_client
+        from kubernetes import config as k8s_config
+
+        from worker.backends.kubernetes import _sa_namespace
+
+        k8s_config.load_incluster_config()
+        namespace = config.k8s_namespace or _sa_namespace() or "default"
+        ssar = k8s_client.V1SelfSubjectAccessReview(
+            spec=k8s_client.V1SelfSubjectAccessReviewSpec(
+                resource_attributes=k8s_client.V1ResourceAttributes(
+                    verb="create",
+                    group="batch",
+                    resource="jobs",
+                    namespace=namespace,
+                )
+            )
+        )
+        resp = k8s_client.AuthorizationV1Api().create_self_subject_access_review(ssar)
+        if not resp.status.allowed:
+            logger.error(
+                "kubernetes mode: ServiceAccount may not create Jobs in %s "
+                "(Role/RoleBinding not applied?)",
+                namespace,
+            )
+            return False
+        return True
+    except Exception as exc:
+        logger.error("kubernetes mode requested but API unreachable: %s", exc)
+        return False
+
+
 class Worker:
     """Owns the API client and the keep-alive loop."""
 
@@ -85,7 +128,7 @@ class Worker:
         self._host_id: int | None = None
         self._shipper: LogShipper | None = None
         self._runner: Runner | None = None
-        self._runner_thread: threading.Thread | None = None
+        self._runner_threads: list[threading.Thread] = []
 
     def run(self) -> int:
         signal.signal(signal.SIGTERM, self._on_signal)
@@ -109,27 +152,42 @@ class Worker:
 
         if self._config.runner_enabled and self._host_id:
             s3_client, s3_bucket = _try_build_s3()
+            backends = None
+            if self._config.execution_backend == "kubernetes":
+                from worker.backends.kubernetes import KubernetesBackend
+
+                # The dispatch payload's `runtime` is the script's *artifact*
+                # type ("Docker" = OCI image), not the host capability. This
+                # host advertises capability "Kubernetes"; it serves those
+                # Docker artifacts by running them as k8s Jobs, hence the
+                # KubernetesBackend is keyed by the artifact it serves.
+                backends = {"Docker": KubernetesBackend(self._config)}
             self._runner = Runner(
                 self._api,
                 self._host_id,
                 poll_interval_s=self._config.runner_poll_interval_s,
+                backends=backends,
                 s3_client=s3_client,
                 s3_bucket=s3_bucket,
             )
-            self._runner_thread = threading.Thread(
-                target=self._runner.run,
-                name="dpmc-worker-runner",
-                daemon=True,
-            )
-            self._runner_thread.start()
+            slots = self._config.runner_slots
+            logger.info("Starting %d runner slot(s)", slots)
+            for i in range(slots):
+                t = threading.Thread(
+                    target=self._runner.run,
+                    name=f"dpmc-worker-runner-{i}",
+                    daemon=True,
+                )
+                t.start()
+                self._runner_threads.append(t)
 
         try:
             self._keepalive_loop()
         finally:
             if self._runner is not None:
                 self._runner.stop()
-            if self._runner_thread is not None:
-                self._runner_thread.join(timeout=5)
+            for t in self._runner_threads:
+                t.join(timeout=5)
             if self._shipper is not None:
                 self._shipper.stop()
             self._mark_off()

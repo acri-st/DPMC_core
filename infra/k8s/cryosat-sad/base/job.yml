@@ -1,0 +1,61 @@
+# One-shot bootstrap: extracts the sad/ tarball from MinIO onto the
+# cryosat-sad PVC. MinIO is the transport only — jobs never stage these 20GB
+# per run, they mount the PVC.
+#
+# Before running, upload the tarball once (from the machine holding the copy):
+#   tar -C ~/cryosat-ocean-data -cf cryosat-sad.tar sad
+#   mc alias set dpmc http://<minio> <access-key> <secret-key>
+#   mc mb -p dpmc/dpmc-static
+#   mc cp cryosat-sad.tar dpmc/dpmc-static/cryosat-sad.tar
+#
+# Re-run after a data update with: kubectl -n eocp-dev delete job cryosat-sad-bootstrap
+# then re-apply. The extraction is idempotent (tar overwrites in place).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cryosat-sad-bootstrap
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      # Every eocp workload runs on the project=shared-tainted node.
+      tolerations:
+        - key: project
+          operator: Equal
+          value: shared
+          effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: bootstrap
+          image: minio/mc:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              mc alias set dpmc "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+              echo "Streaming dpmc-static/cryosat-sad.tar onto the PVC…"
+              mc cat dpmc/dpmc-static/cryosat-sad.tar | tar -x --strip-components=1 -C /data
+              echo "Done:"; ls /data | head; du -sh /data
+          env:
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef: { name: worker, key: S3_ENDPOINT }
+          envFrom:
+            # Reuses the worker's MinIO credentials (S3_ACCESS_KEY/S3_SECRET_KEY).
+            - secretRef: { name: worker }
+          volumeMounts:
+            - name: sad
+              mountPath: /data
+      volumes:
+        - name: sad
+          persistentVolumeClaim:
+            claimName: cryosat-sad

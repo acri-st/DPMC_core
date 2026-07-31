@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eocp-dev
+  labels:
+    app.kubernetes.io/name: dpmc
+    app.kubernetes.io/environment: minikube

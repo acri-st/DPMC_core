@@ -51,7 +51,7 @@ describe('T05.4 — Detection and rejection of circular dependencies', () => {
     log.action('GET chain to resolve processing-chain IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-A')?.id;
     stepBId = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-B')?.id;
     log.ok(`stepA=${stepAId}, stepB=${stepBId}`);
@@ -82,7 +82,7 @@ describe('T05.4 — Detection and rejection of circular dependencies', () => {
     // Re-fetch IDs from latest version after the A→B edge was created
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-B');
 
@@ -104,7 +104,7 @@ describe('T05.4 — Detection and rejection of circular dependencies', () => {
 
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-A');
 
     log.action('POST edges A→A', { parentChainId: pcA?.id, childChainId: pcA?.id });
@@ -125,7 +125,7 @@ describe('T05.4 — Detection and rejection of circular dependencies', () => {
 
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-A');
     const pcB = pcs.find((pc: { name: string }) => pc.name === 'T05.4-step-B');
 

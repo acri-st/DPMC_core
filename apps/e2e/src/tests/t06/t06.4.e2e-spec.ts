@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSING_SCRIPT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T06.4 — Dispatcher decision logic
-// @covers EOCP-E6-05
+// @covers EOCP-E6-03
 //
 // Description: This test verifies that the job dispatcher selects tasks based on priority,
 //   dependencies, and resource constraints.
@@ -65,7 +65,7 @@ describe('T06.4 — Dispatcher decision logic', () => {
       .get(`/production-chain/${chainId}`)
       .set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T06.4-step-A');
     const pcB2 = pcs.find((pc: { name: string }) => pc.name === 'T06.4-step-B');
     expect(pcA).toBeDefined();
@@ -91,7 +91,7 @@ describe('T06.4 — Dispatcher decision logic', () => {
   });
 
   // @plan T06.4
-  // @covers EOCP-E6-05
+  // @covers EOCP-E6-03
   it('Step 1 – high-priority task is accepted by dispatcher', async () => {
     log.step('Step 1 — POST /task (high priority, Super)');
     const res = await request(API)
@@ -117,7 +117,7 @@ describe('T06.4 — Dispatcher decision logic', () => {
   });
 
   // @plan T06.4
-  // @covers EOCP-E6-05
+  // @covers EOCP-E6-03
   it('Step 2 – low-priority task is accepted; priority stored correctly', async () => {
     log.step('Step 2 — POST /task (low priority, NRT)');
     const res = await request(API)
@@ -144,7 +144,7 @@ describe('T06.4 — Dispatcher decision logic', () => {
   });
 
   // @plan T06.4
-  // @covers EOCP-E6-05
+  // @covers EOCP-E6-03
   it('Step 3 – chain task with OnSuccess dep is accepted (dependency constraints in dispatcher)', async () => {
     log.step('Step 3 — POST /task (chain with OnSuccess dep)');
     const res = await request(API)

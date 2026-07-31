@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { deleteHost, registerPayload, setHeartbeat, uniqueHostname, workerHeader } from '../t03/_shared';
 
 // @plan T06.6 — Detection and eviction of zombie nodes
-// @covers EOCP-E6-07
+// @covers EOCP-E6-05
 //
 // Description: This test verifies that execution nodes that stop sending heartbeats are
 //   automatically detected and evicted.
@@ -57,7 +57,7 @@ describe('T06.6 — Detection and eviction of zombie nodes', () => {
   });
 
   // @plan T06.6
-  // @covers EOCP-E6-07
+  // @covers EOCP-E6-05
   it('Step 1 – host is registered and active after initial heartbeat', async () => {
     log.step('Step 1 — GET /host/:id');
     const res = await request(API)
@@ -70,7 +70,7 @@ describe('T06.6 — Detection and eviction of zombie nodes', () => {
   });
 
   // @plan T06.6
-  // @covers EOCP-E6-07
+  // @covers EOCP-E6-05
   it('Step 2 – simulating stale heartbeat (backdating lastHeartbeatAt by 10 minutes)', async () => {
     log.step('Step 2 — setHeartbeat (10 minutes ago)');
     await setHeartbeat(hostname, '10 minutes');
@@ -85,7 +85,7 @@ describe('T06.6 — Detection and eviction of zombie nodes', () => {
   });
 
   // @plan T06.6
-  // @covers EOCP-E6-07
+  // @covers EOCP-E6-05
   it('Step 3 – setting host to Maintenance evicts it from the active pool', async () => {
     log.step('Step 3 — PATCH /host/:id/status → Maintenance');
     const patch = await request(API)
@@ -106,7 +106,7 @@ describe('T06.6 — Detection and eviction of zombie nodes', () => {
   });
 
   // @plan T06.6
-  // @covers EOCP-E6-07
+  // @covers EOCP-E6-05
   it('Step 4 – setting host to Off removes it from active hosts entirely', async () => {
     log.step('Step 4 — PATCH /host/:id/status → Off');
     const patch = await request(API)

@@ -53,7 +53,7 @@ export function DataCenterCard({ dataCenter }: DataCenterCardProps) {
           />
           <Metric
             label="Energy"
-            value={`${dataCenter.energyIntensity} kWh/u`}
+            value={`${dataCenter.energyIntensity} kWh/Go`}
           />
         </CardContent>
       </Card>

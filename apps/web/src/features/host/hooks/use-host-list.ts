@@ -13,7 +13,10 @@ export const hostListKey = (params: ListHostsParams) =>
     params.page,
     params.pageSize,
     params.q ?? '',
-    params.status ?? '',
+    (params.status ?? []).join(','),
+    (params.containerRuntime ?? []).join(','),
+    params.sort ?? '',
+    params.order ?? '',
   ] as const;
 
 export function useHostList(params: ListHostsParams) {

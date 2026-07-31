@@ -112,28 +112,33 @@ async function runSeed() {
         FIXTURES.processorVersion.baseline,
       ],
     );
-    // The project_energy view is not in the Prisma migration (deferred feature).
-    // Create it here so the /metrics/co2 endpoint can query it without crashing.
-    // It aggregates completed job energy from avgPower × duration per project.
-    await c.query(`
-      CREATE OR REPLACE VIEW project_energy AS
-      SELECT
-        j."projectId" AS project_id,
-        COALESCE(
-          SUM(
-            j."avgPower" *
-            EXTRACT(EPOCH FROM (j."endedAt" - j."startedAt")) / 3600.0
-          ), 0
-        ) AS energy_wh,
-        COALESCE(
-          SUM(EXTRACT(EPOCH FROM (j."endedAt" - j."startedAt"))), 0
-        ) AS cpu_seconds
-      FROM job j
-      WHERE j."endedAt" IS NOT NULL
-        AND j."startedAt" IS NOT NULL
-        AND j."avgPower" IS NOT NULL
-      GROUP BY j."projectId"
-    `);
+    // Fixtures above insert explicit integer ids (1..8) into SERIAL columns,
+    // which does NOT advance each table's id sequence. Without this, rows
+    // created at test time via the API would restart at 1 and collide with the
+    // seeded fixtures. Bump every seeded table's sequence past the fixture range
+    // so test-created rows always get fresh, non-colliding ids.
+    for (const table of [
+      'data_center',
+      'project',
+      'pool',
+      'processing_script',
+      'processing_script_version',
+      'processing_script_executable',
+      'auxiliary_configuration',
+      'processor_x_version',
+    ]) {
+      await c.query(
+        `SELECT setval(
+           pg_get_serial_sequence($1, 'id'),
+           GREATEST((SELECT COALESCE(MAX(id), 0) FROM "${table}"), 1000)
+         )`,
+        [table],
+      );
+    }
+    // project_energy (and its batch_energy/task_energy dependencies) is now
+    // provided by the `1_energy_views` Prisma migration, so the seed no longer
+    // creates it. The migration's view column order differs from the old
+    // workaround's, which is why CREATE OR REPLACE here would fail outright.
   } finally {
     await c.end();
   }

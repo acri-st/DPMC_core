@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T11.11 — Validation of invalid state transitions through APIs
-// @covers EOCP-E11-04
+// @covers EOCP-E11-02
 
 const log = makeLogger('T11.11');
 
@@ -46,7 +46,7 @@ describe('T11.11 — Validation of invalid state transitions through APIs', () =
   });
 
   // @plan T11.11
-  // @covers EOCP-E11-04
+  // @covers EOCP-E11-02
   it('Step 1 – PATCH /task/:id with invalid status is rejected or silently ignored (no 5xx)', async () => {
     log.step(`Step 1 — PATCH /task/${taskId} (DEFINITELY_INVALID_STATE)`);
     const res = await request(API).patch(`/task/${taskId}`).set('Cookie', cookie).send({ status: 'DEFINITELY_INVALID_STATE' });
@@ -56,7 +56,7 @@ describe('T11.11 — Validation of invalid state transitions through APIs', () =
   });
 
   // @plan T11.11
-  // @covers EOCP-E11-04
+  // @covers EOCP-E11-02
   it('Step 2 – GET /task/:id shows state is not corrupted', async () => {
     log.step(`Step 2 — GET /task/${taskId}`);
     const res = await request(API).get(`/task/${taskId}`).set('Cookie', cookie);
@@ -68,7 +68,7 @@ describe('T11.11 — Validation of invalid state transitions through APIs', () =
   });
 
   // @plan T11.11
-  // @covers EOCP-E11-04
+  // @covers EOCP-E11-02
   it('Step 3 – error response for invalid transition contains a message field', async () => {
     log.step(`Step 3 — PATCH /task/${taskId} (check error body)`);
     const res = await request(API).patch(`/task/${taskId}`).set('Cookie', cookie).send({ status: 'DEFINITELY_INVALID_STATE' });

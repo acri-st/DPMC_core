@@ -1,0 +1,42 @@
+# Direct-stream loader — the OTHER way to fill the cryosat-sad PVC, used when
+# the sad/ tree sits on a workstation and MinIO is not a convenient transport
+# (its PVC may be smaller than the 20GB tarball). Not part of the
+# kustomization: apply by hand, stream, then delete.
+#
+#   kubectl -n eocp-dev apply -f infra/k8s/cryosat-sad/base/loader-pod.yml
+#   kubectl -n eocp-dev wait --for=condition=Ready pod/cryosat-sad-loader --timeout=180s
+#   tar -C <local sad dir> -cf - . \
+#     | kubectl -n eocp-dev exec -i cryosat-sad-loader -- tar -xf - -C /data
+#   kubectl -n eocp-dev exec cryosat-sad-loader -- du -sh /data   # ~20G expected
+#   kubectl -n eocp-dev delete pod cryosat-sad-loader
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cryosat-sad-loader
+spec:
+  restartPolicy: Never
+  # Every eocp workload runs on the project=shared-tainted node.
+  tolerations:
+    - key: project
+      operator: Equal
+      value: shared
+      effect: NoSchedule
+  # PodSecurity "restricted" compliance (enforced on the namespace).
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: loader
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 86400"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: ["ALL"] }
+      volumeMounts:
+        - { name: sad, mountPath: /data }
+  volumes:
+    - name: sad
+      persistentVolumeClaim: { claimName: cryosat-sad }

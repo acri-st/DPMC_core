@@ -1,0 +1,118 @@
+# Sole purpose here: expose kube_pod_labels so Prometheus can turn
+# (namespace, pod) into a DPMC job id. Everything else kube-state-metrics can
+# produce is deliberately not collected.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-state-metrics
+automountServiceAccountToken: true
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube-state-metrics
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-state-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kube-state-metrics
+subjects:
+  - kind: ServiceAccount
+    name: kube-state-metrics
+    namespace: eocp-dev
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: kube-state-metrics
+
+  template:
+    metadata:
+      labels:
+        app: kube-state-metrics
+
+    spec:
+      serviceAccountName: kube-state-metrics
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+
+      containers:
+        - name: kube-state-metrics
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.0
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - --resources=pods
+            # Not rewritten by the kustomize namespace transformer: an overlay
+            # targeting another namespace must patch this argument and the
+            # matching namespace filter in the cAdvisor scrape job.
+            - --namespaces=eocp-dev
+            - --metric-labels-allowlist=pods=[app,dpmc/job-id]
+
+          ports:
+            - name: metrics
+              containerPort: 8080
+            - name: telemetry
+              containerPort: 8081
+
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

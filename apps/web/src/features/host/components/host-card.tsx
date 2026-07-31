@@ -52,7 +52,9 @@ export function HostCard({ host, onSelect }: HostCardProps) {
                   ? 'border-sky-500/40 text-sky-600'
                   : host.containerRuntime === 'Apptainer'
                     ? 'border-indigo-500/40 text-indigo-600'
-                    : 'border-zinc-400/40 text-zinc-500',
+                    : host.containerRuntime === 'Kubernetes'
+                      ? 'border-blue-600/40 text-blue-700'
+                      : 'border-zinc-400/40 text-zinc-500',
               )}
             >
               {host.containerRuntime}

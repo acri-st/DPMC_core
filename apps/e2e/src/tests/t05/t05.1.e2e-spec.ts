@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSING_SCRIPT_ID } from './_shared';
 
 // @plan T05.1 — Conditional execution based on upstream status and data availability
-// @covers EOCP-E5-04 EOCP-E5-05
+// @covers EOCP-E5-04, EOCP-E5-05
 //
 // Description: Verifies that a task is executed only when its declared dependency conditions are
 //   fulfilled (upstream task success). This test verifies the API/structural contract.
@@ -52,7 +52,7 @@ describe('T05.1 — Conditional execution based on upstream status and data avai
     log.action('GET chain to resolve processing-chain IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     stepAId = pcs.find((pc: { name: string }) => pc.name === 'T05.1-upstream')?.id;
     stepBId = pcs.find((pc: { name: string }) => pc.name === 'T05.1-downstream')?.id;
     log.ok(`stepA=${stepAId}, stepB=${stepBId}`);
@@ -70,7 +70,7 @@ describe('T05.1 — Conditional execution based on upstream status and data avai
   });
 
   // @plan T05.1
-  // @covers EOCP-E5-04
+  // @covers EOCP-E5-04, EOCP-E5-05
   it('Step 1 – OnSuccess dependency between upstream and downstream is accepted', async () => {
     log.step('Step 1 — POST /production-chain/:id/edges (OnSuccess)');
 
@@ -86,7 +86,7 @@ describe('T05.1 — Conditional execution based on upstream status and data avai
   });
 
   // @plan T05.1
-  // @covers EOCP-E5-05
+  // @covers EOCP-E5-04, EOCP-E5-05
   it('Step 2 – chain task is created (upstream production launched)', async () => {
     log.step('Step 2 — POST /task (kind=Chain)');
 
@@ -111,7 +111,7 @@ describe('T05.1 — Conditional execution based on upstream status and data avai
   });
 
   // @plan T05.1
-  // @covers EOCP-E5-04 EOCP-E5-05
+  // @covers EOCP-E5-04, EOCP-E5-05
   it('Step 3 – chain structure reflects OnSuccess dependency (downstream conditional on upstream)', async () => {
     log.step(`Step 3 — GET /production-chain/${chainId} (edges check)`);
 
@@ -119,7 +119,7 @@ describe('T05.1 — Conditional execution based on upstream status and data avai
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const dep = edges.find((e: { dependencyMode: string }) => e.dependencyMode === 'OnSuccess');
     log.ok(`OnSuccess edge found: ${!!dep}, total edges: ${edges.length}`);
     expect(dep).toBeDefined();

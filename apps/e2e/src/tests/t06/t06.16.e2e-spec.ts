@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T06.16 — Scheduler throughput and latency measurement
-// @covers EOCP-E6-10
+// @covers EOCP-E6-03
 //
 // Description: This test measures scheduler performance under load.
 // Prerequisites: Performance monitoring is enabled.
@@ -38,7 +38,7 @@ describe('T06.16 — Scheduler throughput and latency measurement', () => {
   });
 
   // @plan T06.16
-  // @covers EOCP-E6-10
+  // @covers EOCP-E6-03
   it('Step 1 – 20 tasks are accepted without error (throughput baseline)', async () => {
     log.step('Step 1 — POST /task x20 (throughput baseline)');
     const results = await Promise.all(
@@ -68,7 +68,7 @@ describe('T06.16 — Scheduler throughput and latency measurement', () => {
   });
 
   // @plan T06.16
-  // @covers EOCP-E6-10
+  // @covers EOCP-E6-03
   it('Step 2 – status-summary response time is acceptable after burst submission', async () => {
     log.step('Step 2 — GET /task/status-summary (latency check)');
     const start = Date.now();
@@ -81,7 +81,7 @@ describe('T06.16 — Scheduler throughput and latency measurement', () => {
   });
 
   // @plan T06.16
-  // @covers EOCP-E6-10
+  // @covers EOCP-E6-03
   it('Step 3 – scheduler status is still reachable after throughput burst (no regression)', async () => {
     log.step('Step 3 — GET /scheduler/status');
     const res = await request(API)

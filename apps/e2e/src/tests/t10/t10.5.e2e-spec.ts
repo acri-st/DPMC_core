@@ -1,5 +1,5 @@
 // @plan T10.5 — Forced execution through preemption of running jobs
-// @covers EOCP-E10-01
+// @covers EOCP-E10-04
 //
 // Description: This test verifies that critical jobs can be launched by preempting running jobs
 //   according to policy.
@@ -12,6 +12,6 @@
 
 describe('T10.5 — Forced execution through preemption of running jobs', () => {
   // @plan T10.5
-  // @covers EOCP-E10-01
+  // @covers EOCP-E10-04
   it.todo('Step 1–4: requires live job execution and preemption mechanism — not testable via HTTP API alone');
 });

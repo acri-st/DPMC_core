@@ -51,7 +51,7 @@ describe('T05.9 — Combination of multiple dependency conditions', () => {
     log.action('GET chain to resolve IDs');
     const chainRes = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes.status).toBe(200);
-    const pcs = chainRes.body.data.latestVersion?.processingChains ?? [];
+    const pcs = chainRes.body.data.processingChains ?? [];
     const pcA = pcs.find((pc: { name: string }) => pc.name === 'T05.9-step-A');
     const pcC = pcs.find((pc: { name: string }) => pc.name === 'T05.9-step-C');
 
@@ -67,7 +67,7 @@ describe('T05.9 — Combination of multiple dependency conditions', () => {
     log.action('GET chain (re-fetch for latest version)');
     const chainRes2 = await request(API).get(`/production-chain/${chainId}`).set('Cookie', cookie);
     expect(chainRes2.status).toBe(200);
-    const pcs2 = chainRes2.body.data.latestVersion?.processingChains ?? [];
+    const pcs2 = chainRes2.body.data.processingChains ?? [];
     const pcB2 = pcs2.find((pc: { name: string }) => pc.name === 'T05.9-step-B');
     const pcC2 = pcs2.find((pc: { name: string }) => pc.name === 'T05.9-step-C');
 
@@ -101,11 +101,11 @@ describe('T05.9 — Combination of multiple dependency conditions', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     const pcC = pcs.find((pc: { name: string }) => pc.name === 'T05.9-step-C');
     expect(pcC).toBeDefined();
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const incomingToC = edges.filter((e: { childChainId: string }) => e.childChainId === pcC.id);
     log.ok(`incoming edges to C: ${incomingToC.length}`);
     expect(incomingToC.length).toBeGreaterThanOrEqual(2);
@@ -120,7 +120,7 @@ describe('T05.9 — Combination of multiple dependency conditions', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const edges = res.body.data.latestVersion?.edges ?? [];
+    const edges = res.body.data.edges ?? [];
     const modes = edges.map((e: { dependencyMode: string }) => e.dependencyMode);
     log.ok(`edge modes: ${modes.join(', ')}`);
     expect(modes).toContain('OnSuccess');

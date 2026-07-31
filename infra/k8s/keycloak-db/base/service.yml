@@ -1,4 +1,4 @@
-# Headless service: stable DNS `keycloak-db.eocp.svc.cluster.local`, targeted by
+# Headless service: stable DNS `keycloak-db.eocp-dev.svc.cluster.local`, targeted by
 # Keycloak via KC_DB_URL_HOST.
 apiVersion: v1
 kind: Service

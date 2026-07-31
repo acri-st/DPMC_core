@@ -1,5 +1,5 @@
 // @plan T13.5 — Automatic conversion of container images to Apptainer format
-// @covers EOCP-E13-02
+// @covers EOCP-E13-01
 //
 // Description: This test verifies that container images can be converted automatically to Apptainer
 //   (SIF) format when required by site policies.
@@ -11,6 +11,6 @@
 
 describe('T13.5 — Automatic conversion of container images to Apptainer format', () => {
   // @plan T13.5
-  // @covers EOCP-E13-02
+  // @covers EOCP-E13-01
   it.todo('Step 1–3: requires live image conversion toolchain and Apptainer runtime — not testable via HTTP API alone');
 });

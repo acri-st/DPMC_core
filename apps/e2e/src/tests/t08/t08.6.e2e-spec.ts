@@ -16,7 +16,7 @@ import { requireEnvReady } from '../t01/_env-check';
 
 const log = makeLogger('T08.6');
 
-const NON_EXISTENT_ID = '00000000-0000-0000-0000-000000000000';
+const NON_EXISTENT_ID = 0;
 
 describe('T08.6 — Detection of partial or inconsistent processor version deployment', () => {
   beforeAll(async () => {

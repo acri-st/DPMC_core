@@ -108,7 +108,7 @@ describe('T04.7 — Performance of deeply nested chain structures', () => {
     log.http('GET', `/production-chain/${chainId}`, res.status);
     expect(res.status).toBe(200);
 
-    const pcs = res.body.data.latestVersion?.processingChains ?? [];
+    const pcs = res.body.data.processingChains ?? [];
     log.ok(`processingChains count: ${pcs.length}`);
     expect(pcs.length).toBeGreaterThanOrEqual(5);
     for (let i = 1; i <= 5; i++) {

@@ -10,6 +10,7 @@ import {
   formatDurationMs,
 } from '@/features/batch/libs/format-duration';
 import { formatCo2 } from '@/features/batch/libs/format-co2';
+import { describeConcerns } from '@/shared/components/co2-breakdown';
 import { useReplayBatch } from '@/features/batch/hooks/use-replay-batch';
 import type { Batch } from '@/features/batch/types';
 
@@ -82,6 +83,7 @@ export function buildBatchColumns(_ctx: BatchRowContext): ColumnDef<Batch>[] {
     {
       id: 'duration',
       header: 'Duration',
+      enableSorting: false, // computed from started/ended — not a DB column
       cell: ({ row }) => {
         const dur = durationBetween(
           row.original.startedAt,
@@ -95,11 +97,17 @@ export function buildBatchColumns(_ctx: BatchRowContext): ColumnDef<Batch>[] {
     {
       accessorKey: 'co2Grams',
       header: 'CO₂',
+      enableSorting: false, // computed (carbon-aware), not stored in the DB
       cell: ({ row }) => {
         const g = row.original.co2Grams;
         if (g === null || g === undefined)
           return <span className="text-muted-foreground">—</span>;
-        return <span>{formatCo2(g)}</span>;
+        const byConcern = row.original.co2GramsByConcern;
+        return (
+          <span title={byConcern ? describeConcerns(byConcern) : undefined}>
+            {formatCo2(g)}
+          </span>
+        );
       },
     },
     {

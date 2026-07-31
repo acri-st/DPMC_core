@@ -14,6 +14,10 @@ export const datasetListKey = (params: ListDatasetsParams) =>
     params.pageSize ?? 100,
     params.producedByBatchId ?? '',
     params.name ?? '',
+    params.origin ?? '',
+    params.q ?? '',
+    params.sort ?? '',
+    params.order ?? '',
   ] as const;
 
 export function useDatasetList(params: ListDatasetsParams = {}) {

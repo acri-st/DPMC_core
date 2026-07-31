@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      serviceAccountName: worker
+      # PodSecurity "restricted" is enforced on the cluster. The worker image
+      # has no USER, so force a non-root uid; fsGroup makes the PVC subPaths
+      # writable and must match DPMC_K8S_JOB_RUN_AS_UID (job pods write the
+      # same workdir).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: harbor-pull-secret
+      tolerations:
+        - key: project
+          operator: Equal
+          value: shared
+          effect: NoSchedule
+      containers:
+        - name: worker
+          image: harbor.shared.acrist-services.com/dsy/damps/dpmc/worker:development
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: worker
+            - secretRef:
+                name: worker
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          # Single PVC mounted at the exact paths the API embeds in dispatch
+          # mounts; job pods mount the same PVC subPaths (DPMC_K8S_MOUNT_MAP).
+          volumeMounts:
+            - name: worker-data
+              mountPath: /repo/data/warhol/runs
+              subPath: runs
+            - name: worker-data
+              mountPath: /var/lib/dpmc/processing
+              subPath: processing
+            - name: worker-data
+              mountPath: /var/cache/dpmc
+              subPath: cache
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # No probes: no HTTP server; health is visible through worker
+          # heartbeats in the API (WORKER_OFFLINE_THRESHOLD_S).
+      volumes:
+        - name: worker-data
+          persistentVolumeClaim:
+            claimName: worker-data

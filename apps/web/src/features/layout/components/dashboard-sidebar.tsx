@@ -91,7 +91,7 @@ const NAV_SECTIONS = [
   },
   {
     label: 'Catalog',
-    items: ['/products', '/product-types', '/datasets'],
+    items: ['/products', '/product-types', '/processing-scripts', '/datasets'],
   },
   {
     label: 'Infrastructure',

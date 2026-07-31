@@ -5,7 +5,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T11.16 — Performance and stability of APIs under load
-// @covers EOCP-E11-02
+// @covers EOCP-E11-01
 
 const CONCURRENCY = 10;
 const REQUESTS_EACH = 5;
@@ -27,7 +27,7 @@ describe('T11.16 — Performance and stability of APIs under load', () => {
   });
 
   // @plan T11.16
-  // @covers EOCP-E11-02
+  // @covers EOCP-E11-01
   it(`fires ${CONCURRENCY}×${REQUESTS_EACH} concurrent GET /task with p95 ≤ ${MAX_P95_MS}ms and error rate ≤ ${MAX_ERROR_RATE * 100}%`, async () => {
     log.step(`${CONCURRENCY}×${REQUESTS_EACH} concurrent GET /task`);
 

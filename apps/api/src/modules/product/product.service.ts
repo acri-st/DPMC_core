@@ -3,6 +3,7 @@ import {
   DEFAULT_PAGE_SIZE,
   PaginatedResult,
   PaginationQuery,
+  buildOrderBy,
   buildSearchWhere,
   paginationSkipTake,
 } from '@/common/utils/pagination';
@@ -11,6 +12,19 @@ import type { Product } from '@dpmc/client';
 import { Prisma } from '@dpmc/prisma';
 import type { CreateProductBody, UpdateProductBody } from './product.dto';
 import { productToDto } from './product.utils';
+
+// Columns the product list may be sorted by (real Product scalar fields only —
+// derived values like the product type acronym / processing level live on the
+// related ProductType and can't be ordered in the DB here).
+const PRODUCT_SORTABLE = [
+  'name',
+  'version',
+  'productTypeId',
+  'isDefault',
+  'generatedAt',
+  'createdAt',
+  'id',
+] as const;
 
 @Injectable()
 export class ProductService {
@@ -21,12 +35,18 @@ export class ProductService {
     const { skip, take } = paginationSkipTake(p);
     const search = buildSearchWhere(['name', 'version'], p.q);
     const where = search ?? undefined;
+    // Default: name asc (id desc breaks ties for stable pagination);
+    // overridable via ?sort=&order= against the PRODUCT_SORTABLE allowlist.
+    const orderBy = buildOrderBy(PRODUCT_SORTABLE, p.sort, p.order, [
+      { name: 'asc' },
+      { id: 'desc' },
+    ]);
     const [records, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
         skip,
         take,
-        orderBy: { name: 'asc' },
+        orderBy,
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -48,7 +68,7 @@ export class ProductService {
         productTypeId: dto.productTypeId,
         parentBatchId: dto.parentBatchId ?? null,
         name: dto.name,
-        version: dto.version ?? null,
+        version: dto.version ?? '',
         isDefault: dto.isDefault ?? false,
         generatedAt: dto.generatedAt ?? null,
         parameters:

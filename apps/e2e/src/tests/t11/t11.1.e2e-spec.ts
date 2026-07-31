@@ -6,7 +6,7 @@ import { requireEnvReady } from '../t01/_env-check';
 import { PROJECT_ID, PROCESSOR_VERSION_ID } from './_shared';
 
 // @plan T11.1 — Exposure of core DPMC functionalities through REST APIs
-// @covers EOCP-E11-01
+// @covers EOCP-E11-01, EOCP-E1-02
 
 const log = makeLogger('T11.1');
 
@@ -30,7 +30,7 @@ describe('T11.1 — Exposure of core DPMC functionalities through REST APIs', ()
   });
 
   // @plan T11.1
-  // @covers EOCP-E11-01
+  // @covers EOCP-E11-01, EOCP-E1-02
   it('Step 1 – GET /status returns service information', async () => {
     log.step('Step 1 — GET /status');
     const res = await request(API).get('/status').set('Cookie', cookie);
@@ -41,7 +41,7 @@ describe('T11.1 — Exposure of core DPMC functionalities through REST APIs', ()
   });
 
   // @plan T11.1
-  // @covers EOCP-E11-01
+  // @covers EOCP-E11-01, EOCP-E1-02
   it('Step 2 – a documentation or liveness endpoint is reachable', async () => {
     log.step('Step 2 — probe doc/health endpoints');
     const candidates = ['/docs-json', '/docs', '/swagger', '/openapi.json', '/healthz'];
@@ -56,7 +56,7 @@ describe('T11.1 — Exposure of core DPMC functionalities through REST APIs', ()
   });
 
   // @plan T11.1
-  // @covers EOCP-E11-01
+  // @covers EOCP-E11-01, EOCP-E1-02
   it('Step 3 – POST /task creates a Standalone task with correct fields', async () => {
     log.step('Step 3 — POST /task');
     log.action('POST /task', { kind: 'Standalone', processorVersionId: PROCESSOR_VERSION_ID });
@@ -79,7 +79,7 @@ describe('T11.1 — Exposure of core DPMC functionalities through REST APIs', ()
   });
 
   // @plan T11.1
-  // @covers EOCP-E11-01
+  // @covers EOCP-E11-01, EOCP-E1-02
   it('Step 4 – GET /task/:id returns the task with correct id, kind, and a valid status', async () => {
     log.step(`Step 4 — GET /task/${createdIds[0]}`);
     const res = await request(API).get(`/task/${createdIds[0]}`).set('Cookie', cookie);
@@ -92,7 +92,7 @@ describe('T11.1 — Exposure of core DPMC functionalities through REST APIs', ()
   });
 
   // @plan T11.1
-  // @covers EOCP-E11-01
+  // @covers EOCP-E11-01, EOCP-E1-02
   it('Step 5 – GET /task returns an array with id on each item', async () => {
     log.step('Step 5 — GET /task (list)');
     const res = await request(API).get('/task').set('Cookie', cookie);

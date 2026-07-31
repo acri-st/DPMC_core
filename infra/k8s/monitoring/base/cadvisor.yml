@@ -1,0 +1,114 @@
+# The kubelet's embedded cAdvisor stopped exposing per-pod network counters
+# (it only reports the node root cgroup), so DPMC runs its own to attribute
+# ingress/egress bytes to a job. Verify before assuming otherwise:
+#   kubectl get --raw /api/v1/nodes/<node>/proxy/metrics/cadvisor \
+#     | grep container_network_receive_bytes_total
+# If that ever grows namespace/pod labels, delete this DaemonSet and keep the
+# metrics from the kubelet-cadvisor scrape job instead.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cadvisor
+spec:
+  selector:
+    matchLabels:
+      app: cadvisor
+
+  template:
+    metadata:
+      labels:
+        app: cadvisor
+
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+
+      containers:
+        - name: cadvisor
+          image: ghcr.io/google/cadvisor:v0.57.0
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - --port=8080
+            # Matches the 15s scrape interval. At 1s cAdvisor re-walks every
+            # cgroup on the node 15x more often than anything reads the result,
+            # which on a busy node costs more CPU than the workloads we bill.
+            - --housekeeping_interval=10s
+            - --max_housekeeping_interval=15s
+            # RKE2/k3s socket path; without it cAdvisor sees only raw
+            # cgroups — no container labels, no per-pod network.
+            - --containerd=/var/run/k3s/containerd/containerd.sock
+            - --event_storage_event_limit=default=0
+            - --event_storage_age_limit=default=0
+            # Only the metric families we actually keep in Prometheus. cAdvisor
+            # computes everything it is not told to disable, so this is the
+            # cheapest single knob on this DaemonSet.
+            - --disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,percpu,process,referenced_memory,resctrl,sched,tcp,udp
+            # Generate the three labels the Prometheus job needs rather than
+            # every Docker/containerd label followed by a labeldrop.
+            - --store_container_labels=false
+            - --whitelisted_container_labels=io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.container.name
+
+          securityContext:
+            # cAdvisor needs to read every cgroup and namespace on the node.
+            # This is why this DaemonSet stays out of the API/worker namespaces
+            # on clusters with a restricted Pod Security Admission profile.
+            privileged: true
+
+          ports:
+            - name: metrics
+              containerPort: 8080
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true
+            - name: var-run
+              mountPath: /var/run
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: docker
+              mountPath: /var/lib/docker
+              readOnly: true
+            - name: containerd
+              mountPath: /var/lib/containerd
+              readOnly: true
+
+      volumes:
+        - name: rootfs
+          hostPath:
+            path: /
+        # /var/run carries the containerd socket, which is how cAdvisor reads
+        # container metadata on a containerd node (minikube --driver=docker
+        # uses Docker; preprod does not necessarily).
+        - name: var-run
+          hostPath:
+            path: /var/run
+        - name: sys
+          hostPath:
+            path: /sys
+        # DirectoryOrCreate on both runtime roots: exactly one of them exists
+        # on any given node, and a plain hostPath to a missing directory blocks
+        # the pod from starting.
+        - name: docker
+          hostPath:
+            path: /var/lib/docker
+            type: DirectoryOrCreate
+        - name: containerd
+          hostPath:
+            path: /var/lib/containerd
+            type: DirectoryOrCreate

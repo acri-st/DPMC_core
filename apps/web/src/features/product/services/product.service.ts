@@ -15,10 +15,14 @@ const GetResponseSchema = z.object({
   data: ProductSchema,
 });
 
+export type SortOrder = 'asc' | 'desc';
+
 export type ListProductsParams = {
   page: number;
   pageSize: number;
   q?: string;
+  sort?: string;
+  order?: SortOrder;
 };
 
 export type ListProductsResult = {
@@ -34,6 +38,10 @@ export async function listProducts(
     pageSize: String(params.pageSize),
   });
   if (params.q) search.set('q', params.q);
+  if (params.sort) {
+    search.set('sort', params.sort);
+    search.set('order', params.order ?? 'desc');
+  }
   const { data, headers } = await apiFetchWithMeta<unknown>(
     `/product?${search.toString()}`,
   );

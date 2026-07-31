@@ -6,7 +6,7 @@ import {
 } from '../../support/session';
 
 // @plan T12.12 — Tamper resistance of security logs
-// @covers EOCP-E12-12
+// @covers EOCP-E12-04
 //
 // Description: This test verifies that security logs cannot be altered without detection.
 //   The audit log API has no DELETE or PATCH endpoint, making direct API-level tampering
@@ -20,7 +20,7 @@ import {
 
 describe('T12.12 — Tamper resistance of security logs', () => {
   // @plan T12.12
-  // @covers EOCP-E12-12
+  // @covers EOCP-E12-04
   it('Step 1 – no DELETE or PATCH endpoint exists for audit log (API-level tamper prevention)', async () => {
     const { cookie } = await asAdminSession();
 
@@ -35,7 +35,7 @@ describe('T12.12 — Tamper resistance of security logs', () => {
   });
 
   // @plan T12.12
-  // @covers EOCP-E12-12
+  // @covers EOCP-E12-04
   it('Step 2 – unauthorized access to audit log is rejected', async () => {
     // Unauthenticated
     await request(API).get('/audit-log').expect(401);
@@ -46,7 +46,7 @@ describe('T12.12 — Tamper resistance of security logs', () => {
   });
 
   // @plan T12.12
-  // @covers EOCP-E12-12
+  // @covers EOCP-E12-04
   it('Step 3 – audit log entries are returned in consistent descending order', async () => {
     const { cookie } = await asAdminSession();
     const res = await request(API).get('/audit-log').set('Cookie', cookie).expect(200);

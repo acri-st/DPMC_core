@@ -96,10 +96,26 @@ def test_find_best_host_returns_none_when_no_fit():
     assert find_best_host(_NEED, [_host(cores=1)]) is None
 
 
-def test_find_best_host_picks_smallest_residual():
+def test_find_best_host_picks_most_free():
+    # Least-loaded / worst-fit: spread onto the emptiest host, not bin-pack the
+    # tightest one. Workers are single-slot, so packing would idle the big host.
     big = _host(id=2, cores=32, ram=64_000_000_000, disk=1_000_000_000_000)
     tight = _host(id=3, cores=4, ram=8_000_000_000, disk=50_000_000_000)
-    assert find_best_host(_NEED, [big, tight])["id"] == 3
+    assert find_best_host(_NEED, [big, tight])["id"] == 2
+
+
+def test_find_best_host_spreads_across_equal_hosts():
+    # Simulate the dispatch_tick loop: after each placement its free capacity is
+    # decremented in-memory, so consecutive 1-core jobs must round-robin across
+    # the fleet rather than all land on the first host.
+    hosts = [_host(id=i, cores=8, alloc_cores=0) for i in (10, 11, 12)]
+    need = {**_NEED, "cores": 1}
+    picked = []
+    for _ in range(3):
+        h = find_best_host(need, hosts)
+        picked.append(h["id"])
+        next(x for x in hosts if x["id"] == h["id"])["alloc_cores"] += 1
+    assert sorted(picked) == [10, 11, 12]  # one each, not all on id=10
 
 
 def test_find_best_host_refuses_gpu_on_non_gpu_host():
@@ -122,3 +138,21 @@ def test_find_best_host_runtime_none_accepts_any():
     need = {**_NEED, "runtime": "none"}
     assert find_best_host(need, [_host(container_runtime="apptainer")]) is not None
     assert find_best_host(need, [_host(container_runtime="docker")]) is not None
+    assert find_best_host(need, [_host(container_runtime="kubernetes")]) is not None
+
+
+def test_find_best_host_kubernetes_satisfies_docker():
+    # A Kubernetes host runs OCI images, so it serves a Docker requirement.
+    need = {**_NEED, "runtime": "docker"}
+    assert find_best_host(need, [_host(container_runtime="kubernetes")]) is not None
+
+
+def test_find_best_host_docker_need_refuses_apptainer_host():
+    need = {**_NEED, "runtime": "docker"}
+    assert find_best_host(need, [_host(container_runtime="apptainer")]) is None
+
+
+def test_find_best_host_apptainer_need_refuses_kubernetes_host():
+    # Kubernetes serves OCI images only — not Apptainer SIFs.
+    need = {**_NEED, "runtime": "apptainer"}
+    assert find_best_host(need, [_host(container_runtime="kubernetes")]) is None

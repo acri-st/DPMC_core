@@ -5,7 +5,7 @@ import { makeLogger } from '../../support/test-logger';
 import { requireEnvReady } from '../t01/_env-check';
 
 // @plan T14.4 — Prevention of accidental product overwriting
-// @covers EOCP-E14-04
+// @covers EOCP-E14-01
 //
 // Description: This test verifies that generating a new product version does not overwrite an
 //   existing version. The original must remain intact regardless of the API behavior on duplicate.
@@ -49,7 +49,7 @@ describe('T14.4 — Prevention of accidental product overwriting', () => {
   });
 
   // @plan T14.4
-  // @covers EOCP-E14-04
+  // @covers EOCP-E14-01
   it('Step 1 – POST /product with version V1 is stored with correct id, version, comment', async () => {
     log.step('Step 1 — POST /product (V1 initial)');
 
@@ -70,7 +70,7 @@ describe('T14.4 — Prevention of accidental product overwriting', () => {
   });
 
   // @plan T14.4
-  // @covers EOCP-E14-04
+  // @covers EOCP-E14-01
   it('Step 2 – duplicate POST (same name+version) does not corrupt original V1 entry', async () => {
     log.step('Step 2 — POST /product (V1 duplicate attempt)');
 
@@ -102,7 +102,7 @@ describe('T14.4 — Prevention of accidental product overwriting', () => {
   });
 
   // @plan T14.4
-  // @covers EOCP-E14-04
+  // @covers EOCP-E14-01
   it('Step 3 – POST /product with incremented version V2 creates a new independent entry', async () => {
     log.step('Step 3 — POST /product (V2 new version)');
 

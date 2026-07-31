@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Mapping
 
 from domain.dependencies import next_state_for_child
 from domain.enums import DependencyMode, JobStatus
-from repositories.products import is_data_available
 from repositories.tables import T
 
 log = logging.getLogger("dispatcher.dependency")
@@ -40,10 +38,7 @@ async def dep_tick(db) -> int:
 
         for r in rows:
             parents_by_mode = await _collect_parents(conn, r["job_id"])
-            data_available = await _build_data_available(conn, parents_by_mode)
-            new_state = next_state_for_child(
-                parents_by_mode, data_available=data_available
-            )
+            new_state = next_state_for_child(parents_by_mode)
             if new_state == JobStatus.WAITING:
                 continue
             await conn.execute(
@@ -53,41 +48,6 @@ async def dep_tick(db) -> int:
             changed += 1
             log.info("job %s waiting → %s", r["job_id"], new_state)
     return changed
-
-
-async def _build_data_available(
-    conn,
-    parents_by_mode: Mapping[str, list[tuple[int, str]]],
-) -> Callable[[int], bool] | None:
-    """Pre-resolve catalog availability for the `on_data_available` edges.
-
-    `next_state_for_child` is a pure, synchronous function, so the async DB
-    lookups happen here: we query each distinct expected `productTypeId` once
-    and hand back a plain dict-backed predicate. Returns None when the child
-    has no `on_data_available` edge (so the common case adds no queries).
-    """
-    oda = parents_by_mode.get(DependencyMode.ON_DATA_AVAILABLE)
-    if not oda:
-        return None
-    avail: dict[int, bool] = {}
-    for product_type_id, _ in oda:
-        if product_type_id not in avail:
-            avail[product_type_id] = await is_data_available(conn, product_type_id)
-    return lambda pid: avail.get(pid, False)
-
-
-def _data_available_product_type(condition: object) -> int | None:
-    """Extract the productTypeId from a `dataAvailable` edge condition.
-
-    Returns None for a missing/other-kind/malformed condition, signalling the
-    caller to keep the child waiting rather than run it without its data.
-    """
-    if not isinstance(condition, Mapping):
-        return None
-    if condition.get("kind") != "dataAvailable":
-        return None
-    pid = condition.get("productTypeId")
-    return pid if isinstance(pid, int) else None
 
 
 async def _collect_parents(
@@ -103,17 +63,16 @@ async def _collect_parents(
          appears at most once per ProductionChainVersion, so this match
          is 1-to-1.
       2. Read every `production_chain_x_edge` whose `childChainId` is
-         that node. Each row tells us the `parentChainId`, the
-         `dependencyMode`, and the `condition` carried by the edge.
+         that node. Each row tells us the `parentChainId` and the
+         `dependencyMode` carried by the edge.
       3. Find the sibling Job in the same Batch whose ProcessingScript
          matches the edge's parent ProcessingChain. Group the resulting
          (parent_id, parent_status) tuples by `dependencyMode`.
 
-    `on_data_available` edges are gated on catalog availability rather than
-    the parent Job's status: we read the expected `productTypeId` from the
-    edge's `dataAvailable` condition and emit `(productTypeId, "data")` so
-    that `next_state_for_child` (with the predicate from
-    `_build_data_available`) promotes the child once that product exists.
+    `on_data_available` edges are skipped with a warning: their
+    evaluation hinges on the edge's `condition.productTypeId`, which the
+    dispatcher does not yet parse. They will be wired in once
+    `domain.edges.evaluate_edge_condition` is plugged into this service.
     """
     chain_cur = await conn.execute(
         f"""
@@ -137,7 +96,6 @@ async def _collect_parents(
     parents_cur = await conn.execute(
         f"""
         SELECT e."dependencyMode" AS mode,
-               e."condition"      AS condition,
                sib.id              AS parent_id,
                sib.status          AS parent_status
         FROM {T.PRODUCTION_CHAIN_EDGE} e
@@ -159,19 +117,11 @@ async def _collect_parents(
     for r in parent_rows:
         mode = r["mode"]
         if mode == DependencyMode.ON_DATA_AVAILABLE:
-            product_type_id = _data_available_product_type(r["condition"])
-            if product_type_id is None:
-                log.warning(
-                    "on_data_available edge for child job %s has no dataAvailable "
-                    "condition/productTypeId — keeping it waiting",
-                    child_job_id,
-                )
-                # Sentinel 0: no Product has type 0, so availability is always
-                # false and the child stays waiting (fail-safe) instead of
-                # running without its expected data.
-                grouped.setdefault(mode, []).append((0, "data"))
-                continue
-            grouped.setdefault(mode, []).append((product_type_id, "data"))
+            log.warning(
+                "on_data_available edge skipped for child job %s — "
+                "edge.condition evaluation is not yet wired in the dispatcher",
+                child_job_id,
+            )
             continue
         grouped.setdefault(mode, []).append((r["parent_id"], r["parent_status"]))
     return grouped

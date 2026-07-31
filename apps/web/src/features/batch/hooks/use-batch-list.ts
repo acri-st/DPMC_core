@@ -19,8 +19,10 @@ export const batchListKey = (
     params.page,
     params.pageSize,
     params.q ?? '',
-    params.status ?? '',
-    params.kind ?? '',
+    (params.status ?? []).join(','),
+    (params.kind ?? []).join(','),
+    params.sort ?? '',
+    params.order ?? '',
   ] as const;
 
 export function useBatchList(params: ListBatchesParams) {

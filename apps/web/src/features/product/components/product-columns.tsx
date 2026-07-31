@@ -33,6 +33,7 @@ export function buildProductColumns(
     {
       id: 'processingLevel',
       header: 'Processing level',
+      enableSorting: false, // derived from the related ProductType — not a DB column
       cell: ({ row }) => {
         const level = productTypeById.get(
           row.original.productTypeId,

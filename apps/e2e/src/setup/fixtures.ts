@@ -3,38 +3,38 @@
 
 export const FIXTURES = {
   dataCenter: {
-    id: '00000000-0000-0000-0000-000000000001',
+    id: 1,
     code: 'TST',
     name: 'Test Data Center',
   },
   project: {
-    id: '00000000-0000-0000-0000-000000000002',
+    id: 2,
     identifier: 'test',
     name: 'Test Project',
   },
   pool: {
-    id: '00000000-0000-0000-0000-000000000003',
+    id: 3,
     name: 'DevelopmentPool1',
   },
   processingScript: {
-    id: '00000000-0000-0000-0000-000000000004',
+    id: 4,
     acronym: 'imagemagick-resize',
     name: 'ImageMagick Resize',
   },
   processingScriptVersion: {
-    id: '00000000-0000-0000-0000-000000000005',
+    id: 5,
     version: '1.0',
   },
   processingScriptExecutable: {
-    id: '00000000-0000-0000-0000-000000000006',
+    id: 6,
   },
   auxiliaryConfiguration: {
-    id: '00000000-0000-0000-0000-000000000007',
+    id: 7,
     name: 'e2e-aux-config',
     baseline: '1.0',
   },
   processorVersion: {
-    id: '00000000-0000-0000-0000-000000000008',
+    id: 8,
     baseline: '1.0',
   },
 } as const;
